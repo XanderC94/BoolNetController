@@ -1,9 +1,12 @@
 import itertools, random, string, math, time
 
-truthValues = [False, True]
+truth_values = [False, True]
 
-# Return a Random bool between [False, True] with p=0.5 for both
-rBool = lambda : random.choice(truthValues)
+def r_bool():
+    '''
+    Return a Random bool between [False, True] with p=0.5 for both
+    ''' 
+    return random.choice(truth_values)
 
 class Boolean(object):
     """
@@ -21,7 +24,7 @@ class Boolean(object):
 
     """
     def __init__(self, truth):
-        self.setTruth(truth)      
+        self.set_truth(truth)      
     
     
     def truth(self):
@@ -33,10 +36,10 @@ class Boolean(object):
         """
         return self.__truth
 
-    def setTruth(self, newTruthValue):
+    def set_truth(self, new_truth):
         
-        self.__truth = self.__check_truth_compliance(newTruthValue)
-        self.__strategy = BooleanStrategy.factory(newTruthValue)
+        self.__truth = self.__check_truth_compliance(new_truth)
+        self.__strategy = BooleanStrategy.factory(new_truth)
 
     def __check_truth_compliance(self, truth) -> float:
         if isinstance(truth, bool):
@@ -55,14 +58,14 @@ class Boolean(object):
     def __str__(self):
         return str({'0':1 - self.__truth, '1':self.__truth})
         
-    def toJson(self) -> dict:
+    def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object
         """
         return {'0':1 - self.__truth, '1':self.__truth}
     
     @staticmethod
-    def fromJson(json:dict):
+    def from_json(json:dict):
         return Boolean(json['1'])
 
 ###########################################################################################
@@ -99,7 +102,7 @@ class ProbabilisticStrategy(BooleanStrategy):
         self.__truth = truth
     
     def __call__(self):
-        return random.choices(truthValues, weights=[1 - self.__truth, self.__truth])[0]
+        return random.choices(truth_values, weights=[1 - self.__truth, self.__truth])[0]
          
     def __bool__(self):
         return self()

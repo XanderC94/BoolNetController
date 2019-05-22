@@ -1,5 +1,5 @@
 import itertools, random, string, hashlib, unicodedata, json
-from boolean import rBool, truthValues, Boolean
+from boolean import r_bool, truth_values, Boolean
 
 def test(*args, f):
     print(args)
@@ -14,30 +14,30 @@ class BooleanFunction(object):
 
     It's initialized randomly through a generator function. Default: deterministic Boolean generator.
     """
-    def __init__(self, k: int, generator = lambda *args: Boolean(rBool())):
+    def __init__(self, k: int, generator = lambda *args: Boolean(r_bool())):
         
         self.__k = k
 
-        _table = list(itertools.product(truthValues, repeat=k))
+        tt = list(itertools.product(truth_values, repeat=k))
         
-        self.__truth_table = dict([(args, generator(*args)) for args in _table])
+        self.__truth_table = dict([(args, generator(*args)) for args in tt])
 
-    def __setitem__(self, params: tuple, newValue):
-        if isinstance(newValue, Boolean):
-            self.__truth_table[params] = newValue
-        elif isinstance(newValue, (bool, int, float)):
-            self.__truth_table[params] = Boolean(newValue)
+    def __setitem__(self, params: tuple, new_value):
+        if isinstance(new_value, Boolean):
+            self.__truth_table[params] = new_value
+        elif isinstance(new_value, (bool, int, float)):
+            self.__truth_table[params] = Boolean(new_value)
         else:
-            raise Exception(f'Boolean functions do not accept {type(newValue)} as truth value.')
+            raise Exception(f'Boolean functions do not accept {type(new_value)} as truth value.')
 
     def __getitem__(self, params: tuple) -> Boolean:
         return self.__truth_table[params]
     
-    def setByIndex(self, idx, newValue):
+    def set_index(self, idx, new_value):
         k = list(self.__truth_table.keys())[idx]
-        self[k] = newValue
+        self[k] = new_value
 
-    def getByIndex(self, idx):
+    def get_index(self, idx):
         k = list(self.__truth_table.keys())[idx]
         return self[k]
 
@@ -53,18 +53,18 @@ class BooleanFunction(object):
     def __len__(self):
         return self.__k
 
-    def toJson(self) -> dict:
+    def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'k':len(self), 'truthtable':list(map(lambda e: {'params':e[0],'hold':e[1].toJson()}, self.__truth_table.items()))}
+        return {'k':len(self), 'truthtable':list(map(lambda e: {'params':e[0],'hold':e[1].to_json()}, self.__truth_table.items()))}
 
     @staticmethod
-    def fromJson(json:dict):
+    def from_json(json:dict):
         _bf = BooleanFunction(json['k'])
 
         for e in json['truthtable']:
-            _bf[e['params']] = Boolean.fromJson(e['hold'])
+            _bf[e['params']] = Boolean.from_json(e['hold'])
 
 if __name__ == "__main__":
 
@@ -83,6 +83,6 @@ if __name__ == "__main__":
     print()
 
     with open('tt.json', 'w') as fp:
-        json.dump(dbf.toJson(), fp, indent=2)
+        json.dump(dbf.to_json(), fp, indent=2)
 
     # print(pbf.toJson())
