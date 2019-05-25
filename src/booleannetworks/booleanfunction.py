@@ -14,32 +14,37 @@ class BooleanFunction(object):
 
     It's initialized randomly through a generator function. Default: deterministic Boolean generator.
     """
-    def __init__(self, k: int, generator = lambda *args: Boolean(r_bool())):
+    def __init__(self, k: int, result_generator = lambda *args: Boolean(r_bool())):
         
         self.__k = k
 
         tt = list(itertools.product(truth_values, repeat=k))
         
-        self.__truth_table = dict([(args, generator(*args)) for args in tt])
+        self.__truth_table = dict()
+
+        for args in tt: self.__truth_table[args] = result_generator(*args)
 
     def __setitem__(self, params: tuple, new_value):
         if isinstance(new_value, Boolean):
             self.__truth_table[params] = new_value
         elif isinstance(new_value, (bool, int, float)):
-            self.__truth_table[params] = Boolean(new_value)
+            self.__truth_table[params].set_bias(new_value)
         else:
             raise Exception(f'Boolean functions do not accept {type(new_value)} as truth value.')
 
     def __getitem__(self, params: tuple) -> Boolean:
         return self.__truth_table[params]
     
-    def set_index(self, idx, new_value):
+    def set_by_index(self, idx, new_value):
         k = list(self.__truth_table.keys())[idx]
         self[k] = new_value
 
-    def get_index(self, idx):
+    def by_index(self, idx) -> (tuple, Boolean):
         k = list(self.__truth_table.keys())[idx]
-        return self[k]
+        return (k, self[k])
+
+    def get_k(self) -> int:
+        return self.__k
 
     def __call__(self, params: tuple) -> bool:
         """
@@ -69,7 +74,7 @@ class BooleanFunction(object):
 if __name__ == "__main__":
 
     dbf = BooleanFunction(3)
-    pbf = BooleanFunction(3, generator = lambda *args: Boolean(random.choice([0.2, 0.35, 0.5, 0.65, 0.8])))
+    pbf = BooleanFunction(3, result_generator = lambda *args: Boolean(random.choice([0.2, 0.35, 0.5, 0.65, 0.8])))
 
     print(dbf)
     print()

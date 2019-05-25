@@ -2,11 +2,11 @@ import itertools, random, string, math, time
 
 truth_values = [False, True]
 
-def r_bool():
+def r_bool(bias = 0.5):
     '''
     Return a Random bool between [False, True] with p=0.5 for both
     ''' 
-    return random.choice(truth_values)
+    return random.choices(truth_values, weights=[1-bias, bias])[0]
 
 class Boolean(object):
     """
@@ -20,34 +20,33 @@ class Boolean(object):
 
     * A Deterministic Boolean variable holds always True or False at any time.
     A Deterministic Boolean is a Probabilistic Boolean 
-    with Truth bias equal to 1.0 (holds True) or 0.0 (holds False)
+    with a truth bias equal to 1.0 (holds True) or 0.0 (holds False)
 
     """
-    def __init__(self, truth):
-        self.set_truth(truth)      
+    def __init__(self, bias):
+        self.set_bias(bias)      
     
-    
-    def truth(self):
+    def bias(self) -> float:
         """ 
-        Return the truth value (float) of the Boolean Variable.
+        Return the truth bias (float) of the Boolean Variable.
 
         Truth values equals to 1.0 or 0.0 are proper of a Deterministic Boolean variables.
         Truth values in (0.0, 1.0) are proper of Probabilistic Boolean variables
         """
-        return self.__truth
+        return self.__bias
 
-    def set_truth(self, new_truth):
+    def set_bias(self, new_bias):
         
-        self.__truth = self.__check_truth_compliance(new_truth)
-        self.__strategy = BooleanStrategy.factory(new_truth)
+        self.__bias = self.__check_bias_compliance(new_bias)
+        self.__strategy = BooleanStrategy.factory(new_bias)
 
-    def __check_truth_compliance(self, truth) -> float:
-        if isinstance(truth, bool):
-            return float(truth)
-        elif isinstance(truth, (float, int)):
-            return min(1.0, truth) if truth > 0 else 0.0
+    def __check_bias_compliance(self, bias) -> float:
+        if isinstance(bias, bool):
+            return float(bias)
+        elif isinstance(bias, (float, int)):
+            return min(1.0, bias) if bias > 0 else 0.0
         else:
-            raise Exception(f'Boolean Variable does not accept {type(truth)} as truth values.')
+            raise Exception(f'Boolean Variable does not accept {type(bias)} as truth bias.')
     
     def __bool__(self):
         return self.__strategy()
@@ -56,13 +55,13 @@ class Boolean(object):
         return self.__strategy()
 
     def __str__(self):
-        return str({'0':1 - self.__truth, '1':self.__truth})
+        return str({'0':1 - self.__bias, '1':self.__bias})
         
     def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'0':1 - self.__truth, '1':self.__truth}
+        return {'0':1 - self.__bias, '1':self.__bias}
     
     @staticmethod
     def from_json(json:dict):
