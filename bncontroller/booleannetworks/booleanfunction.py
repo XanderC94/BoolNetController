@@ -57,19 +57,34 @@ class BooleanFunction(object):
     
     def __len__(self):
         return self.__k
+    
+    def __eq__(self, that):
+
+        if isinstance(that, BooleanFunction):
+            return self.get_k() == that.get_k() and all(self[e] == that[e] for e in list(itertools.product(truth_values, repeat=self.get_k())))
+        else:
+            return False
 
     def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'k':len(self), 'truthtable':list(map(lambda e: {'params':e[0],'hold':e[1].to_json()}, self.__truth_table.items()))}
+        return {
+            'k':len(self), 
+            'truth_table': list(map(lambda e: {
+                    'params':list(e[0]),
+                    'hold':e[1].to_json()
+                }, self.__truth_table.items()))
+        }
 
     @staticmethod
     def from_json(json:dict):
         _bf = BooleanFunction(json['k'])
 
-        for e in json['truthtable']:
-            _bf[e['params']] = Boolean.from_json(e['hold'])
+        for e in json['truth_table']:
+            _bf[tuple(e['params'])] = Boolean.from_json(e['hold'])
+        
+        return _bf
 
 if __name__ == "__main__":
 

@@ -50,7 +50,17 @@ class Boolean(object):
     
     def __bool__(self):
         return self.__strategy()
-    
+
+    def __eq__(self, that):
+
+        if isinstance(that, Boolean):
+            return that.bias() == self.bias()
+        elif isinstance(that, (float, int)):
+            return that == self.bias()
+        elif isinstance(that, bool):
+            return float(that) == self.bias()
+        else: return False
+
     def __call__(self):
         return self.__strategy()
 

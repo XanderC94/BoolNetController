@@ -4,7 +4,3 @@ def check_to_json_existence(value):
         return value.to_json() 
     else:
         return value
-
-def string_bracketizer(string : str, brackets=('{', '}')):
-
-    return brackets[0].join(string).join(brackets[1])
