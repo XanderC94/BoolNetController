@@ -40,10 +40,10 @@ def tree_edit_distance(C:NTree, T:NTree) -> float:
     
     return apted.APTED(C, T).compute_edit_distance()
 
-def ntree_level_arities(nodes: list) -> dict:
+def tree_level_arities(nodes: list) -> dict:
     """
-    Returns an Histogram (dict) where the keys are the number of children
-    while the values are the number of nodes in the list
+    Returns an Histogram (dict) where each key is a cardinality (the number of children)
+    while the values are the number of nodes with such cardinality
     """
     arities = defaultdict(int)
 
@@ -72,7 +72,7 @@ def tree_histogram_distance(C : NTree, T: NTree) -> float:
    
     while len(levelc) > 0 or len(levelt) > 0:
         
-        ac, at = ntree_level_arities(levelc), ntree_level_arities(levelt)
+        ac, at = tree_level_arities(levelc), tree_level_arities(levelt)
 
         arities = defaultdict(int)
 
