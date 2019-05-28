@@ -2,9 +2,12 @@ from bnstructure import BooleanNetwork
 from boolean import Boolean, r_bool, truth_values
 from booleanfunction import BooleanFunction
 from ntree import NTree
-from tes import bn_to_tes
-import random, math, queue, copy
 from ntreeutils import tree_edit_distance, tree_histogram_distance
+from tes import bn_to_tes
+from pathlib import Path
+from utils import read_json, write_json
+from bnevaluation_config import EvaluationConfig
+import random, math, queue, copy, subprocess, datetime
 
 def tes_distance(C, T) -> float:
     """
@@ -22,23 +25,6 @@ def tes_distance(C, T) -> float:
     H = tree_histogram_distance(C, T)
     
     return E + (E * H)
-
-def generate_flips(bn: BooleanNetwork, last_flips = []):
-    """
-    Given the BN and a list of node_id to be excluded from the flipping,
-    returns a list of tuples representing the changes (flips) to apply to the BN.
-    
-    The tuple structure is defined as follow
-    
-        (node_id, truth_table_entry, new_bias)
-    
-    where:
-        * node_id is the "name" of the node in the BN.
-        * bf_args is a tuple of bool representing the entry of the (node) truth table
-        which output value has to be flipped.
-        * new_bias is the flipped output of the (node) truth table.
-    """
-    return list(generate_flip(bn, last_flips) for _ in last_flips)
 
 def generate_flip(bn: BooleanNetwork, last_flips = []):
     """
@@ -65,6 +51,23 @@ def generate_flip(bn: BooleanNetwork, last_flips = []):
     args, res = bn[nid].boolfun.by_index(ttidx)
 
     return (nid, args, 1.0 - res.bias())
+
+def generate_flips(bn: BooleanNetwork, last_flips = []):
+    """
+    Given the BN and a list of node_id to be excluded from the flipping,
+    returns a list of tuples representing the changes (flips) to apply to the BN.
+    
+    The tuple structure is defined as follow
+    
+        (node_id, truth_table_entry, new_bias)
+    
+    where:
+        * node_id is the "name" of the node in the BN.
+        * bf_args is a tuple of bool representing the entry of the (node) truth table
+        which output value has to be flipped.
+        * new_bias is the flipped output of the (node) truth table.
+    """
+    return list(generate_flip(bn, last_flips) for _ in last_flips)
 
 def edit_boolean_network(bn: BooleanNetwork, flips: list):
     """
@@ -214,6 +217,62 @@ def variable_neighborhood_search(n, k, p, target_tes, thresholds:list, maxIter =
         it += 1
 
     return sol
+
+#########################################################################################################
+
+def run_simulation(config : EvaluationConfig, model) -> dict:
+    date = f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
+    write_json(model, config.bn_model_dir / f'bn_model_{date}.json')
+    subprocess.run([str(config.webots_path), *config.webots_launch_args, str(config.webots_world_path)])
+
+
+def aggregate_sym_data(path:Path) -> dict:
+    return {}
+
+def custom_vns(n, k, p, simulation = lambda *args: str(*args), maxIter = 10000, maxStall = 1):
+    """
+    """
+    bn = BooleanNetwork(n, k, bfInit= lambda *args: Boolean(r_bool(p)))
+    sol = bn
+    # run agent with flipped network simulation
+    data_path = simulation(bn)
+    dist = float('inf')
+    it, last_flips, nStall, nFlips = 0, -1, 0, 1
+
+    while it < maxIter and dist > 0:
+
+        if nStall == maxStall:
+            nStall = 0
+            nFlips += 1
+
+            if nFlips > len(bn): 
+                return sol
+
+        flips = generate_flips(sol, last_flips)
+        bn, last_flips = edit_boolean_network(bn, flips)
+
+        # run agent with flipped network simulation
+        data_path = simulation(bn)
+
+        _dist = random.random() # Read Symulation values
+
+        if _dist > dist:
+            bn = sol
+        else:
+
+            if dist == _dist:
+                nStall += 1
+            else:
+                nStall = 0
+                nFlips = 1
+
+            dist = _dist
+            sol = bn
+
+        it += 1
+
+    return sol
+
 
 if __name__ == "__main__":
     

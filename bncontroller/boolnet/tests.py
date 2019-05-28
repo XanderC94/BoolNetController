@@ -4,7 +4,6 @@ from booleanfunction import BooleanFunction
 from ntree import NTree
 from ntreeutils import tree_edit_distance, tree_histogram_distance, tree_level_arities
 
-
 class TestBoolean(unittest.TestCase):
 
     def test_creation(self):
