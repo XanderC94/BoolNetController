@@ -1,4 +1,5 @@
 import itertools, random, string, math, time
+from bncontroller.json_utils import Jsonkin
 
 truth_values = [False, True]
 
@@ -8,7 +9,7 @@ def r_bool(bias = 0.5):
     ''' 
     return random.choices(truth_values, weights=[1-bias, bias])[0]
 
-class Boolean(object):
+class Boolean(Jsonkin):
     """
 
     A Probabilistic (and Deterministic) Boolean variable implementation.

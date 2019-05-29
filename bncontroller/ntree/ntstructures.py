@@ -1,4 +1,4 @@
-from utils import check_to_json_existence
+from bncontroller.json_utils import check_to_json_existence
 from apted.helpers import Tree
 from apted import APTED
 

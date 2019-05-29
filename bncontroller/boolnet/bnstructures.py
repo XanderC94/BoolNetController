@@ -1,9 +1,11 @@
-from booleanfunction import BooleanFunction
-from boolean import Boolean, r_bool
-from ntree import NTree
+from bncontroller.boolnet.bfunction import BooleanFunction
+from bncontroller.boolnet.boolean import Boolean, r_bool
+from bncontroller.boolnet.bnutils import bnstate_distance
+from bncontroller.ntree.ntstructures import NTree
+from bncontroller.json_utils import Jsonkin
 import json, time, random
 
-class BooleanNode(object):
+class BooleanNode(Jsonkin):
 
     def __init__(self, label, neighbors:list, bf : BooleanFunction, init_state=r_bool):
         self.__label = label
@@ -65,7 +67,7 @@ class BooleanNode(object):
 
 ###############################################################################################################
 
-class BooleanNetwork(object):
+class BooleanNetwork(Jsonkin):
 
     '''
     An simple implementation of a BN using the <Boolean> wrappers for bool values which implements both
@@ -105,10 +107,17 @@ class BooleanNetwork(object):
         else:
             raise Exception(f'Boolean Network does not accept {type(K)} as node neighbors number. Use List, Dict or Int (each node has K neighbors).')
 
+        # self.__n = len(nids)
+        # self.__k = sum(list(nks.values())) / self.__n
         self.__bn = dict({})
 
         for nid in nids:
-            self[str(nid)] = BooleanNode(nid, neighborFun(nid, nks[nid], nids), BooleanFunction(nks[nid], result_generator = bfInit), nInit(nid))
+            self[str(nid)] = BooleanNode(
+                nid, 
+                neighborFun(nid, nks[nid], nids), 
+                BooleanFunction(nks[nid], result_generator = bfInit), 
+                nInit(nid)
+            )
 
     def __setitem__(self, nodeId, newNode: BooleanNode):
         self.__bn[str(nodeId)] = newNode
@@ -117,7 +126,13 @@ class BooleanNetwork(object):
         return self.__bn[str(nodeId)]
 
     def __len__(self):
-        return len(self.keys())
+        return len(self.__bn)
+    
+    # def n(self):
+    #     return self.__n
+    
+    # def k(self):
+    #     return self.__k
 
     def to_pairlist(self):
         return list(self.__bn.items())
@@ -165,7 +180,7 @@ class BooleanNetwork(object):
 
         bn = BooleanNetwork(0, 0)
 
-        for nid, node in json.items:
+        for nid, node in json.items():
             bn[nid] = BooleanNode.from_json(node)
 
         return bn
@@ -174,17 +189,6 @@ class BooleanNetwork(object):
         return str(self.to_json())
 
 ####################################################################################################
-
-def bnstate_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
-    '''
-    Return the distance between 2 states of a BN.
-    The default criterium count the number of states 
-    that don't hold the same value.
-    '''
-    ds = [comp(s2[k1], v1) for k1, v1 in s1.items()]
-    return crit(ds)
-
-#####################################################################################################
 
 if __name__ == "__main__":
     

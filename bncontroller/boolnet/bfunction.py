@@ -1,12 +1,13 @@
 import itertools, random, string, hashlib, unicodedata, json
-from boolean import r_bool, truth_values, Boolean
+from bncontroller.boolnet.boolean import r_bool, truth_values, Boolean
+from bncontroller.json_utils import Jsonkin
 
 def test(*args, f):
     print(args)
     
     return f(args)
 
-class BooleanFunction(object):
+class BooleanFunction(Jsonkin):
     """ 
     A Boolean Function with k parameters implemented as a dictonary wrapper. 
 

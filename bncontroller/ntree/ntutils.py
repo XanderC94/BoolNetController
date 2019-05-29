@@ -1,7 +1,7 @@
 import random, math, queue, apted
 from itertools import chain
 from collections import defaultdict
-from ntree import NTree
+from bncontroller.ntree.ntstructures import NTree
 
 bracket_notation_template = "{{{label}{children}}}"
 

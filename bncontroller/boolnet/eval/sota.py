@@ -1,12 +1,8 @@
-from bnstructure import BooleanNetwork
-from boolean import Boolean, r_bool, truth_values
-from booleanfunction import BooleanFunction
-from ntree import NTree
-from ntreeutils import tree_edit_distance, tree_histogram_distance
-from tes import bn_to_tes
-from pathlib import Path
-from utils import read_json, write_json
-from bnevaluation_config import EvaluationConfig
+from bncontroller.boolnet.bnstructures import BooleanNetwork
+from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
+from bncontroller.ntree.ntstructures import NTree
+from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance
+from bncontroller.boolnet.tes import bn_to_tes
 import random, math, queue, copy, subprocess, datetime
 
 def tes_distance(C, T) -> float:
@@ -52,7 +48,7 @@ def generate_flip(bn: BooleanNetwork, last_flips = []):
 
     return (nid, args, 1.0 - res.bias())
 
-def generate_flips(bn: BooleanNetwork, last_flips = []):
+def generate_flips(bn: BooleanNetwork, n_flips, last_flips = []):
     """
     Given the BN and a list of node_id to be excluded from the flipping,
     returns a list of tuples representing the changes (flips) to apply to the BN.
@@ -67,7 +63,13 @@ def generate_flips(bn: BooleanNetwork, last_flips = []):
         which output value has to be flipped.
         * new_bias is the flipped output of the (node) truth table.
     """
-    return list(generate_flip(bn, last_flips) for _ in last_flips)
+    flips = []
+
+    for _ in range(n_flips):
+        flip = generate_flip(bn, last_flips + flips)
+        flips.append(flip)
+    
+    return flips
 
 def edit_boolean_network(bn: BooleanNetwork, flips: list):
     """
@@ -94,7 +96,7 @@ def edit_boolean_network(bn: BooleanNetwork, flips: list):
     else:
         return (bn, list(map(lambda f: f[0], flips)))
 
-def adaptive_walk(n, k, p, target_tes, thresholds:list, maxIter = 10000):
+def adaptive_walk(n, k, p, target_tes, thresholds:list, max_iters = 10000):
     """ 
     A simple technique of local search that performs a stochastic descent.
     Starts from a randomly generated boolean network and after the execution 
@@ -126,27 +128,31 @@ def adaptive_walk(n, k, p, target_tes, thresholds:list, maxIter = 10000):
     tes = bn_to_tes(bn, thresholds)
     dist = tes_distance(tes, target_tes)
     sol = bn
-
+    
     it, last_flip = 0, -1
 
-    while it < maxIter and dist > 0:
+    while it < max_iters and dist > 0:
 
         flips = generate_flip(sol, [last_flip])
         bn, last_flip = edit_boolean_network(bn, flips = [flips])
-        tes = bn_to_tes(bn, thresholds)
-        _dist = tes_distance(tes, target_tes)
 
-        if _dist > dist:
-            bn = sol
+        tes = bn_to_tes(bn, thresholds)
+        new_dist = tes_distance(tes, target_tes)
+
+        if new_dist > dist:
+            bn = edit_boolean_network(bn, [(flips[0], flips[1], not flips[2])])
         else:
-            dist = _dist
+            dist = new_dist
             sol = bn
         
         it += 1
 
     return sol
 
-def variable_neighborhood_search(n, k, p, target_tes, thresholds:list, maxIter = 10000, maxStall = 10):
+def variable_neighborhood_search(
+        n: int or list, k: int or list or dict, p:float, 
+        target_tes: NTree, thresholds: list, 
+        max_iters = 10000, max_stalls = 10):
     """
     Metaheuristic technique highly inspired by the Variable Neighbourhood Search (VNS) and 
     proposed in
@@ -184,34 +190,34 @@ def variable_neighborhood_search(n, k, p, target_tes, thresholds:list, maxIter =
     dist = tes_distance(tes, target_tes)
     sol = bn
 
-    it, last_flips, nStall, nFlips = 0, -1, 0, 1
+    it, last_flips, n_stalls, n_flips = 0, [], 0, 1
 
-    while it < maxIter and dist > 0:
+    while it < max_iters and dist > 0:
 
-        if nStall == maxStall:
-            nStall = 0
-            nFlips += 1
+        if n_stalls == max_stalls:
+            n_stalls = 0
+            n_flips += 1
 
-            if nFlips > len(bn): 
+            if n_flips > len(bn): 
                 return sol
 
-        flips = generate_flips(sol, last_flips)
+        flips = generate_flips(bn, n_flips, last_flips)
         bn, last_flips = edit_boolean_network(bn, flips)
 
         tes = bn_to_tes(bn, thresholds)
-        _dist = tes_distance(tes, target_tes)
+        new_dist = tes_distance(tes, target_tes)
 
-        if _dist > dist:
-            bn = sol
+        if new_dist > dist:
+            bn = edit_boolean_network(bn, [(flip[0], flip[1], not flip[2]) for flip in flips])
         else:
 
-            if dist == _dist:
-                nStall += 1
+            if dist == new_dist:
+                n_stalls += 1
             else:
-                nStall = 0
-                nFlips = 1
+                n_stalls = 0
+                n_flips = 1
 
-            dist = _dist
+            dist = new_dist
             sol = bn
 
         it += 1
@@ -220,62 +226,10 @@ def variable_neighborhood_search(n, k, p, target_tes, thresholds:list, maxIter =
 
 #########################################################################################################
 
-def run_simulation(config : EvaluationConfig, model) -> dict:
-    date = f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
-    write_json(model, config.bn_model_dir / f'bn_model_{date}.json')
-    subprocess.run([str(config.webots_path), *config.webots_launch_args, str(config.webots_world_path)])
-
-
-def aggregate_sym_data(path:Path) -> dict:
-    return {}
-
-def custom_vns(n, k, p, simulation = lambda *args: str(*args), maxIter = 10000, maxStall = 1):
-    """
-    """
-    bn = BooleanNetwork(n, k, bfInit= lambda *args: Boolean(r_bool(p)))
-    sol = bn
-    # run agent with flipped network simulation
-    data_path = simulation(bn)
-    dist = float('inf')
-    it, last_flips, nStall, nFlips = 0, -1, 0, 1
-
-    while it < maxIter and dist > 0:
-
-        if nStall == maxStall:
-            nStall = 0
-            nFlips += 1
-
-            if nFlips > len(bn): 
-                return sol
-
-        flips = generate_flips(sol, last_flips)
-        bn, last_flips = edit_boolean_network(bn, flips)
-
-        # run agent with flipped network simulation
-        data_path = simulation(bn)
-
-        _dist = random.random() # Read Symulation values
-
-        if _dist > dist:
-            bn = sol
-        else:
-
-            if dist == _dist:
-                nStall += 1
-            else:
-                nStall = 0
-                nFlips = 1
-
-            dist = _dist
-            sol = bn
-
-        it += 1
-
-    return sol
-
-
 if __name__ == "__main__":
     
-    bn = adaptive_walk(5, 1, 0.666, NTree.empty(), [], maxIter=100000)
+    bn1 = adaptive_walk(20, 3, 0.666, NTree.empty(), [], max_iters=100000)
+    bn2 = variable_neighborhood_search(20, 3, 0.666, NTree.empty(), [], max_iters=100000, max_stalls=10)
 
-    print(bn)
+    print(bn1)
+    print(bn2)
