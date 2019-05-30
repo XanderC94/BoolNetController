@@ -2,6 +2,7 @@ from bncontroller.boolnet.bnstructures import BooleanNetwork
 from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.boolnet.tes import bn_to_tes
+from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.eval.sota import generate_flips, edit_boolean_network, tes_distance
 from pathlib import Path
 import random, math, queue, copy, subprocess, datetime
@@ -16,37 +17,13 @@ def default_scramble_strategy(bn: BooleanNetwork, n_flips, last_flips):
     bn, flipped = edit_boolean_network(bn, flips)
     return (bn, flipped, flips)
 
-def adaptive_walk(
-        n: int or list, k: int or list or dict, p:float, 
-        target_tes: NTree, thresholds: list, 
-        max_iters = 10000):
-    
-    return parametric_vns(
-        n, k, p, 
-        evaluation_strategy = lambda *args: default_evaluation_strategy(args[0], target_tes, thresholds), 
-        max_iters=max_iters, 
-        max_stalls=-1
-    )
-
-def variable_neighborhood_search(
-        n: int or list, k: int or list or dict, p:float, 
-        target_tes: NTree, thresholds: list, 
-        max_iters = 10000, max_stalls = 10):
-    
-    return parametric_vns(
-        n, k, p, 
-        evaluation_strategy = lambda *args: default_evaluation_strategy(args[0], target_tes, thresholds), 
-        max_iters=max_iters, 
-        max_stalls=max_stalls
-    )
-
 def parametric_vns(
-        n: int or list, k: int or list or dict, p: float, 
-        evaluation_strategy = lambda *args: default_evaluation_strategy(args[0], NTree.empty(), []),
+        bng: RBNFactory,
+        evaluation_strategy = lambda bn: default_evaluation_strategy(bn, NTree.empty(), []),
         scramble_strategy =  lambda bn, n_flips, last_flipped: default_scramble_strategy(bn, n_flips, last_flipped),
         max_iters = 10000, max_stalls = -1):
 
-    bn = BooleanNetwork(n, k, bfInit= lambda *args: Boolean(r_bool(p)))
+    bn = bng.new()
     # sol = bn
     dist = evaluation_strategy(bn)
 
@@ -65,7 +42,7 @@ def parametric_vns(
         new_dist = evaluation_strategy(bn)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flip[0], flip[1], not flip[2]) for flip in flips])
+            bn = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
         else:
 
             if dist == new_dist:
@@ -85,6 +62,8 @@ def parametric_vns(
 
 if __name__ == "__main__":
     
-    bn = adaptive_walk(5, 1, 0.666, NTree.empty(), [], max_iters=100000)
+    bng = RBNFactory(5, 1, bf_init=lambda *args: r_bool(0.666), node_init=lambda i: False)
+
+    bn = parametric_vns(bng, max_iters=100000)
 
     print(bn)

@@ -10,8 +10,8 @@ class TestBoolean(unittest.TestCase):
         b1 = Boolean(True)
         b2 = Boolean(0.5)
 
-        self.assertIsInstance(b1.bias(), float)
-        self.assertIsInstance(b2.bias(), float)
+        self.assertIsInstance(b1.bias, float)
+        self.assertIsInstance(b2.bias, float)
         self.assertTrue(b1())
         self.assertIsInstance(b1(), bool)
         self.assertIsInstance(b2(), bool)
@@ -23,13 +23,13 @@ class TestBoolean(unittest.TestCase):
         tmp1 = copy.deepcopy(b1)
         tmp2 = copy.deepcopy(b2)
 
-        b1.set_bias(0.5)
-        b2.set_bias(False)
+        b1.bias = 0.5
+        b2.bias = False
 
-        self.assertIsInstance(b1.bias(), float)
-        self.assertIsInstance(b2.bias(), float)
-        self.assertNotEqual(b1.bias(), tmp1.bias())
-        self.assertNotEqual(b2.bias(), tmp2.bias())
+        self.assertIsInstance(b1.bias, float)
+        self.assertIsInstance(b2.bias, float)
+        self.assertNotEqual(b1.bias, tmp1.bias)
+        self.assertNotEqual(b2.bias, tmp2.bias)
         self.assertFalse(b2())
         self.assertIsInstance(b1(), bool)
         self.assertIsInstance(b2(), bool)
@@ -82,7 +82,7 @@ class TestBooleanFunction(unittest.TestCase):
         dbf = BooleanFunction(2, result_generator=lambda *args: Boolean(args[0] and args[1]))
 
         dbf_json = {
-            'k':2,
+            'arity':2,
             'truth_table':[
                 {
                     'params':[False, False],
@@ -109,7 +109,7 @@ class TestBooleanFunction(unittest.TestCase):
     def test_deserialization(self):
         dbf = BooleanFunction(2, result_generator=lambda *args: Boolean(args[0] and args[1]))
         dbf_json = {
-            'k':2,
+            'arity':2,
             'truth_table':[
                 {
                     'params':[True, True],
@@ -138,10 +138,10 @@ class TestNTree(unittest.TestCase):
             NTree(2, [], 2)
         ], 1)
 
-        self.assertEqual(t1.label(), 1)
-        self.assertEqual(t1.children[0].label(), 2)
-        self.assertEqual(t1.value(), 1)
-        self.assertEqual(t1.children[0].value(), 2)
+        self.assertEqual(t1.label, 1)
+        self.assertEqual(t1.children[0].label, 2)
+        self.assertEqual(t1.value, 1)
+        self.assertEqual(t1.children[0].value, 2)
         # self.assertEqual(t1.depth(), 0)
         # self.assertEqual(t1.children[0].depth(), 1)
         # self.assertEqual(t1, t1.children[0].parent())
@@ -151,9 +151,9 @@ class TestNTree(unittest.TestCase):
 
         self.assertEqual(len(t1), 0)
 
-        t1.set_value(Boolean(True))
+        t1.value = Boolean(True)
 
-        self.assertIsInstance(t1.value(), Boolean)
+        self.assertIsInstance(t1.value, Boolean)
 
         t1.children = [
             NTree(2, [], 2),

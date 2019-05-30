@@ -25,8 +25,9 @@ class Boolean(Jsonkin):
 
     """
     def __init__(self, bias):
-        self.set_bias(bias)      
+        self.bias = bias     
     
+    @property
     def bias(self) -> float:
         """ 
         Return the truth bias (float) of the Boolean Variable.
@@ -36,8 +37,14 @@ class Boolean(Jsonkin):
         """
         return self.__bias
 
-    def set_bias(self, new_bias):
-        
+    @bias.setter
+    def bias(self, new_bias):
+        """ 
+        Set a new the truth bias to the Boolean Variable.
+
+        Truth values equals to 1.0 or 0.0 are proper of a Deterministic Boolean variables.
+        Truth values in (0.0, 1.0) are proper of Probabilistic Boolean variables
+        """
         self.__bias = self.__check_bias_compliance(new_bias)
         self.__strategy = BooleanStrategy.factory(new_bias)
 
@@ -46,6 +53,8 @@ class Boolean(Jsonkin):
             return float(bias)
         elif isinstance(bias, (float, int)):
             return min(1.0, bias) if bias > 0 else 0.0
+        elif isinstance(bias, Boolean):
+            return bias.bias
         else:
             raise Exception(f'Boolean Variable does not accept {type(bias)} as truth bias.')
     
@@ -55,24 +64,24 @@ class Boolean(Jsonkin):
     def __eq__(self, that):
 
         if isinstance(that, Boolean):
-            return that.bias() == self.bias()
+            return that.bias == self.bias
         elif isinstance(that, (float, int)):
-            return that == self.bias()
+            return that == self.bias
         elif isinstance(that, bool):
-            return float(that) == self.bias()
+            return float(that) == self.bias
         else: return False
 
     def __call__(self):
         return self.__strategy()
 
     def __str__(self):
-        return str({'0':1 - self.__bias, '1':self.__bias})
+        return str({'0':1 - self.bias, '1':self.bias})
         
     def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'0':1 - self.__bias, '1':self.__bias}
+        return {'0':1 - self.bias, '1':self.bias}
     
     @staticmethod
     def from_json(json:dict):

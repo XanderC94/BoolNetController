@@ -10,31 +10,37 @@ class NTree(Tree):
     """
     def __init__(self, label, children: list, value):
         super().__init__(label, *children)
-        self.__label = label
         self.__child_are_ntrees = all(map(lambda n: isinstance(n, NTree), children))
-        # self.__children = children
         # self.__depth = 0
 
         if self.__child_are_ntrees:
             for child in self.children: 
-                child.set_parent(self)
+                child.parent = self
 
         self.__value = value
         self.__parent = None
 
+    @property
     def parent(self):
         return self.__parent
-        
+    
+    @property
     def label(self):
-        return self.__label
+        return self.name
 
+    @property
     def value(self):
         return self.__value
 
     # def depth(self):
     #     return self.__depth
-        
-    def set_value(self, value):
+
+    @label.setter
+    def label(self, new_label):
+        self.name = new_label
+
+    @value.setter
+    def value(self, value):
         self.__value = value
 
     # def set_depth(self, depth):
@@ -43,7 +49,8 @@ class NTree(Tree):
     #         for child in self.children:
     #             child.set_depth(self.__depth + 1)
     
-    def set_parent(self, parent):
+    @parent.setter
+    def parent(self, parent):
         self.__parent = parent
     #     self.set_depth(self.parent().depth() + 1)
 
@@ -51,7 +58,7 @@ class NTree(Tree):
         return len(self) == 0
 
     def is_empty(self):
-        return self.__label == None
+        return self.label == None
 
     def is_not_empty(self):
         return not self.is_empty()
@@ -62,13 +69,10 @@ class NTree(Tree):
 
     def to_json(self) -> dict:
 
-        nid = check_to_json_existence(self.label())
-        value = check_to_json_existence(self.value())
-
         return {
-                'label': nid, 
+                'label': check_to_json_existence(self.label), 
                 'children': list(map(lambda c: c.to_json(), self.children)), 
-                'value': value,
+                'value': check_to_json_existence(self.value),
                 # 'parent': self.parent()
                 # 'depth': self.depth()
             }

@@ -2,6 +2,10 @@ import json, datetime, logging
 from pathlib import Path
 from glob import glob
 
+def collection_diff(first, second):
+        _second = set(second)
+        return [item for item in first if item not in _second]
+
 def iso8106():
     return f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
 

@@ -1,49 +1,58 @@
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.boolnet.bnutils import bnstate_distance
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.json_utils import Jsonkin
-import json, time, random
+import json
 
 class BooleanNode(Jsonkin):
 
-    def __init__(self, label, neighbors:list, bf : BooleanFunction, init_state=r_bool):
+    def __init__(self, label, predecessors: list, bf: BooleanFunction, init_state=r_bool()):
         self.__label = label
-        self.__neighbors = neighbors
-        self.boolfun = bf
+        self.__predecessors = predecessors
+        self.__boolfun = bf
         self.__hash = hash(str(self.__label))
-        self.__state = init_state
+        self.__state = Boolean(init_state)
     
+    @property
     def label(self):
         return self.__label
+    
+    @property
+    def bf(self) -> BooleanFunction:
+        return self.__boolfun
 
-    def neighbors(self) -> list:
-        return self.__neighbors
+    @bf.setter
+    def bf(self, new_bf: BooleanFunction):
+        self.__boolfun = new_bf
 
+    @property
+    def arity(self):
+        return self.bf.arity
+
+    @property
+    def predecessors(self) -> list:
+        return self.__predecessors
+    
+    @predecessors.setter
+    def predecessors(self, nodes: list):
+        self.__predecessors = nodes
+
+    @property
     def state(self) -> bool:
         '''
-        Return the state (bool) of the encapsulated Boolean Variable.
+        Return the current state (bool) of the Boolean Node.
         This does not evaluate the Boolean Function (e.g.: Probabilistic Booleans) 
         so it returns always the same value between successive evaluations.  
         '''
-        return self.__state
+        return self.__state()
 
-    def __setitem__(self, params: tuple, new_value: Boolean):
-        self.boolfun[params] = new_value
-
-    def __getitem__(self, params: tuple) -> Boolean:
-        return self.boolfun[params]
-
-    def __hash__(self):
-        return self.__hash
-    
-    def __call__(self, params: tuple) -> bool:
+    @state.setter
+    def state(self, new_state):
         '''
-        Evaluate the encapsulated boolean function for the given bool tuple.
-        Equivalent to call the <BooleanNode.evaluate> method
+        Set the state for the current Boolean Node 
+        that will be used to evaluate final network state.
         '''
-        self.__state = self.boolfun(params) 
-        return self.__state
+        self.__state.bias = new_state
     
     def evaluate(self, params: tuple) -> bool:
         '''
@@ -56,111 +65,66 @@ class BooleanNode(Jsonkin):
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'id':self.label(), 'inputs': self.neighbors(), 'bf':self.boolfun.to_json()}
+        return {'id':self.label, 'inputs': self.predecessors, 'bf':self.bf.to_json()}
 
-    def __str__(self):
-        return str(self.to_json())
+    def __setitem__(self, params: tuple, new_value: Boolean):
+        self.bf[params] = new_value
+
+    def __getitem__(self, params: tuple) -> Boolean:
+        return self.bf[params]
+
+    def __hash__(self):
+        return self.__hash
+    
+    def __call__(self, params: tuple) -> bool:
+        '''
+        Evaluate the encapsulated boolean function for the given bool tuple.
+
+        Returns the current node state.
+        
+        Equivalent to call the <BooleanNode.evaluate> method
+        '''
+        self.state = self.bf(params) 
+        return self.state
 
     @staticmethod
     def from_json(json:dict):
         return BooleanNode(json['id'], json['inputs'], BooleanFunction.from_json(json['bf']))
 
-###############################################################################################################
+##########################################################################################################
 
 class BooleanNetwork(Jsonkin):
 
     '''
     An simple implementation of a BN using the <Boolean> wrappers for bool values which implements both
     Determinstic and Probabilistic Boolean variables.
-
-    * N = Number of node in the BN or a list of node ids 
-    * K = (global) Number of Neighbors of each node or a list/map of the NUMBER of neighbors for each single node
-    * neighborFun = Returns the k neighbors for the node i among the ns available
-    * bfInit = Decides whether the BN is going to be a simple BN or a RBN. 
-        Takes a vararg as input since it receives the the truth table entries 
-        of the boolean function (tuple of length k)
-    * nInit = Decides the initial state value of each node
-
     '''
-    def __init__(self, N, K, 
-    neighborFun = lambda i, k, ns: [ns[(i + j + 1) % len(ns)] for j in range(k)], 
-    bfInit = lambda *args: Boolean(r_bool()), 
-    nInit = lambda nid: r_bool()):
+    def __init__(self, nodes: list):
 
-        nids = list()
-        nks = dict()
+        self.__bn = {}
 
-        if isinstance(N, int): 
-            nids = list(range(N)) 
-        elif isinstance(N, list):
-            nids = N
-        else:
-            raise Exception(f'Boolean Network does not accept {type(N)} as node ids. Use List or Int (0 ot N-1).')
-
-        if isinstance(K, int): 
-            nks = dict([(nid, K) for nid in nids])
-        elif isinstance(K, list):
-            
-            nks = dict([(nid, K) for nid in zip(nids, K)])
-        elif isinstance(K, dict):
-            nks = K
-        else:
-            raise Exception(f'Boolean Network does not accept {type(K)} as node neighbors number. Use List, Dict or Int (each node has K neighbors).')
-
-        # self.__n = len(nids)
-        # self.__k = sum(list(nks.values())) / self.__n
-        self.__bn = dict({})
-
-        for nid in nids:
-            self[str(nid)] = BooleanNode(
-                nid, 
-                neighborFun(nid, nks[nid], nids), 
-                BooleanFunction(nks[nid], result_generator = bfInit), 
-                nInit(nid)
-            )
-
-    def __setitem__(self, nodeId, newNode: BooleanNode):
-        self.__bn[str(nodeId)] = newNode
-
-    def __getitem__(self, nodeId) -> BooleanNode:
-        return self.__bn[str(nodeId)]
-
-    def __len__(self):
-        return len(self.__bn)
-    
-    # def n(self):
-    #     return self.__n
-    
-    # def k(self):
-    #     return self.__k
-
-    def to_pairlist(self):
-        return list(self.__bn.items())
-
+        for node in nodes:
+            self[str(node.label)] = node 
+  
+    @property
     def keys(self):
         return list(self.__bn.keys())
-    
+    @property
     def nodes(self):
         return list(self.__bn.values())
 
+    @property
     def state(self) -> dict:
         '''
         Return the current state of the BN as a dictionary where the keys are the Nodes Id
         while the value are the current node state.
         See <BooleanNode.state> for more info. 
         '''
-        return dict([(k, v.state()) for k, v  in self.__bn.items()])
+        return dict((k, v.state) for k, v  in self.to_pairlist())
 
-    def __call__(self):
-        
-        oldstate = self.state()
-
-        for _, node in self.__bn.items():
-            nparams = tuple([oldstate[str(nn)] for nn in node.neighbors()])
-            node.evaluate(nparams)
-
-        return self.state()
-
+    def to_pairlist(self):
+        return list(self.__bn.items())
+    
     def step(self):
         '''
         Evaluate the new network state.
@@ -168,53 +132,38 @@ class BooleanNetwork(Jsonkin):
         S(bn) = (s(x0), ..., s(xi)) : i in N(bn)
         '''
         return self()
+    
+    def __setitem__(self, node_label, new_node: BooleanNode):
+        self.__bn[str(node_label)] = new_node
+
+    def __getitem__(self, node_label) -> BooleanNode:
+        return self.__bn[str(node_label)]
+
+    def __len__(self):
+        return len(self.__bn)
+
+    def __call__(self):
+        
+        oldstate = self.state
+
+        for _, node in self.to_pairlist():
+            nparams = tuple([oldstate[str(nn)] for nn in node.predecessors])
+            node.evaluate(nparams)
+
+        return self.state
 
     def to_json(self) -> dict:
         """
         Return a (valid) json representation (dict) of this object.
         """
-        return dict([(k, v.to_json()) for k, v  in self.__bn.items()])
+        return dict((k, v.to_json()) for k, v  in self.to_pairlist())
 
     @staticmethod
     def from_json(json:dict):
 
-        bn = BooleanNetwork(0, 0)
+        bn = BooleanNetwork([])
 
         for nid, node in json.items():
             bn[nid] = BooleanNode.from_json(node)
 
         return bn
-
-    def __str__(self):
-        return str(self.to_json())
-
-####################################################################################################
-
-if __name__ == "__main__":
-    
-    # bfg = lambda: Boolean(random.choice([0.2, 0.35, 0.5, 0.65, 0.8]))
-
-    bn = BooleanNetwork(10, 3, bfInit= lambda *args: Boolean(r_bool()), nInit=lambda i:False)
-
-    print('Saving BN...')
-    with open('bn.json', 'w') as fp:
-        json.dump(bn.to_json(), fp, indent=4)
-
-    print('Performance test...')
-    s1 = bn.state()
-    d, maxIter, it = -1, 1000, 0
-    
-    print('s0:', s1)
-    t = time.perf_counter()
-    
-    while d != 0 and it < maxIter:
-        s2 = bn()
-        
-        print(s2)
-        d = bnstate_distance(s1, s2)
-        print(d)
-
-        s1 = s2
-        it += 1
-    
-    print(time.perf_counter() - t)

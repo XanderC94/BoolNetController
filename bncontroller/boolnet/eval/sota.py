@@ -1,4 +1,5 @@
 from bncontroller.boolnet.bnstructures import BooleanNetwork
+from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance
@@ -38,15 +39,15 @@ def generate_flip(bn: BooleanNetwork, last_flips = []):
         * new_bias is the flipped output of the (node) truth table.
     """
 
-    nid = random.choice([n for n in bn.keys() if n not in last_flips])
+    nid = random.choice([n for n in bn.keys if n not in last_flips])
 
-    k = bn[nid].boolfun.get_k()
+    k = bn[nid].bf.arity
 
     ttidx = random.choice(list(range(2**k))) 
 
-    args, res = bn[nid].boolfun.by_index(ttidx)
+    args, res = bn[nid].bf.by_index(ttidx)
 
-    return (nid, args, 1.0 - res.bias())
+    return (nid, args, 1.0 - res.bias)
 
 def generate_flips(bn: BooleanNetwork, n_flips, last_flips = []):
     """
@@ -89,14 +90,14 @@ def edit_boolean_network(bn: BooleanNetwork, flips: list):
     """
 
     for last_flip, args, new_bias in flips:
-        bn[last_flip].boolfun[args] = new_bias
+        bn[last_flip].bf[args] = new_bias
 
     if len(flips) == 1:
         return (bn, flips[0][0])
     else:
         return (bn, list(map(lambda f: f[0], flips)))
 
-def adaptive_walk(n, k, p, target_tes, thresholds:list, max_iters = 10000):
+def adaptive_walk(bng: RBNFactory, target_tes: NTree, thresholds:list, max_iters = 10000):
     """ 
     A simple technique of local search that performs a stochastic descent.
     Starts from a randomly generated boolean network and after the execution 
@@ -124,7 +125,7 @@ def adaptive_walk(n, k, p, target_tes, thresholds:list, max_iters = 10000):
 
     """
 
-    bn = BooleanNetwork(n, k, bfInit= lambda *args: Boolean(r_bool(p)))
+    bn = bng.new()
     tes = bn_to_tes(bn, thresholds)
     dist = tes_distance(tes, target_tes)
     sol = bn
@@ -140,7 +141,7 @@ def adaptive_walk(n, k, p, target_tes, thresholds:list, max_iters = 10000):
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flips[0], flips[1], not flips[2])])
+            bn = edit_boolean_network(bn, [(flips[0], flips[1], 1.0 - flips[2])])
         else:
             dist = new_dist
             sol = bn
@@ -150,7 +151,7 @@ def adaptive_walk(n, k, p, target_tes, thresholds:list, max_iters = 10000):
     return sol
 
 def variable_neighborhood_search(
-        n: int or list, k: int or list or dict, p:float, 
+        bng: RBNFactory,
         target_tes: NTree, thresholds: list, 
         max_iters = 10000, max_stalls = 10):
     """
@@ -185,7 +186,7 @@ def variable_neighborhood_search(
     the Adaptive Walk.
 
     """
-    bn = BooleanNetwork(n, k, bfInit= lambda *args: Boolean(r_bool(p)))
+    bn = bng.new()
     tes = bn_to_tes(bn, thresholds)
     dist = tes_distance(tes, target_tes)
     sol = bn
@@ -208,7 +209,7 @@ def variable_neighborhood_search(
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flip[0], flip[1], not flip[2]) for flip in flips])
+            bn = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
         else:
 
             if dist == new_dist:
@@ -227,9 +228,11 @@ def variable_neighborhood_search(
 #########################################################################################################
 
 if __name__ == "__main__":
-    
-    bn1 = adaptive_walk(20, 3, 0.666, NTree.empty(), [], max_iters=100000)
-    bn2 = variable_neighborhood_search(20, 3, 0.666, NTree.empty(), [], max_iters=100000, max_stalls=10)
+
+    bng = RBNFactory(5, 1, bf_init=lambda *args: Boolean(r_bool(0.666)), node_init=lambda i: False)
+
+    bn1 = adaptive_walk(bng, NTree.empty(), [], max_iters=100000)
+    bn2 = variable_neighborhood_search(bng, NTree.empty(), [], max_iters=100000, max_stalls=10)
 
     print(bn1)
     print(bn2)
