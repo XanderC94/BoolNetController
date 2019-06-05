@@ -45,11 +45,11 @@ def parametric_vns(
         bn, last_flipped, flips = scramble_strategy(bn, n_flips, last_flipped)
 
         new_dist = evaluation_strategy(bn)
+        
+        print(flips, dist, new_dist)
 
         if new_dist > dist:
             bn, *_ = utils.edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
-
-            print(flips, dist, new_dist)
 
             # n_stalls = 0
             # n_flips = 1

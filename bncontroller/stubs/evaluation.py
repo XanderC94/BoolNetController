@@ -70,9 +70,9 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     key_max = df['n_step'].idxmax()
 
-    last_step, last_value = df[
+    last_value = df[
         df['n_step'] == key_max
-    ][['n_step','aggr_light_values']].T.values
+    ]['aggr_light_values'].T.values[0]
 
     # df['dist'] = df['position'].apply(lambda p: sim_config.sim_light_position.dist(p))
 

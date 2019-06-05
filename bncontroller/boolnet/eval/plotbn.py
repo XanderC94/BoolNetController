@@ -19,7 +19,29 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list, O:list):
 
     values = [val_map[node] for node in dg.nodes()]
 
-    pos = nx.spring_layout(dg, k=1.0, iterations=500)
+    iy, hy, oy = 10.0, 0.0, -10.0
+    ix, hx, ox = -int(len(I)/2), -int((len(bn) - len(I) - len(O))/2), -int(len(O)/2)
+
+    spos = dict()
+
+    for k in dg.nodes():
+
+        if k in I:
+            spos[k] = (ix, iy)
+            ix += 1.0
+        elif k in O:
+            spos[k] = (ox, oy)
+            ox += 1.0
+        else:
+            spos[k] = (hx, hy)
+            hx += 1.0
+
+    # fixed=list(k for k in dg.nodes() if k in I + O)
+
+    # print(fixed)
+
+    # pos = nx.spring_layout(dg, pos=spos, k=1.0, iterations=100, center=(0,0))
+    pos = nx.kamada_kawai_layout(dg, pos=spos, center=(0,0))
     ## https://matplotlib.org/examples/color/colormaps_reference.html
     nx.draw_networkx_nodes(dg, pos, cmap=plotter.get_cmap('rainbow'), node_color = values, node_size = 500)
 
@@ -27,8 +49,7 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list, O:list):
     nx.draw_networkx_edges(dg, pos, edgelist=dg.edges(), arrows=True)
 
     plotter.legend(
-        scatterpoints=1,
-        labels=['Input Nodes', 'Output Nodes', 'Hidden Nodes'], 
+        labels=['Input Nodes', 'Hidden Nodes', 'Output Nodes'], 
         frameon=False,
         loc='upper right'
     )
