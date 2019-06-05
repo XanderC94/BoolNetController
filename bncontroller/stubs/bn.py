@@ -1,10 +1,11 @@
 from bncontroller.boolnet.bnstructures import BooleanNode
 from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import r_bool
-from bncontroller.utils import collection_diff
+from bncontroller.file.utils import collection_diff
+from bncontroller.json.utils import write_json
 import random
 
-def experiment_predecessors_fun(node: BooleanNode, nodes: list, bn_inputs: list, bn_outputs: list):
+def predecessors(node: BooleanNode, nodes: list, bn_inputs: list, bn_outputs: list):
 
     predecessors = []
 
@@ -34,7 +35,7 @@ def experiment_predecessors_fun(node: BooleanNode, nodes: list, bn_inputs: list,
     
     return predecessors
 
-def experiment_rbng(N, K, P, I, O) -> RBNFactory:
+def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
     """
     Generates a Random Boolean Network Generator which bn have the following properties:
 
@@ -43,10 +44,28 @@ def experiment_rbng(N, K, P, I, O) -> RBNFactory:
     * hidden nodes (N - I) and outputs (O) have k predecessors
     * outputs nodes (O) can't have another output node as predecessor
     """
+
+    _N = list(map(str, range(N)))
+    _I = list(map(str, range(I))) 
+    _O = list(map(str, range(I, O))) 
+    _K = dict((l, K) if l not in _I else (l, 1) for l in _N)
+
+
     return RBNFactory(
-        list(range(N)), # labels 
-        dict((l, K) if l not in I else (l, 1) for l in range(N)), # arities
-        predecessors_fun=lambda node, nodes: experiment_predecessors_fun(node, nodes, I, O),
+        _N, # labels 
+        _K, # arities
+        predecessors_fun=lambda node, nodes: predecessors(node, nodes, _I, _O),
         bf_init=lambda *args: args[0] if len(args) == 1 else r_bool(P), 
         node_init=lambda label: False
-    )
+    ), _I, _O
+
+if __name__ == "__main__":
+    
+    n, k, p, i, o = 20, 2, 0.5, 8, 2
+    bng, ia, oa, *_ = rbn_gen(n, k, p, i, o)
+
+    bn = bng.new()
+
+    print('Saving BN...')
+    
+    write_json(bn.to_json(), './bn_test_model.json', indent=True)

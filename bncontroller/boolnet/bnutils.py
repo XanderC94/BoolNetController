@@ -1,7 +1,8 @@
 import random
-from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork
+from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork, NoisyBooleanNetwork
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
+from bncontroller.json.utils import write_json, read_json, objrepr
 
 def bnstate_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
     '''
@@ -62,7 +63,7 @@ class RBNFactory(object):
         else:
             raise Exception(f'Boolean Network does not accept {type(k)} as node neighbors number. Use List, Dict or Int (each node has K neighbors).')
 
-    def new(self):
+    def new(self) -> BooleanNetwork:
 
         nodes = [
             BooleanNode(
@@ -78,37 +79,67 @@ class RBNFactory(object):
 
         return BooleanNetwork(nodes)
 
+    def new_nbn(self, I, O) -> NoisyBooleanNetwork:
+
+        nodes = [
+            BooleanNode(
+                label, 
+                [], 
+                BooleanFunction(self.node_arities[label], result_generator = self.bf_init), 
+                self.node_init(label)
+            ) for label in self.node_labels
+        ]
+
+        for node in nodes: 
+            node.predecessors = self.predecessors_fun(node, nodes)
+
+        return NoisyBooleanNetwork(nodes, input_nodes= I, output_nodes=O)
+
 #################################################################################################
 
 if __name__ == "__main__":
     
     import time
 
-    # bfg = lambda: Boolean(random.choice([0.2, 0.35, 0.5, 0.65, 0.8]))
-    n, k, p = 10, 3, 0.6
+    def test_bn(bn, max_iters = 1000):
+
+        print('Performance test...')
+        
+        s1 = bn.state
+    
+        d, it, t = -1, 0, time.perf_counter()
+
+        while d != 0 and it < max_iters:
+            s2 = bn()
+            
+            print(s2)
+            d = bnstate_distance(s1, s2)
+            # print(d)
+
+            s1 = s2
+            it += 1
+        
+        print(time.perf_counter() - t)
+
+    n, k, p, i, o = 20, 2, 0.5, 8, 2
     bn = RBNFactory(n, k, bf_init=lambda *args: r_bool(p), node_init=lambda i:False).new()
 
     # print('Saving BN...')
-    # with open('bn.json', 'w') as fp:
-    #     json.dump(bn.to_json(), fp, indent=4)
-    
-    print(bn)
+    # write_json(bn.to_json(), './bn.json', indent=True)
 
-    print('Performance test...')
-    s1 = bn.state
-    d, maxIter, it = -1, 1000, 0
-    
-    print('s0:', s1)
-    t = time.perf_counter()
-    
-    while d != 0 and it < maxIter:
-        s2 = bn()
-        
-        print(s2)
-        d = bnstate_distance(s1, s2)
-        print(d)
+    # print(bn)
 
-        s1 = s2
-        it += 1
+    test_bn(bn)
     
-    print(time.perf_counter() - t)
+
+    rbn = objrepr(
+        read_json("D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\models\\bn_test_model.json"), 
+        BooleanNetwork
+    )
+
+    for i in range(8):
+        rbn[i].state = True
+
+    print(rbn.state)
+    
+    test_bn(rbn)

@@ -6,9 +6,6 @@ class Jsonkin(object):
     A mixin class that enable json serialization and deserialization 
     for the objects of the inheriting classes
     """
-    def __init__(self):
-        pass
-
     def to_json(self) -> dict:
         """
         Return a (valid) json representation of the object as a dictionary
@@ -25,6 +22,28 @@ class Jsonkin(object):
     def __str__(self):
         return str(self.to_json())
 
+    def __repr__(self):
+        return str(self.to_json())
+
+################################################################
+
+def jsonrepr(obj):
+    if isinstance(obj, Jsonkin):
+        return obj.to_json()
+    elif hasattr(obj, '__dict__'):
+        return vars(obj)
+    elif isinstance(obj, Path):
+        return str(obj)
+    else:
+        return obj
+
+def objrepr(json_repr : dict, obj_type):
+    if isinstance(json_repr, dict) and (
+        issubclass(obj_type, Jsonkin) or isinstance(obj_type, Jsonkin)):
+        return obj_type.from_json(json_repr)
+    else:
+        return obj_type(json_repr)
+        
 def check_to_json_existence(value):
     if hasattr(value, 'to_json') and callable(value.to_json):
         return value.to_json() 
@@ -39,7 +58,7 @@ def read_json(path: Path or str) -> dict:
 
     return _obj
 
-def write_json(obj, path: Path or str):
+def write_json(obj, path: Path or str, indent = False):
 
     def check(obj) -> dict:
         if isinstance(obj, dict):
@@ -53,4 +72,17 @@ def write_json(obj, path: Path or str):
     _obj = check(obj)
 
     with open(_path, 'w') as fp:
-        json.dump(_obj, fp, indent=4, default=lambda x: x.__dict__)
+        if indent:
+            json.dump(_obj, fp, indent=4, default=lambda x: x.__dict__)
+        else:
+            json.dump(_obj, fp, default=lambda x: x.__dict__)
+
+
+def recursiveExtractDictWithIntKey(json)-> dict:
+    connectivities = {}
+    for K,V in json.items():
+        if isinstance(V, dict):
+            connectivities.update({int(K): recursiveExtractDictWithIntKey(V)})
+        else:
+            connectivities.update({int(K): V})
+    return connectivities

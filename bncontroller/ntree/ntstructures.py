@@ -1,8 +1,8 @@
-from bncontroller.json_utils import check_to_json_existence
+from bncontroller.json.utils import jsonrepr, objrepr, Jsonkin
 from apted.helpers import Tree
 from apted import APTED
 
-class NTree(Tree):
+class NTree(Tree, Jsonkin):
     """
     A linked objects representation of a nTree wrapping the Tree implementation
     from apted library for backward compatibility.
@@ -70,20 +70,20 @@ class NTree(Tree):
     def to_json(self) -> dict:
 
         return {
-                'label': check_to_json_existence(self.label), 
-                'children': list(map(lambda c: c.to_json(), self.children)), 
-                'value': check_to_json_existence(self.value),
+                'label': jsonrepr(self.label), 
+                'children': list(map(lambda c: jsonrepr(c), self.children)), 
+                'value': jsonrepr(self.value),
                 # 'parent': self.parent()
                 # 'depth': self.depth()
             }
 
     @staticmethod
-    def from_json(json:dict, value_deserializer = lambda t: int(t)):
+    def from_json(json:dict):
 
         return NTree(
             json['label'], 
-            list(NTree.from_json(c, value_deserializer) for c in json['children']), 
-            value_deserializer(json['value'])
+            list(NTree.from_json(c) for c in json['children']), 
+            json['value']
         )
 
     def __str__(self):

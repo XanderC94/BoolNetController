@@ -8,4 +8,10 @@ setup(name='BoolNetController',
       author_email='alessandro.cevoli@outlook.com',
       license='GPL3',
       packages=['bncontroller'],
+      install_requires=[
+          'pandas',
+          'numpy',
+          'apted', 
+          'networkx'
+      ],
       zip_safe=False)

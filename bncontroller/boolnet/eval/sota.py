@@ -1,101 +1,11 @@
-from bncontroller.boolnet.bnstructures import BooleanNetwork
 from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
-from bncontroller.ntree.ntstructures import NTree
-from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance
 from bncontroller.boolnet.tes import bn_to_tes
-import random, math, queue, copy, subprocess, datetime
+from bncontroller.ntree.ntstructures import NTree
+from bncontroller.boolnet.eval.utils import edit_boolean_network, generate_flip, generate_flips, tes_distance
 
-def tes_distance(C, T) -> float:
-    """
-    Objective Function for the Search Processes
 
-        f = E + (E * H) 
-    
-    where:
-
-        * E is the trees edit distance
-        * H is the trees histogram distance
-
-    """
-    E = tree_edit_distance(C, T)
-    H = tree_histogram_distance(C, T)
-    
-    return E + (E * H)
-
-def generate_flip(bn: BooleanNetwork, last_flips = []):
-    """
-    Given the BN and a list of node_id to be excluded from the flipping,
-    returns a tuple representing the change (flip) to apply to the BN.
-    
-    The tuple structure is defined as follow
-    
-        (node_id, truth_table_entry, new_bias)
-    
-    where:
-        * node_id is the "name" of the node in the BN.
-        * bf_args is a tuple of bool representing the entry of the (node) truth table
-        which output value has to be flipped.
-        * new_bias is the flipped output of the (node) truth table.
-    """
-
-    nid = random.choice([n for n in bn.keys if n not in last_flips])
-
-    k = bn[nid].bf.arity
-
-    ttidx = random.choice(list(range(2**k))) 
-
-    args, res = bn[nid].bf.by_index(ttidx)
-
-    return (nid, args, 1.0 - res.bias)
-
-def generate_flips(bn: BooleanNetwork, n_flips, last_flips = []):
-    """
-    Given the BN and a list of node_id to be excluded from the flipping,
-    returns a list of tuples representing the changes (flips) to apply to the BN.
-    
-    The tuple structure is defined as follow
-    
-        (node_id, truth_table_entry, new_bias)
-    
-    where:
-        * node_id is the "name" of the node in the BN.
-        * bf_args is a tuple of bool representing the entry of the (node) truth table
-        which output value has to be flipped.
-        * new_bias is the flipped output of the (node) truth table.
-    """
-    flips = []
-
-    for _ in range(n_flips):
-        flip = generate_flip(bn, last_flips + flips)
-        flips.append(flip)
-    
-    return flips
-
-def edit_boolean_network(bn: BooleanNetwork, flips: list):
-    """
-    Given the BN and a list of flips to apply to the BN,
-    returns the modified BN (ndr: it doesn't create a new one)
-    paired with the node_id(s) of the flipped nodes.
-    
-    A flip is a tuple and its structure is defined as follow
-    
-        (node_id, truth_table_entry, new_bias)
-    
-    where:
-        * node_id is the "name" of the node in the BN.
-        * bf_args is a tuple of bool representing the entry of the (node) truth table
-        which output value has to be flipped.
-        * new_bias is the flipped output of the (node) truth table.
-    """
-
-    for last_flip, args, new_bias in flips:
-        bn[last_flip].bf[args] = new_bias
-
-    if len(flips) == 1:
-        return (bn, flips[0][0])
-    else:
-        return (bn, list(map(lambda f: f[0], flips)))
+###########################################################################################
 
 def adaptive_walk(bng: RBNFactory, target_tes: NTree, thresholds:list, max_iters = 10000):
     """ 
@@ -130,18 +40,18 @@ def adaptive_walk(bng: RBNFactory, target_tes: NTree, thresholds:list, max_iters
     dist = tes_distance(tes, target_tes)
     sol = bn
     
-    it, last_flip = 0, -1
+    it, last_flips = 0, []
 
     while it < max_iters and dist > 0:
 
-        flips = generate_flip(sol, [last_flip])
-        bn, last_flip = edit_boolean_network(bn, flips = [flips])
+        flips = generate_flip(sol, last_flips)
+        bn, last_flips = edit_boolean_network(bn, flips = flips)
 
         tes = bn_to_tes(bn, thresholds)
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flips[0], flips[1], 1.0 - flips[2])])
+            bn, *_ = edit_boolean_network(bn, [(flips[0], flips[1], 1.0 - flips[2])])
         else:
             dist = new_dist
             sol = bn
@@ -209,7 +119,7 @@ def variable_neighborhood_search(
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
+            bn, *_ = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
         else:
 
             if dist == new_dist:

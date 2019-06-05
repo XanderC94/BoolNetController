@@ -187,6 +187,8 @@ class TestNTree(unittest.TestCase):
             'value': 1
         }
 
+        # print(t1.to_json())
+
         self.assertDictEqual(t1.to_json(), t1_json)
     
     def test_deserialization(self):
@@ -213,6 +215,8 @@ class TestNTree(unittest.TestCase):
             ], 
             'value': 1
         }
+
+        print(NTree.from_json(t1_json))
 
         self.assertEqual(t1, NTree.from_json(t1_json))
 

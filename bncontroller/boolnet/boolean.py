@@ -1,5 +1,5 @@
 import itertools, random, string, math, time
-from bncontroller.json_utils import Jsonkin
+from bncontroller.json.utils import Jsonkin
 
 truth_values = [False, True]
 

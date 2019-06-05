@@ -9,19 +9,8 @@ def collection_diff(first, second):
 def iso8106():
     return f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
 
-def generate_file_name(*args, uniqueness_gen = iso8106):
-    """
-    """
-    return '.'.join((*args, uniqueness_gen()))
-
-def recursiveExtractDictWithIntKey(json)-> dict:
-    connectivities = {}
-    for K,V in json.items():
-        if isinstance(V, dict):
-            connectivities.update({int(K): recursiveExtractDictWithIntKey(V)})
-        else:
-            connectivities.update({int(K): V})
-    return connectivities
+def generate_file_name(*args, uniqueness_gen = iso8106, ftype=''):
+    return '.'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen(), ftype)))
 
 def getAllFilesIn(target:str or Path, extension:str) -> list:
 

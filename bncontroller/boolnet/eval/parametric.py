@@ -3,19 +3,23 @@ from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.boolnet.tes import bn_to_tes
 from bncontroller.boolnet.bnutils import RBNFactory
-from bncontroller.boolnet.eval.sota import generate_flips, edit_boolean_network, tes_distance
 from pathlib import Path
 import random, math, queue, copy, subprocess, datetime
+import bncontroller.boolnet.eval.utils as utils
 
 def default_evaluation_strategy(bn: BooleanNetwork, target_tes: NTree, thresholds: list) -> float:
 
     tes = bn_to_tes(bn, thresholds)
-    return tes_distance(tes, target_tes)
+    return utils.tes_distance(tes, target_tes)
 
-def default_scramble_strategy(bn: BooleanNetwork, n_flips, last_flips):
-    flips = generate_flips(bn, n_flips, last_flips)
-    bn, flipped = edit_boolean_network(bn, flips)
+def default_scramble_strategy(bn: BooleanNetwork, n_flips, last_flipped):
+    
+    flips = utils.generate_flips(bn, n_flips, last_flipped)
+    bn, flipped = utils.edit_boolean_network(bn, flips)
+
     return (bn, flipped, flips)
+
+###############################################################################
 
 def parametric_vns(
         bng: RBNFactory,
@@ -24,10 +28,9 @@ def parametric_vns(
         max_iters = 10000, max_stalls = -1):
 
     bn = bng.new()
-    # sol = bn
     dist = evaluation_strategy(bn)
 
-    it, last_flipped, n_stalls, n_flips = 0, [-1], 0, 1
+    it, last_flipped, n_stalls, n_flips = 0, [], 0, 1
 
     while it < max_iters and dist > 0:
 
@@ -37,22 +40,27 @@ def parametric_vns(
 
             if n_flips > len(bn): return bn
 
+        old = bn.to_json()
+        
         bn, last_flipped, flips = scramble_strategy(bn, n_flips, last_flipped)
 
         new_dist = evaluation_strategy(bn)
 
         if new_dist > dist:
-            bn = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
-        else:
+            bn, *_ = utils.edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
 
-            if dist == new_dist:
+            print(flips, dist, new_dist)
+
+            # n_stalls = 0
+            # n_flips = 1
+        else:
+            if new_dist == dist:
                 n_stalls += 1
             else:
                 n_stalls = 0
                 n_flips = 1
 
             dist = new_dist
-            # sol = bn
 
         it += 1
 
