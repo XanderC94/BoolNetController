@@ -2,13 +2,15 @@ from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.bn import rbn_gen
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
-from bncontroller.boolnet.eval.search import incremental_stochastic_descent, parametric_vns
+from bncontroller.boolnet.eval.search.parametric import parametric_vns
+# from bncontroller.boolnet.eval.search.incremental import incremental_stochastic_descent
 from bncontroller.json.utils import read_json, write_json
 from bncontroller.file.utils import generate_file_name, iso8106
 from pathlib import Path
 import subprocess, pandas, math, random
 
 dist = None
+date = iso8106()
 
 def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
 
@@ -17,13 +19,11 @@ def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
     new_dist = aggregate_sim_data(light_position, data)
 
     if dist is None or new_dist < dist:
-        write_json(bn.to_json(), config.bn_model_path / 'bn_model_top.json')
+        write_json(bn.to_json(), config.bn_model_path / f'bn_model_top_{date}.json')
 
     return new_dist
 
 def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict:
-
-    date = iso8106()
 
     model_fname = generate_file_name('bn_model', uniqueness_gen= lambda: '', ftype='json')
     data_fname = generate_file_name('sim_data', uniqueness_gen= lambda: '', ftype='json')

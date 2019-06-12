@@ -59,7 +59,10 @@ def generate_available_flips(bn: BooleanNetwork, excluded=set(), flip_map=identi
 
 #############################################################################################
 
-def generate_flips(bn: BooleanNetwork, n_flips, excluded=set(), flip_map=identity):
+def generate_flip(bn, excluded=set()):
+    return generate_flips(bn, 1, excluded=excluded)
+
+def generate_flips(bn: BooleanNetwork, n_flips, excluded=set(), flip_map=identity) -> set:
     """
     Given the BN and a list of node_id to be excluded from the flipping,
     returns a list of tuples representing the changes (flips) to apply to the BN.

@@ -13,8 +13,8 @@ class DefaultConfigOptions(Jsonkin):
         webots_quit_on_termination = True,
         sd_max_iters = 10000, # stochastic descent max iterations
         sd_max_stalls = 1, # 1 -> Adaptive Walk, 2+ -> VNS 
-        sim_run_time = 10, # Execution time of the simulation in seconds
-        sim_sensing_interval = 500, # Execution time of the simulation in milli-seconds
+        sim_run_time_s = 10, # Execution time of the simulation in seconds
+        sim_sensing_interval_ms = 500, # Execution time of the simulation in milli-seconds
         sim_sensors_thresholds = {
             DeviceName.DISTANCE : 0.0,
             DeviceName.LIGHT : 0.0,
@@ -24,7 +24,7 @@ class DefaultConfigOptions(Jsonkin):
             DeviceName.WHEEL_POS : 0.0,
             DeviceName.GPS : 0.0,
         }, # sensors threshold to apply as filters
-        sim_event_timer = 5, # Perturbation event triggered after t seconds
+        sim_event_timer_s = 5, # Perturbation event triggered after t seconds
         sim_light_position = Point3D(0.0,0.0,0.0),
         sim_light_spawn_radius = 0.5, # meters
         sim_agent_position = Point3D(0.0,0.0,0.0),
@@ -70,10 +70,10 @@ class SimulationConfig(Jsonkin):
         self.sd_max_iters = options['sd_max_iters']
         self.sd_max_stalls = options['sd_max_stalls']
         # Simulation #
-        self.sim_run_time = options['sim_run_time']
-        self.sim_sensing_interval = options['sim_sensing_interval']
+        self.sim_run_time_s = options['sim_run_time_s']
+        self.sim_sensing_interval_ms = options['sim_sensing_interval_ms']
         self.sim_sensors_thresholds = options['sim_sensors_thresholds']
-        self.sim_event_timer = options['sim_event_timer']
+        self.sim_event_timer_s = options['sim_event_timer_s']
         self.sim_light_position = options['sim_light_position']
         self.sim_light_spawn_radius = options['sim_light_spawn_radius']
         self.sim_agent_position = options['sim_agent_position']
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     c = SimulationConfig(sd_max_iters = 10)
 
-    c.sim_event_timer = 10
+    c.sim_event_timer_s = 10
 
     # print(c, end='\n\n')
 

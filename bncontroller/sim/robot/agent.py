@@ -59,12 +59,12 @@ class RoboticAgent(object):
     def run(self, controller : Controller, logging_hook = lambda string: None, data_hook = lambda data: None):
         # initialize simulation
         n_steps = 0
-        max_steps = int((self.__config.sim_run_time * 1000) / self.timestep)
+        max_steps = int((self.__config.sim_run_time_s * 1000) / self.timestep)
 
-        trigger_step = int((self.__config.sim_event_timer * 1000) / self.timestep) # step @ which the event should be triggered
+        trigger_step = int((self.__config.sim_event_timer_s * 1000) / self.timestep) # step @ which the event should be triggered
 
         logging_hook(
-            f"TIME:{self.__config.sim_run_time} min | STEP-TIME:{self.timestep} ms => MAX-STEPS: {max_steps}"
+            f"TIME:{self.__config.sim_run_time_s} min | STEP-TIME:{self.timestep} ms => MAX-STEPS: {max_steps}"
         )
 
         # -------------------------------------------------

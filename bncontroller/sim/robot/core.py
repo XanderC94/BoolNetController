@@ -32,7 +32,7 @@ class BNController(Controller):
 
         if self.__next_sensing == step:
 
-            self.__next_sensing += int(self.__config.sim_sensing_interval / timestep)
+            self.__next_sensing += int(self.__config.sim_sensing_interval_ms / timestep)
 
             # Retreive Sensors Data
             self.gps_data = [Point3D.from_tuple(g.read()) for g in morphology.gps.values()]

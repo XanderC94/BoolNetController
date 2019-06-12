@@ -2,7 +2,7 @@ from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import Boolean, r_bool, truth_values
 from bncontroller.boolnet.tes import bn_to_tes
 from bncontroller.ntree.ntstructures import NTree
-from bncontroller.boolnet.eval.utils import edit_boolean_network, generate_flip, generate_flips, tes_distance
+from bncontroller.boolnet.eval.utils import edit_boolean_network, generate_flip, generate_flips, tes_distance, reverse_flips
 
 
 ###########################################################################################
@@ -40,18 +40,19 @@ def adaptive_walk(bng: RBNFactory, target_tes: NTree, thresholds:list, max_iters
     dist = tes_distance(tes, target_tes)
     sol = bn
     
-    it, last_flips = 0, []
+    it, last_flips = set(), []
 
     while it < max_iters and dist > 0:
 
-        flips = generate_flip(sol, last_flips)
-        bn, last_flips = edit_boolean_network(bn, flips = flips)
+        last_flips = generate_flip(sol, last_flips)
+        bn = edit_boolean_network(bn, flips = last_flips)
 
         tes = bn_to_tes(bn, thresholds)
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn, *_ = edit_boolean_network(bn, [(flips[0], flips[1], 1.0 - flips[2])])
+            reverse = reverse_flips(last_flips)
+            bn = edit_boolean_network(bn, reverse)
         else:
             dist = new_dist
             sol = bn
@@ -101,7 +102,7 @@ def variable_neighborhood_search(
     dist = tes_distance(tes, target_tes)
     sol = bn
 
-    it, last_flips, n_stalls, n_flips = 0, [], 0, 1
+    it, last_flips, n_stalls, n_flips = 0, set(), 0, 1
 
     while it < max_iters and dist > 0:
 
@@ -112,14 +113,15 @@ def variable_neighborhood_search(
             if n_flips > len(bn): 
                 return sol
 
-        flips = generate_flips(bn, n_flips, last_flips)
-        bn, last_flips = edit_boolean_network(bn, flips)
+        last_flips = generate_flips(bn, n_flips, excluded=last_flips)
+        bn = edit_boolean_network(bn, last_flips)
 
         tes = bn_to_tes(bn, thresholds)
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            bn, *_ = edit_boolean_network(bn, [(flip[0], flip[1], 1.0 - flip[2]) for flip in flips])
+            reverse = reverse_flips(last_flips)
+            bn = edit_boolean_network(bn, reverse)
         else:
 
             if dist == new_dist:
