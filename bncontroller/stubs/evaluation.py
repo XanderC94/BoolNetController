@@ -100,7 +100,8 @@ def stub_search(config : SimulationConfig, bn: OpenBooleanNetwork):
 
     return parametric_vns(
         bn,
-        evaluate= lambda bn: evaluation(config, bn),
-        max_iters= config.sd_max_iters,
-        max_stalls= config.sd_max_stalls
+        evaluate=lambda bn: evaluation(config, bn),
+        max_iters=config.sd_max_iters,
+        max_stalls=config.sd_max_stalls,
+        min_target=config.sd_minimization_target
     )

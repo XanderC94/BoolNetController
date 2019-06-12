@@ -13,6 +13,7 @@ class DefaultConfigOptions(Jsonkin):
         webots_quit_on_termination = True,
         sd_max_iters = 10000, # stochastic descent max iterations
         sd_max_stalls = 1, # 1 -> Adaptive Walk, 2+ -> VNS 
+        sd_minimization_target = 0.0, # value to which reduce the objective function 
         sim_run_time_s = 10, # Execution time of the simulation in seconds
         sim_sensing_interval_ms = 500, # Execution time of the simulation in milli-seconds
         sim_sensors_thresholds = {
@@ -69,6 +70,7 @@ class SimulationConfig(Jsonkin):
         # Stochastic Descent Search
         self.sd_max_iters = options['sd_max_iters']
         self.sd_max_stalls = options['sd_max_stalls']
+        self.sd_minimization_target = options['sd_minimization_target']
         # Simulation #
         self.sim_run_time_s = options['sim_run_time_s']
         self.sim_sensing_interval_ms = options['sim_sensing_interval_ms']
