@@ -1,20 +1,27 @@
-from bncontroller.boolnet.bnstructures import BooleanNetwork
+from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.bn import rbn_gen
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
-from bncontroller.boolnet.eval.parametric import parametric_vns, default_scramble_strategy
+from bncontroller.boolnet.eval.search import incremental_stochastic_descent, parametric_vns
 from bncontroller.json.utils import read_json, write_json
 from bncontroller.file.utils import generate_file_name, iso8106
 from pathlib import Path
 import subprocess, pandas, math, random
 
-def evaluation(config: SimulationConfig, bn: BooleanNetwork, input_nodes: list, output_nodes: list) -> float:
+dist = None
 
-    light_position, data = run_simulation(config, bn, input_nodes, output_nodes)
+def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
 
-    return aggregate_sim_data(light_position, data)
+    light_position, data = run_simulation(config, bn)
 
-def run_simulation(config : SimulationConfig, model: BooleanNetwork, input_nodes: list, output_nodes: list) -> dict:
+    new_dist = aggregate_sim_data(light_position, data)
+
+    if dist is None or new_dist < dist:
+        write_json(bn.to_json(), config.bn_model_path / 'bn_model_top.json')
+
+    return new_dist
+
+def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict:
 
     date = iso8106()
 
@@ -26,22 +33,25 @@ def run_simulation(config : SimulationConfig, model: BooleanNetwork, input_nodes
     # Create Sim Config based on the Experiment Config
     sim_config = SimulationConfig.from_json(config.to_json())
 
-    # sim_config.bn_inputs = input_nodes
-    # sim_config.bn_outputs = output_nodes
+    # sim_config.bn_inputs = model.input_nodes
+    # sim_config.bn_outputs = model.output_nodes
     
     sim_config.sim_light_position = r_point3d(
-        O = config.sim_light_position, 
-        R = config.sim_light_spawn_radius, 
-        axis=Axis.Y, quadrant=Quadrant.NPP
+        O=config.sim_light_position, 
+        R=config.sim_light_spawn_radius, 
+        axis=Axis.Y, 
+        quadrant=Quadrant.NPP
     )
 
     sim_config.sim_agent_position = r_point3d(
-        O = config.sim_agent_position, 
-        R = config.sim_agent_spawn_radius, 
-        axis=Axis.Y, quadrant=Quadrant.PPN
+        O=config.sim_agent_position, 
+        R=config.sim_agent_spawn_radius, 
+        axis=Axis.Y, 
+        quadrant=Quadrant.PPN
     )
 
-    sim_config.sim_agent_y_rot = 9/12*math.pi # random.uniform(0, 2*math.pi)
+    sim_config.sim_agent_y_rot = random.uniform(0, 2*math.pi) # 
+    # sim_config.sim_agent_y_rot = math.pi # 
 
     sim_config.bn_model_path /= model_fname
     sim_config.sim_data_path /= data_fname
@@ -62,8 +72,8 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     df = pandas.DataFrame(sim_data['data'])
 
-    df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs))
-    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs))
+    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs))
+    df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs.values()))
     # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs)/len(lvs))
 
     # total_sum = df['sum_light_values'].sum(axis=0, skipna=True) 
@@ -83,15 +93,14 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
     # print(total_sum)
     # print(last_step, last_value)
     # print(nearest_step, nearest_value)
-
     # return round(math.sqrt(1 / last_value), 3) # Irradiance (E) is inverserly proportional to Squared Distance (d)
-    return 1 / round(last_value, 3) # Irradiance (E) is inverserly proportional to Squared Distance (d)
+    return round(1 / last_value * 1000, 5) # Irradiance (E) is inverserly proportional to Squared Distance (d)
 
-def stub_search(config : SimulationConfig, bng, I, O):
+def stub_search(config : SimulationConfig, bn: OpenBooleanNetwork):
+
     return parametric_vns(
-        bng,
-        evaluation_strategy= lambda bn: evaluation(config, bn, I, O),
-        scramble_strategy= lambda bn, n_flips, last_flips: default_scramble_strategy(bn, n_flips, last_flips + I),
+        bn,
+        evaluate= lambda bn: evaluation(config, bn),
         max_iters= config.sd_max_iters,
         max_stalls= config.sd_max_stalls
     )

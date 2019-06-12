@@ -19,7 +19,15 @@ class Sensor:
     def position(self):
         return self.__position
 
-def sensor_array(labels:str, timestep:int, sensor_getter, sensors_positions = [0.0], enable_sensors = True): 
+    def read(self):
+        if hasattr(self.device, 'getValues'):
+            return self.device.getValues()
+        elif hasattr(self.device, 'getValue'):
+            return self.device.getValue()
+        else:
+            raise Exception('Unreadable Sensor.')
+
+def sensor_array(labels:dict, timestep:int, sensor_getter, sensors_positions = [0.0], enable_sensors = True): 
     ss = {}
     i = 0
     

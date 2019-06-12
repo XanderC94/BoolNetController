@@ -12,6 +12,7 @@ setup(name='BoolNetController',
           'pandas',
           'numpy',
           'apted', 
-          'networkx'
+          'networkx',
+          'multiset'
       ],
       zip_safe=False)

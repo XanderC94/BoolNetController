@@ -85,22 +85,21 @@ class TestBooleanFunction(unittest.TestCase):
             'arity':2,
             'truth_table':[
                 {
-                    'params':[False, False],
+                    'params':{'0':False, '1':False},
                     'hold':{'0':1.0, '1':0.0}
                 },
                 {
-                    'params':[False, True],
+                    'params':{'0':False, '1':True},
                     'hold':{'0':1.0, '1':0.0}
                 },
                 {
-                    'params':[True, False],
+                    'params':{'0':True, '1':False},
                     'hold':{'0':1.0, '1':0.0}
                 },
                 {
-                    'params':[True, True],
+                    'params':{'0':True, '1':True},
                     'hold':{'0':0.0, '1':1.0}
                 }
-                
             ]
         }
 
@@ -112,20 +111,20 @@ class TestBooleanFunction(unittest.TestCase):
             'arity':2,
             'truth_table':[
                 {
-                    'params':[True, True],
+                    'params':{'0':False, '1':False},
+                    'hold':{'0':1.0, '1':0.0}
+                },
+                {
+                    'params':{'0':False, '1':True},
+                    'hold':{'0':1.0, '1':0.0}
+                },
+                {
+                    'params':{'0':True, '1':False},
+                    'hold':{'0':1.0, '1':0.0}
+                },
+                {
+                    'params':{'0':True, '1':True},
                     'hold':{'0':0.0, '1':1.0}
-                },
-                {
-                    'params':[True, False],
-                    'hold':{'0':1.0, '1':0.0}
-                },
-                {
-                    'params':[False, True],
-                    'hold':{'0':1.0, '1':0.0}
-                },
-                {
-                    'params':[False, False],
-                    'hold':{'0':1.0, '1':0.0}
                 }
             ]
         }
@@ -216,7 +215,7 @@ class TestNTree(unittest.TestCase):
             'value': 1
         }
 
-        print(NTree.from_json(t1_json))
+        # print(NTree.from_json(t1_json))
 
         self.assertEqual(t1, NTree.from_json(t1_json))
 

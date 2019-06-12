@@ -25,6 +25,16 @@ class Jsonkin(object):
     def __repr__(self):
         return str(self.to_json())
 
+###############################################################
+
+def tuple_to_json(t:tuple) -> dict:
+
+    return dict((str(k), t[k]) for k in range(len(t)))
+
+def tuple_from_json(json:dict) -> tuple:
+
+    return tuple(json[k] for k in json)
+
 ################################################################
 
 def jsonrepr(obj):

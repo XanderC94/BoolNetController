@@ -7,7 +7,7 @@ import matplotlib.cm as cmx
 from bncontroller.sim.config import parse_args_to_config
 from bncontroller.json.utils import read_json
 
-def __nodes_std_positioning(I, H, O, ydim=(5, 0, -5)):
+def __nodes_std_positioning(I, H, O, ydim=(25, 0, -25)):
 
     iy, hy, oy = ydim
     ix, hx, ox = -int(len(I)/2), -int(len(H)/2), -int(len(O)/2)
@@ -70,8 +70,10 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list, O:list):
     # fixed=list(k for k in dg.nodes() if k in I + O)
     # print(fixed)
 
-    # pos = nx.spring_layout(dg, pos=spos, k=1.0, threshold=0.01, center=(0,0))
-    pos = nx.kamada_kawai_layout(dg, pos=spos, center=(0,0))
+    # pos = nx.spring_layout(dg, pos=spos, k=5.0, center=(0,0))
+    dis = dict((k, dict((p, 1.0) for p in dg.nodes() if p != k))for k in dg.nodes())
+    # dis = None
+    pos = nx.kamada_kawai_layout(dg, dist= dis, pos=spos, center=(0,0))
 
     # Plotting #
 

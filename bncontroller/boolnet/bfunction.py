@@ -1,6 +1,6 @@
 import itertools, random, string, hashlib, unicodedata, json
 from bncontroller.boolnet.boolean import r_bool, truth_values, Boolean
-from bncontroller.json.utils import Jsonkin
+from bncontroller.json.utils import Jsonkin, tuple_from_json, tuple_to_json
 from collections import defaultdict
 
 class BooleanFunction(Jsonkin):
@@ -22,12 +22,12 @@ class BooleanFunction(Jsonkin):
         for args in tt: self[args] = result_generator(*args)
 
     def __setitem__(self, params: tuple, new_value):
-        if isinstance(new_value, Boolean):
-            self.__truth_table[params] = new_value
-        elif isinstance(new_value, (bool, int, float)):
-            self.__truth_table[params].bias = new_value
-        else:
-            raise Exception(f'Boolean functions do not accept {type(new_value)} as truth value.')
+            if isinstance(new_value, Boolean):
+                self.__truth_table[params] = new_value
+            elif isinstance(new_value, (bool, int, float)):
+                self.__truth_table[params].bias = new_value
+            else:
+                raise Exception(f'Boolean functions do not accept {type(new_value)} as truth value.')
 
     def __getitem__(self, params: tuple) -> Boolean:
         return self.__truth_table[params]
@@ -75,7 +75,7 @@ class BooleanFunction(Jsonkin):
         return {
             'arity': len(self), 
             'truth_table': list(map(lambda e: {
-                    'params': list(e[0]),
+                    'params': tuple_to_json(e[0]),
                     'hold': e[1].to_json()
                 }, self.__truth_table.items()))
         }
@@ -85,7 +85,8 @@ class BooleanFunction(Jsonkin):
         _bf = BooleanFunction(json['arity'])
 
         for e in json['truth_table']:
-            _bf[tuple(e['params'])] = Boolean.from_json(e['hold'])
+            params = tuple_from_json(e['params'])
+            _bf[params] = Boolean.from_json(e['hold'])
         
         return _bf
 

@@ -5,34 +5,51 @@ from bncontroller.file.utils import collection_diff
 from bncontroller.json.utils import write_json
 import random
 
-def predecessors(node: BooleanNode, nodes: list, bn_inputs: list, bn_outputs: list):
+def predecessors(node: BooleanNode, N: list, I: list, O: list):
+    '''
+    This predecessor function create a BN with the given properties:
 
+    * input nodes (I) have only 1 (external) predecessor.
+        That is, they are only predecessors to other nodes 
+    * hidden nodes (N - I) and outputs (O) have k predecessors
+    * outputs nodes (O) can't have another output node as predecessor 
+        nor be directly connected to input nodes.
+    
+    Moreover, Input and Output have connectivity priority, 
+    that is the are chosen to be connected before any other node
+    '''
     predecessors = []
 
-    # inputs node must not be connected by other nodes (?)
-    if node.label not in bn_inputs: 
-        
-        labels = [n.label for n in nodes]
+    # inputs node must not be connected by other nodes
+    if node.label not in I: 
         
         # Exclude from the predecessor choice the node itself (no self-loops) 
-        # and all the other nodes with enough predecessors (len(p) == k)
-
-        exclusions = [node.label] #+ [n.label() for n in nodes if len(n.predecessors()) == arity or n.label() in bn_inputs]
-
+        exclusions = [node.label] #+ [n.label for n in nodes if len(n.predecessors) == n.arity]
+        priority = []
+     
         # outputs nod should not interfer with one another
-        if node.label in bn_outputs:
-            exclusions += bn_outputs
-        # if node.label() in bn_inputs:
-        #     exclusions += bn_inputs
+        # Outputs should not be directly connected to inputs
+        if node.label in O:
+            exclusions += O
+            exclusions += I
+        else:
+            # First connect other nodes to Input
+            priority = [li for li in I if not any(li in n.predecessors for n in N)]
+
+        others = [n.label for n in N if n.label not in priority + exclusions]
+
+        pf = 0.8/len(priority) if len(priority) > 0 else 0
+        po = (0.2 if len(priority) > 0 else 1.0)/len(others)
+
+        choices = dict(
+            [(k, pf) for k in priority] +
+            [(k, po) for k in others]
+        )
         
         for _ in range(node.arity):
-            
-            predecessors.append(
-                random.choice(
-                    collection_diff(labels, exclusions + predecessors)
-                )
-            )
-    
+            predecessors += random.choices(list(choices.keys()), weights=list(choices.values()))
+            choices[predecessors[len(predecessors) - 1]] = 0.0
+
     return predecessors
 
 def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
@@ -42,14 +59,14 @@ def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
     * input nodes (I) have only 1 (external) predecessor.
         That is, they are only predecessors to other nodes 
     * hidden nodes (N - I) and outputs (O) have k predecessors
-    * outputs nodes (O) can't have another output node as predecessor
+    * outputs nodes (O) can't have another output node as predecessor 
+        nor be directly connected to input nodes.
     """
 
     _N = list(map(str, range(N)))
     _I = list(map(str, range(I))) 
-    _O = list(map(str, range(I, O))) 
+    _O = list(map(str, range(I, I+O))) 
     _K = dict((l, K) if l not in _I else (l, 1) for l in _N)
-
 
     return RBNFactory(
         _N, # labels 
@@ -61,7 +78,7 @@ def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
 
 if __name__ == "__main__":
     
-    n, k, p, i, o = 20, 2, 0.5, 8, 2
+    n, k, p, i, o = 20, 3, 0.5, 8, 2
     bng, ia, oa, *_ = rbn_gen(n, k, p, i, o)
 
     bn = bng.new()

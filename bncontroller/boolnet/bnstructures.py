@@ -8,9 +8,10 @@ class BooleanNode(Jsonkin):
 
     def __init__(self, label:str, predecessors: list, bf: BooleanFunction, init_state=r_bool()):
         self.__label = str(label)
-        self.__predecessors = predecessors
+        self.__predecessors = sorted(predecessors)
         self.__boolfun = bf
         self.__hash = hash(str(self.__label))
+        self.__init_state = bool(init_state)
         self.__state = Boolean(init_state)
     
     @property
@@ -35,7 +36,7 @@ class BooleanNode(Jsonkin):
     
     @predecessors.setter
     def predecessors(self, nodes: list):
-        self.__predecessors = nodes
+        self.__predecessors = sorted(nodes)
 
     @property
     def state(self) -> bool:
@@ -44,7 +45,7 @@ class BooleanNode(Jsonkin):
         This does not evaluate the Boolean Function (e.g.: Probabilistic Booleans) 
         so it returns always the same value between successive evaluations.  
         '''
-        return self.__state()
+        return bool(self.__state)
 
     @state.setter
     def state(self, new_state):
@@ -85,11 +86,17 @@ class BooleanNode(Jsonkin):
         """
         Return a (valid) json representation (dict) of this object
         """
-        return {'id':self.label, 'inputs': self.predecessors, 'bf':self.bf.to_json()}
+        return {
+            'id':self.label, 
+            'inputs': self.predecessors, 
+            'bf':self.bf.to_json(), 
+            'istate': self.__init_state, 
+            'cstate': self.state
+        }
 
     @staticmethod
     def from_json(json:dict):
-        return BooleanNode(json['id'], json['inputs'], BooleanFunction.from_json(json['bf']))
+        return BooleanNode(json['id'], json['inputs'], BooleanFunction.from_json(json['bf']), json['istate'])
 
 ##########################################################################################################
 
@@ -109,6 +116,7 @@ class BooleanNetwork(Jsonkin):
     @property
     def keys(self):
         return list(self.__nodes.keys())
+        
     @property
     def nodes(self):
         return list(self.__nodes.values())
@@ -158,8 +166,9 @@ class BooleanNetwork(Jsonkin):
         oldstate = dict(self.state) # Copy old state
 
         for node in self.nodes:
-            fparams = tuple(oldstate[str(p)] for p in node.predecessors)
-            node.evaluate(fparams)
+            if len(node.predecessors) > 0:
+                fparams = [oldstate[node.predecessors[i]] for i in range(node.arity)]
+                node.evaluate(tuple(fparams))
 
         return self.state
 
@@ -167,21 +176,18 @@ class BooleanNetwork(Jsonkin):
         """
         Return a (valid) json representation (dict) of this object.
         """
-        return dict((k, jsonrepr(v)) for k, v  in self.to_pairlist())
+        return dict(nodes=[jsonrepr(v) for v  in self.nodes])
 
     @staticmethod
     def from_json(json:dict):
 
-        bn = BooleanNetwork([])
+        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
 
-        for label, node in json.items():
-            bn[label] = BooleanNode.from_json(node)
-
-        return bn
+        return BooleanNetwork(nodes)
 
 #############################################################################
 
-class NoisyBooleanNetwork(BooleanNetwork):
+class OpenBooleanNetwork(BooleanNetwork):
 
     def __init__(self, nodes: list, input_nodes = [], output_nodes = []):
         super().__init__(nodes)
@@ -191,8 +197,26 @@ class NoisyBooleanNetwork(BooleanNetwork):
 
     @property
     def input_nodes(self):
-        return self.__input_nodes
+        return set(self.__input_nodes)
 
     @property
     def output_nodes(self):
-        return self.__output_nodes
+        return set(self.__output_nodes)
+    
+    def to_json(self):
+        __json = super().to_json()
+
+        __json.update({
+            'inputs': list(self.input_nodes),
+            'outputs': list(self.output_nodes)
+        })
+
+        return __json
+
+    @staticmethod
+    def from_json(json:dict):
+
+        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
+        
+        return OpenBooleanNetwork(nodes, json['inputs'], json['outputs'])
+        

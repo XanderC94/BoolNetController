@@ -1,8 +1,10 @@
 from bncontroller.boolnet.bnstructures import BooleanNetwork
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance
-import random
+from multiset import FrozenMultiset
+import random, collections, math, itertools
 
+Flip = collections.namedtuple('Flip', ['label', 'entry', 'new_bias'])
 
 def tes_distance(C, T) -> float:
     """
@@ -21,33 +23,43 @@ def tes_distance(C, T) -> float:
     
     return E + (E * H)
 
-def generate_flip(bn: BooleanNetwork, last_flips = []):
-    """
-    Given the BN and a list of node_id to be excluded from the flipping,
-    returns a tuple representing the change (flip) to apply to the BN.
-    
-    The tuple structure is defined as follow
-    
-        (node_id, truth_table_entry, new_bias)
-    
-    where:
-        * node_id is the "name" of the node in the BN.
-        * bf_args is a tuple of bool representing the entry of the (node) truth table
-        which output value has to be flipped.
-        * new_bias is the flipped output of the (node) truth table.
-    """
+###########################################################################################
 
-    node_label = random.choice([n for n in bn.keys if n not in last_flips])
+def sampling(flips, n_flips):
 
-    k = bn[node_label].bf.arity
+    return set(random.sample(flips, n_flips) if len(flips) >= n_flips else flips)
 
-    truthtable_index = random.choice(list(range(2**k))) 
+def ncombinations(n, k):
+    return math.factorial(n) / (math.factorial(k) * math.factorial(n-k))
 
-    args, res = bn[node_label].bf.by_index(truthtable_index)
+def reverse_flips(flips):
+    return set(Flip(f.label, f.entry, 1.0 - f.new_bias) for f in flips)
 
-    return (node_label, args, 1.0 - res.bias)
+def identity(x): 
+    return x
 
-def generate_flips(bn: BooleanNetwork, n_flips, last_flips = []):
+############################################################################################
+
+def generate_available_flips(bn: BooleanNetwork, excluded=set(), flip_map=identity):
+
+    free_flips = set()
+
+    for node in bn.nodes:
+        if flip_map(node.label) not in excluded:
+            for i in range(2**node.arity):
+                
+                e, r = node.bf.by_index(i)
+
+                pFlip = Flip(node.label, e, 1.0 - r.bias)
+
+                if flip_map(pFlip) not in excluded:
+                    free_flips.add(pFlip)
+
+    return free_flips
+
+#############################################################################################
+
+def generate_flips(bn: BooleanNetwork, n_flips, excluded=set(), flip_map=identity):
     """
     Given the BN and a list of node_id to be excluded from the flipping,
     returns a list of tuples representing the changes (flips) to apply to the BN.
@@ -62,13 +74,36 @@ def generate_flips(bn: BooleanNetwork, n_flips, last_flips = []):
         which output value has to be flipped.
         * new_bias is the flipped output of the (node) truth table.
     """
-    flips = []
 
-    for _ in range(n_flips):
-        flip = generate_flip(bn, last_flips + flips)
-        flips.append(flip)
-    
-    return flips
+    free_flips = generate_available_flips(bn, excluded, flip_map)
+
+    return sampling(free_flips, n_flips)
+
+###################################################################################
+
+def generate_flips_blob(bn:BooleanNetwork, n_flips, already_flipped=set(), max_it = 1000):
+
+    flips, hflip, it = set(), None, 0
+
+    free_flips = generate_available_flips(
+        bn, 
+        excluded=already_flipped, 
+        flip_map=hash
+    )
+
+    while it < max_it:
+
+        flips = sampling(free_flips, n_flips)
+        hflip = hash(FrozenMultiset(flips))
+
+        if hash(hflip) not in already_flipped:
+            it = max_it
+
+        it += 1
+
+    return (flips, hflip)
+
+######################################################################################
 
 def edit_boolean_network(bn: BooleanNetwork, flips: list):
     """
@@ -87,7 +122,7 @@ def edit_boolean_network(bn: BooleanNetwork, flips: list):
         * new_bias is the flipped output of the (node) truth table.
     """
 
-    for last_flip, args, new_bias in flips:
-        bn[last_flip].bf[args] = new_bias
+    for label, entry, new_bias in flips:
+        bn[label].bf[entry] = new_bias
 
-    return (bn, list(map(lambda f: f[0], flips)))
+    return bn

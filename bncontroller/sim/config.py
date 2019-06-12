@@ -2,18 +2,28 @@ import json, argparse, sys
 from pathlib import Path
 from bncontroller.json.utils import Jsonkin, read_json, jsonrepr, objrepr
 from bncontroller.sim.data import Point3D
+from bncontroller.sim.robot.utils import DeviceName
 
 class DefaultConfigOptions(Jsonkin):
 
     __def_options = dict(
         webots_path = Path('.'), # Path to webots executable
         webots_world_path = Path('.'), # Path to webots world file
-        webots_launch_args = ["--mode=fast", "--batch"],
+        webots_launch_args = ["--mode=fast", "--batch", "--minimize"],
         webots_quit_on_termination = True,
         sd_max_iters = 10000, # stochastic descent max iterations
         sd_max_stalls = 1, # 1 -> Adaptive Walk, 2+ -> VNS 
         sim_run_time = 10, # Execution time of the simulation in seconds
         sim_sensing_interval = 500, # Execution time of the simulation in milli-seconds
+        sim_sensors_thresholds = {
+            DeviceName.DISTANCE : 0.0,
+            DeviceName.LIGHT : 0.0,
+            DeviceName.LED : 0.0,
+            DeviceName.TOUCH : 0.0,
+            DeviceName.WHEEL_MOTOR : 0.0,
+            DeviceName.WHEEL_POS : 0.0,
+            DeviceName.GPS : 0.0,
+        }, # sensors threshold to apply as filters
         sim_event_timer = 5, # Perturbation event triggered after t seconds
         sim_light_position = Point3D(0.0,0.0,0.0),
         sim_light_spawn_radius = 0.5, # meters
@@ -62,6 +72,7 @@ class SimulationConfig(Jsonkin):
         # Simulation #
         self.sim_run_time = options['sim_run_time']
         self.sim_sensing_interval = options['sim_sensing_interval']
+        self.sim_sensors_thresholds = options['sim_sensors_thresholds']
         self.sim_event_timer = options['sim_event_timer']
         self.sim_light_position = options['sim_light_position']
         self.sim_light_spawn_radius = options['sim_light_spawn_radius']

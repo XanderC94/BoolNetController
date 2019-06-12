@@ -1,5 +1,5 @@
 import random
-from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork, NoisyBooleanNetwork
+from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
 from bncontroller.json.utils import write_json, read_json, objrepr
@@ -63,8 +63,7 @@ class RBNFactory(object):
         else:
             raise Exception(f'Boolean Network does not accept {type(k)} as node neighbors number. Use List, Dict or Int (each node has K neighbors).')
 
-    def new(self) -> BooleanNetwork:
-
+    def __build_nodes(self):
         nodes = [
             BooleanNode(
                 label, 
@@ -76,24 +75,20 @@ class RBNFactory(object):
 
         for node in nodes: 
             node.predecessors = self.predecessors_fun(node, nodes)
+
+        return nodes
+
+    def new(self) -> BooleanNetwork:
+
+        nodes = self.__build_nodes()
 
         return BooleanNetwork(nodes)
 
-    def new_nbn(self, I, O) -> NoisyBooleanNetwork:
+    def new_obn(self, I, O) -> OpenBooleanNetwork:
 
-        nodes = [
-            BooleanNode(
-                label, 
-                [], 
-                BooleanFunction(self.node_arities[label], result_generator = self.bf_init), 
-                self.node_init(label)
-            ) for label in self.node_labels
-        ]
+        nodes = self.__build_nodes()
 
-        for node in nodes: 
-            node.predecessors = self.predecessors_fun(node, nodes)
-
-        return NoisyBooleanNetwork(nodes, input_nodes= I, output_nodes=O)
+        return OpenBooleanNetwork(nodes, input_nodes=I, output_nodes=O)
 
 #################################################################################################
 
