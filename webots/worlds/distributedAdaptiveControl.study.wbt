@@ -1,0 +1,33 @@
+#VRML_SIM R2019a utf8
+DEF Hyperuranium WorldInfo {
+  title "Boolean Network Controller Study"
+}
+Viewpoint {
+  fieldOfView 1.5
+  orientation 1 0 0 4.71238898038469
+  position 0.0003051557522423154 1.8449004780514524 3.5003308478655397e-06
+}
+TexturedBackground {
+}
+DEF Cave RectangleArena {
+  floorSize 2 2
+  floorAppearance RoughConcrete {
+  }
+  wallAppearance Roughcast {
+  }
+}
+DEF Fire PointLight {
+  location 0.75 0.3 -0.75
+}
+DEF Socrates E-puck {
+  translation -0.75 0 0.75
+  rotation 0 -1 0 0.7853981801795871
+  controllerArgs "--config_path=\"D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\configs\\sim_config.json\""
+}
+DEF Demiurge Robot {
+  translation 1 0 1
+  name "Demiurge"
+  controller "demiurge"
+  controllerArgs "--config_path=\"D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\configs\\sim_config.json\""
+  supervisor TRUE
+}

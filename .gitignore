@@ -112,4 +112,4 @@ webots/libraries
 webots/protos
 webots/plugins
 webots/transfer
-webots/worlds
+# webots/worlds
