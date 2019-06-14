@@ -3,13 +3,7 @@
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, LED, DistanceSensor
 from controller import Supervisor
-# import sys, os, copy
-# print(os.getcwd())
-
 from bncontroller.sim.config import parse_args_to_config
-from bncontroller.sim.robot.binarization import light_sensor_binarization
-from bncontroller.sim.logging.logger import FileLogger
-from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
 config = parse_args_to_config()
 
@@ -45,7 +39,7 @@ while demiurge.step(timestep) != -1 and n_steps != max_steps:
     if n_steps == trigger_step:
         # trigger event modifying the simulation world
         try:
-            ls = demiurge.getFromDef('LightSource')
+            ls = demiurge.getFromDef(config.webots_nodes_defs['PointLight'])
             ls.getField('intensity').setSFFloat(0.0)
             print('Event Triggered')
         except Exception as ex:
