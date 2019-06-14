@@ -77,10 +77,6 @@ class RoboticAgent(object):
 
             logging_hook(f"step:{n_steps}")
             
-            if n_steps == trigger_step:
-                # trigger event modifying the simulation world
-                pass
-
             data = controller(self.morphology, n_steps, self.timestep)
 
             data_hook(data)

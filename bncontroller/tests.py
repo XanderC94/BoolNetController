@@ -280,5 +280,7 @@ class TestNTreeUtils(unittest.TestCase):
         self.assertDictEqual(tree_level_arities([t2]), {2:1})
         self.assertDictEqual(tree_level_arities(t2.children), {0:2})
 
+######################################################################################
+
 if __name__ == "__main__":
     unittest.main()

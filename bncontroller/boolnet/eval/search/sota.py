@@ -51,8 +51,8 @@ def adaptive_walk(bng: RBNFactory, target_tes: NTree, thresholds:list, max_iters
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            reverse = reverse_flips(last_flips)
-            bn = edit_boolean_network(bn, reverse)
+            # reverse = reverse_flips(last_flips)
+            bn = edit_boolean_network(bn, last_flips)
         else:
             dist = new_dist
             sol = bn
@@ -120,8 +120,8 @@ def variable_neighborhood_search(
         new_dist = tes_distance(tes, target_tes)
 
         if new_dist > dist:
-            reverse = reverse_flips(last_flips)
-            bn = edit_boolean_network(bn, reverse)
+            # reverse = reverse_flips(last_flips)
+            bn = edit_boolean_network(bn, last_flips)
         else:
 
             if dist == new_dist:

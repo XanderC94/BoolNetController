@@ -11,11 +11,13 @@ class DefaultConfigOptions(Jsonkin):
         webots_world_path = Path('.'), # Path to webots world file
         webots_launch_args = ["--mode=fast", "--batch", "--minimize"],
         webots_quit_on_termination = True,
+        webots_nodes_defs = {},
         sd_max_iters = 10000, # stochastic descent max iterations
         sd_max_stalls = 1, # 1 -> Adaptive Walk, 2+ -> VNS 
         sd_minimization_target = 0.0, # value to which reduce the objective function 
         sim_run_time_s = 10, # Execution time of the simulation in seconds
-        sim_sensing_interval_ms = 500, # Execution time of the simulation in milli-seconds
+        sim_timestep_ms = 32, # Simulation Loop synch time in ms
+        sim_sensing_interval_ms = 320, # Execution time of the simulation in milli-seconds
         sim_sensors_thresholds = {
             DeviceName.DISTANCE : 0.0,
             DeviceName.LIGHT : 0.0,
@@ -67,12 +69,14 @@ class SimulationConfig(Jsonkin):
         self.webots_world_path = options['webots_world_path']
         self.webots_launch_args = options['webots_launch_args']
         self.webots_quit_on_termination = options['webots_quit_on_termination']
+        self.webots_nodes_defs = options['webots_nodes_defs']
         # Stochastic Descent Search
         self.sd_max_iters = options['sd_max_iters']
         self.sd_max_stalls = options['sd_max_stalls']
         self.sd_minimization_target = options['sd_minimization_target']
         # Simulation #
         self.sim_run_time_s = options['sim_run_time_s']
+        self.sim_timestep_ms = options['sim_timestep_ms']
         self.sim_sensing_interval_ms = options['sim_sensing_interval_ms']
         self.sim_sensors_thresholds = options['sim_sensors_thresholds']
         self.sim_event_timer_s = options['sim_event_timer_s']

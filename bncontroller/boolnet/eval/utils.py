@@ -4,7 +4,8 @@ from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distan
 from multiset import FrozenMultiset
 import random, collections, math, itertools
 
-Flip = collections.namedtuple('Flip', ['label', 'entry', 'new_bias'])
+# Flip = collections.namedtuple('Flip', ['label', 'entry', 'new_bias'])
+Flip = collections.namedtuple('Flip', ['label', 'entry'])
 
 def tes_distance(C, T) -> float:
     """
@@ -32,8 +33,8 @@ def sampling(flips, n_flips):
 def ncombinations(n, k):
     return math.factorial(n) / (math.factorial(k) * math.factorial(n-k))
 
-def reverse_flips(flips):
-    return set(Flip(f.label, f.entry, 1.0 - f.new_bias) for f in flips)
+# def reverse_flips(flips):
+#     return set(Flip(f.label, f.entry, 1.0 - f.new_bias) for f in flips)
 
 def identity(x): 
     return x
@@ -48,9 +49,9 @@ def generate_available_flips(bn: BooleanNetwork, excluded=set(), flip_map=identi
         if flip_map(node.label) not in excluded:
             for i in range(2**node.arity):
                 
-                e, r = node.bf.by_index(i)
+                # e, r = node.bf.by_index(i)
 
-                pFlip = Flip(node.label, e, 1.0 - r.bias)
+                pFlip = Flip(node.label, i)
 
                 if flip_map(pFlip) not in excluded:
                     free_flips.add(pFlip)
@@ -125,7 +126,8 @@ def edit_boolean_network(bn: BooleanNetwork, flips: list):
         * new_bias is the flipped output of the (node) truth table.
     """
 
-    for label, entry, new_bias in flips:
-        bn[label].bf[entry] = new_bias
+    for label, i in flips:
+        e, r = bn[label].bf.by_index(i)
+        bn[label].bf[e] = 1.0 - r.bias
 
     return bn

@@ -19,7 +19,11 @@ class BooleanFunction(Jsonkin):
         
         self.__truth_table = defaultdict(lambda: Boolean(False))
 
-        for args in tt: self[args] = result_generator(*args)
+        self.__tt_index = defaultdict(tuple)
+
+        for i, args in zip(range(2**k), tt): 
+            self[args] = result_generator(*args)
+            self.__tt_index[i] = args
 
     def __setitem__(self, params: tuple, new_value):
             if isinstance(new_value, Boolean):
@@ -33,12 +37,12 @@ class BooleanFunction(Jsonkin):
         return self.__truth_table[params]
     
     def set_by_index(self, idx, new_value):
-        k = list(self.__truth_table.keys())[idx]
-        self[k] = new_value
+        args = self.__tt_index[idx]
+        self[args] = new_value
 
     def by_index(self, idx) -> (tuple, Boolean):
-        k = list(self.__truth_table.keys())[idx]
-        return (k, self[k])
+        args = self.__tt_index[idx]
+        return (args, self[args])
 
     @property
     def arity(self) -> int:
