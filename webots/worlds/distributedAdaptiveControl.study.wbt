@@ -22,12 +22,12 @@ DEF Fire PointLight {
 DEF Socrates E-puck {
   translation -0.75 0 0.75
   rotation 0 -1 0 0.7853981801795871
-  controllerArgs "--config_path=\"D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\configs\\sim_config.json\""
+  controllerArgs "--config_path=\".\""
 }
 DEF Demiurge Robot {
   translation 1 0 1
   name "Demiurge"
   controller "demiurge"
-  controllerArgs "--config_path=\"D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\configs\\sim_config.json\""
+  controllerArgs "--config_path=\".\""
   supervisor TRUE
 }
