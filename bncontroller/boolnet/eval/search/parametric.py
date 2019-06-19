@@ -81,11 +81,15 @@ def parametric_vns(
             end='\n\n'
         )
 
-        if new_dist > dist:
+        if new_dist < dist:
+
+            n_stalls = 0
+            n_flips = 1
+            dist = new_dist
+
+        else:
 
             bn = utils.edit_boolean_network(bn, flips)
-
-        elif new_dist == dist:
 
             n_stalls += 1
 
@@ -95,11 +99,6 @@ def parametric_vns(
                 
                 if n_flips > max_flips:
                     it = max_iters
-
-        else:
-            n_stalls = 0
-            n_flips = 1
-            dist = new_dist
 
         it += 1
 

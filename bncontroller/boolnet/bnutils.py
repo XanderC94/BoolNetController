@@ -73,20 +73,33 @@ class RBNFactory(object):
             ) for label in self.node_labels
         ]
 
+        return nodes
+
+    def __connect_nodes(self, nodes):
         for node in nodes: 
             node.predecessors = self.predecessors_fun(node, nodes)
-
         return nodes
+
+    def __r_connect_nodes(self, nodes):
+        
+        scrambled_nodes = list(nodes)
+
+        random.shuffle(scrambled_nodes)
+
+        for node in scrambled_nodes: 
+            node.predecessors = self.predecessors_fun(node, nodes)
+
+        return nodes 
 
     def new(self) -> BooleanNetwork:
 
-        nodes = self.__build_nodes()
+        nodes = self.__connect_nodes(self.__build_nodes())
 
         return BooleanNetwork(nodes)
 
     def new_obn(self, I, O) -> OpenBooleanNetwork:
 
-        nodes = self.__build_nodes()
+        nodes = self.__r_connect_nodes(self.__build_nodes())
 
         return OpenBooleanNetwork(nodes, input_nodes=I, output_nodes=O)
 

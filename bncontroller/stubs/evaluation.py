@@ -19,7 +19,10 @@ def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
     new_dist = aggregate_sim_data(light_position, data)
 
     if dist is None or new_dist < dist:
-        write_json(bn.to_json(), config.bn_model_path / f'bn_model_top_{date}.json')
+        dist = new_dist
+        bnjson = bn.to_json()
+        bnjson['score'] = dist
+        write_json(bnjson, config.bn_model_path / f'bn_model_top_{date}.json')
 
     return new_dist
 
@@ -72,29 +75,11 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     df = pandas.DataFrame(sim_data['data'])
 
-    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs))
     df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs.values()))
-    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs)/len(lvs))
 
-    # total_sum = df['sum_light_values'].sum(axis=0, skipna=True) 
+    score = df['aggr_light_values'].sum(axis=0, skipna=True) 
 
-    key_max = df['n_step'].idxmax()
-
-    last_value = df[
-        df['n_step'] == key_max
-    ]['aggr_light_values'].T.values[0]
-
-    # df['dist'] = df['position'].apply(lambda p: sim_config.sim_light_position.dist(p))
-
-    # nearest_step, nearest_value = df.iloc[
-    #     df['dist'].idxmin()
-    # ][['n_step','sum_light_values']].T.values
-
-    # print(total_sum)
-    # print(last_step, last_value)
-    # print(nearest_step, nearest_value)
-    # return round(math.sqrt(1 / last_value), 3) # Irradiance (E) is inverserly proportional to Squared Distance (d)
-    return round(1 / last_value * 1000, 5) # Irradiance (E) is inverserly proportional to Squared Distance (d)
+    return 10**5 / score # Irradiance (E) is inverserly proportional to Squared Distance (d)
 
 def stub_search(config : SimulationConfig, bn: OpenBooleanNetwork):
 
