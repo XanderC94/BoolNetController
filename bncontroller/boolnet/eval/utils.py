@@ -105,7 +105,7 @@ def generate_flips_blob(bn:BooleanNetwork, n_flips, already_flipped=set(), max_i
 
         it += 1
 
-    return (flips, hflip)
+    return flips, hflip
 
 ######################################################################################
 

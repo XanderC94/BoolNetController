@@ -9,24 +9,40 @@ from bncontroller.file.utils import generate_file_name, iso8106
 from pathlib import Path
 import subprocess, pandas, math, random
 
-dist = None
-date = iso8106()
+__globals = dict(
+    date = iso8106(),
+    score = -1.0,
+    it = -1,
+    top_model_name = f'bn_model_top_{iso8106()}.json',
+)
 
 def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
-
+    
     light_position, data = run_simulation(config, bn)
 
-    new_dist = aggregate_sim_data(light_position, data)
+    new_score = aggregate_sim_data(light_position, data)
 
-    if dist is None or new_dist < dist:
-        dist = new_dist
+    __globals['it'] += 1
+
+    if __globals['score'] < 0.0 or new_score < __globals['score']:
+
+        __globals['score'] = new_score
+
         bnjson = bn.to_json()
-        bnjson['score'] = dist
-        write_json(bnjson, config.bn_model_path / f'bn_model_top_{date}.json')
+        
+        bnjson.update({'sim_info': dict()})
+        bnjson['sim_info'].update({'eval_score':__globals['score']})
+        # bnjson['sim_info'].update({'light_pos': light_position.to_json()})
+        # bnjson['sim_info'].update({'agent_pos': agent_position.to_json()})
+        # bnjson['sim_info'].update({'final_pos': agent_position.to_json()})
+        # bnjson['sim_info'].update({'final_dist': abs(final_pos.dist(light_position))})
+        bnjson['sim_info'].update({'n_it':__globals['it']})
 
-    return new_dist
+        write_json(bnjson, config.bn_model_path / __globals['top_model_name'])
 
-def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict:
+    return new_score
+
+def run_simulation(config : SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     model_fname = generate_file_name('bn_model', uniqueness_gen= lambda: '', ftype='json')
     data_fname = generate_file_name('sim_data', uniqueness_gen= lambda: '', ftype='json')
@@ -35,9 +51,6 @@ def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict
 
     # Create Sim Config based on the Experiment Config
     sim_config = SimulationConfig.from_json(config.to_json())
-
-    # sim_config.bn_inputs = model.input_nodes
-    # sim_config.bn_outputs = model.output_nodes
     
     sim_config.sim_light_position = r_point3d(
         O=config.sim_light_position, 
@@ -53,8 +66,7 @@ def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict
         quadrant=Quadrant.PPN
     )
 
-    sim_config.sim_agent_y_rot = random.uniform(0, 2*math.pi) # 
-    # sim_config.sim_agent_y_rot = math.pi # 
+    sim_config.sim_agent_y_rot = random.uniform(0, 2*math.pi) #
 
     sim_config.bn_model_path /= model_fname
     sim_config.sim_data_path /= data_fname
@@ -62,26 +74,35 @@ def run_simulation(config : SimulationConfig, model: OpenBooleanNetwork) -> dict
     sim_config.sim_config_path /= config_fname
 
     # Save model (inside or outside of the config? mumble rumble)
-    write_json(model.to_json(), sim_config.bn_model_path)
+    write_json(bn.to_json(), sim_config.bn_model_path)
     write_json(sim_config.to_json(), sim_config.sim_config_path, indent=True)
 
     # Run Webots
     cmd = [str(config.webots_path), *config.webots_launch_args, str(config.webots_world_path)]
     subprocess.run(cmd)
-        
-    return (sim_config.sim_light_position, read_json(sim_config.sim_data_path))
+    
+    data = read_json(sim_config.sim_data_path)
+
+    return sim_config.sim_light_position, data
 
 def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     df = pandas.DataFrame(sim_data['data'])
 
-    df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs.values()))
+    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs.values()))
 
-    score = df['aggr_light_values'].sum(axis=0, skipna=True) 
+    # score = df['aggr_light_values'].sum(axis=0, skipna=True) 
 
-    return 10**5 / score # Irradiance (E) is inverserly proportional to Squared Distance (d)
+    max_step = df['n_step'].max()
 
-def stub_search(config : SimulationConfig, bn: OpenBooleanNetwork):
+    final_pos = df[df['n_step'] == max_step]['position'].T.values[0]
+
+    # return (1 / score if score > 0 else float('+inf'))
+    return round(light_position.dist(final_pos), 5)
+
+###############################################################################################
+
+def search_bn_controller(config : SimulationConfig, bn: OpenBooleanNetwork):
 
     return parametric_vns(
         bn,

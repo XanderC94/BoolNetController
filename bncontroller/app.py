@@ -1,7 +1,7 @@
 
 from bncontroller.stubs.bn import rbn_gen
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.stubs.evaluation import stub_search
+from bncontroller.stubs.evaluation import search_bn_controller
 from bncontroller.sim.config import parse_args_to_config
 from bncontroller.json.utils import read_json, write_json
 from pathlib import Path
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     t = time.perf_counter()
 
-    stub_search(config, bn)
+    search_bn_controller(config, bn)
 
     print(f"Search time: {time.perf_counter()-t}s")
     

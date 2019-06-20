@@ -150,6 +150,10 @@ if __name__ == "__main__":
     data = defaultdict(list)
     p = Point3D(0.0,0.0,0.0)
 
+    p2 = Point3D(1, 1, 1)
+
+    print(p.dist(p2))
+
     print(tuple(p))
 
     for i in range(20):

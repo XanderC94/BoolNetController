@@ -16,14 +16,14 @@ def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set)
     flips = utils.generate_flips(bn, n_flips, excluded=do_not_flip, flip_map=hash)
     bn = utils.edit_boolean_network(bn, flips)
 
-    return (bn, flips, set(map(hash, flips)))
+    return bn, flips, set(map(hash, flips))
 
 ###############################################################################
 
 def parametric_vns(
         bn: OpenBooleanNetwork,
         evaluate=lambda bn: default_evaluation_strategy(bn, NTree.empty(), []),
-        scramble=lambda bn, nf, lf: default_scramble_strategy(bn, nf, lf),
+        scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         min_target=0.0,
         max_iters=10000, 
         max_stalls=-1):
@@ -73,11 +73,12 @@ def parametric_vns(
         new_dist = evaluate(bn)
         
         print(
-            'i:', it, 
-            'n_flips:', n_flips,
+            'it:', it, 
+            'n_flips:', len(flips), '/', n_flips, 
             'n_stalls:', n_stalls,
-            f'old: {dist}', 
-            f'new: {new_dist}', 
+            'scores --',
+            'old:', dist,  
+            'new:', new_dist,
             end='\n\n'
         )
 

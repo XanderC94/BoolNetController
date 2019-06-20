@@ -6,8 +6,11 @@ def collection_diff(first, second):
         _second = set(second)
         return [item for item in first if item not in _second]
 
-def iso8106():
-    return f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
+def iso8106(format_type = 0):
+    if format_type == 0:
+        return f'{datetime.datetime.now():%Y%m%dT%H%M%S}'
+    else:
+        return f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
 
 def generate_file_name(*args, uniqueness_gen = iso8106, ftype=''):
     return '.'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen(), ftype)))
