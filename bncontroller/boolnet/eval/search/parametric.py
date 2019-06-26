@@ -2,6 +2,7 @@ from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.boolnet.tes import bn_to_tes
 import bncontroller.boolnet.eval.utils as utils
+from bncontroller.sim.logging.logger import staticlogger as logger
 
 ###############################################################################
 
@@ -72,14 +73,13 @@ def parametric_vns(
 
         new_dist = evaluate(bn)
         
-        print(
+        logger.info(
             'it:', it, 
             'n_flips:', len(flips), '/', n_flips, 
             'n_stalls:', n_stalls,
-            'scores --',
+            'dist --',
             'old:', dist,  
-            'new:', new_dist,
-            end='\n\n'
+            'new:', new_dist
         )
 
         if new_dist < dist:

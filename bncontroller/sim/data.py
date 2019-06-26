@@ -1,5 +1,5 @@
 from bncontroller.json.utils import Jsonkin
-import json, random, math, enum
+import json, random, math, enum, numpy as np
 from collections import defaultdict
 from pathlib import Path
 
@@ -74,7 +74,7 @@ class Axis(enum.Enum):
     X = lambda p: p.to(0.0, p.y, p.z)
     Y = lambda p: p.to(p.x, 0.0, p.z)
     Z = lambda p: p.to(p.x, p.y, 0.0)
-    ANY = lambda p: p
+    NONE = lambda p: p
 
 class Quadrant(enum.Enum):
     PPP = lambda p: abs(p)
@@ -87,13 +87,13 @@ class Quadrant(enum.Enum):
     PNP = lambda p: p.to( abs(p.x), -abs(p.y),  abs(p.z))
     ANY = lambda p: p
 
-def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.ANY, quadrant=Quadrant.ANY):
+def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.NONE, quadrant=Quadrant.ANY):
 
-    r = R * math.sqrt(random.uniform(0.0, 1.0))
+    r = R * math.sqrt(np.random.uniform(0.0, 1.0))
 
-    phi = math.acos(1 - 2 * random.uniform(0.0, 1.0))
+    phi = math.acos(1 - 2 * np.random.uniform(0.0, 1.0))
 
-    theta = random.uniform(0.0, 1.0) * 2 * math.pi
+    theta = np.random.uniform(0.0, 1.0) * 2 * math.pi
 
     P = Point3D(
         x = r * math.cos(theta) * math.sin(phi), 
@@ -148,7 +148,7 @@ class SimulationStepData(Jsonkin):
 if __name__ == "__main__":
     
     data = defaultdict(list)
-    p = Point3D(0.0,0.0,0.0)
+    p = Point3D(-0.9,0.0,0.9)
 
     p2 = Point3D(1, 1, 1)
 
@@ -157,27 +157,27 @@ if __name__ == "__main__":
     print(tuple(p))
 
     for i in range(20):
-        print(i, r_point3d())
-        print(i, r_point3d(O=p, R=0.5, axis=Axis.Y, quadrant=Quadrant.PPP))
+        # print(i, r_point3d())
+        print(i, r_point3d(O=p, R=0.3, axis=Axis.Y, quadrant=Quadrant.PPN))
 
-    for i in range(10):
+    # for i in range(10):
 
-        p.x += 0.1
-        p.z += 0.1
+    #     p.x += 0.1
+    #     p.z += 0.1
 
-        print(p)
+    #     print(p)
 
-        data['data'].append(
-            SimulationStepData(
-                i, 
-                Point3D(p.x, 0.0, p.z),
-                [0.0 for _ in range(20)],
-                [random.random() for _ in range(8)],
-                [random.random() for _ in range(8)],
-                [random.random() for _ in range(8)]
-            )
-        )
+    #     data['data'].append(
+    #         SimulationStepData(
+    #             i, 
+    #             Point3D(p.x, 0.0, p.z),
+    #             [0.0 for _ in range(20)],
+    #             [random.random() for _ in range(8)],
+    #             [random.random() for _ in range(8)],
+    #             [random.random() for _ in range(8)]
+    #         )
+    #     )
 
-    from bncontroller.json.utils import write_json
+    # from bncontroller.json.utils import write_json
 
-    write_json(data, Path('./data.json'))
+    # write_json(data, Path('./data.json'))

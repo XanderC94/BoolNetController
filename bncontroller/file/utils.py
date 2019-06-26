@@ -6,13 +6,18 @@ def collection_diff(first, second):
         _second = set(second)
         return [item for item in first if item not in _second]
 
-def iso8106(format_type = 0):
+def iso8106(format_type=0, ms=0):
+    
+    max_ms = 6
+
     if format_type == 0:
-        return f'{datetime.datetime.now():%Y%m%dT%H%M%S}'
+        return f'{datetime.datetime.now():%Y%m%dT%H%M%S%f}'[:ms-max_ms]
     else:
-        return f'{datetime.datetime.now():%Y-%m-%dT%H-%M-%S}'
+        return f'{datetime.datetime.now():%Y%m%dT%H%M%S-%f}'[:ms-max_ms]
 
 def generate_file_name(*args, uniqueness_gen = iso8106, ftype=''):
+    '''
+    '''
     return '.'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen(), ftype)))
 
 def getAllFilesIn(target:str or Path, extension:str) -> list:

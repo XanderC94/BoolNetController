@@ -1,49 +1,94 @@
-import logging, os
+import logging, os, sys
 from pathlib import Path
+from singleton_decorator import singleton
 from bncontroller.file.utils import iso8106
 
-class FileLogger:
+class Logger(object):
 
-    def __init__(self, name:str, path = Path(f"{os.getcwd()}/{iso8106()}.log"), buffer_length = 50):
+    def __init__(self, name, 
+                output_stream = sys.stdout,
+                log_level=logging.INFO, 
+                message_format='%(message)s', 
+                buffer_length=0):
 
-        self.__logger = logging.getLogger(name)
-        self.__logger.setLevel(logging.ERROR)
-        formatter = logging.Formatter('%(message)s')
-        fh = logging.FileHandler(path, mode='w', encoding="UTF-8")
-        fh.setLevel(logging.ERROR)
-        fh.setFormatter(formatter)
-        self.__logger.addHandler(fh)
+        self._logger = logging.getLogger(name)
+        self._logger.setLevel(log_level)
 
-        self.__buffer_length = buffer_length
+        self._formatter = logging.Formatter(message_format)
+        self._sh = logging.StreamHandler(output_stream)
+        self._sh.setFormatter(self._formatter)
         
-        self.__log_buffer = []
-
-    def info(self, message: str):
-        if not self.__logger.disabled:
-            self.__log_buffer.append(message)
-            if len(self.__log_buffer) > self.__buffer_length:
+        self._logger.addHandler(self._sh)
+        self._buffer_length = buffer_length
+        self._log_buffer = []
+           
+    def info(self, *items):
+        if not self._logger.disabled:
+            msg = ' '.join(map(str, items))
+            self._log_buffer.append(msg)
+            if len(self._log_buffer) > self._buffer_length:
                 self.__log()        
 
     def __log(self):
-        m = '\n'.join([ f'{s}' for s in self.__log_buffer])
-        self.__logger.info(m)
-        self.__log_buffer.clear()
+        m = '\n'.join([ f'{s}' for s in self._log_buffer])
+        self._logger.info(m)
+        self._log_buffer.clear()
 
     def flush(self):
-        if not self.__logger.disabled:
+        if not self._logger.disabled:
             self.__log()
 
     def suppress(self, boolean:bool):
-        self.__logger.disabled = boolean
-
-    @property
-    def logger(self):
-        return logger
+        self._logger.disabled = boolean
     
     @property
     def buffer_length(self):
-        return self.__buffer_length
+        return self._buffer_length
 
-    @buffer_length.setter
-    def buffer_length(self, new_length):
-        self.__buffer_length = new_length
+    def set_file_logger(self, path):
+        self._logger.removeHandler(self._sh)
+
+        fh = logging.FileHandler(path, mode='w', encoding="UTF-8")
+        fh.setLevel(self._logger.level)
+        fh.setFormatter(self._formatter)
+        self._logger.addHandler(fh)
+
+class FileLogger(Logger):
+
+    def __init__(self, name, 
+                path = Path(f"./{iso8106()}.log"),
+                log_level=logging.INFO, 
+                message_format='%(message)s', 
+                buffer_length = 50):
+
+        super().__init__(
+            name, 
+            log_level=log_level,
+            output_stream=None,
+            message_format=message_format, 
+            buffer_length=buffer_length
+        )
+
+        super().set_file_logger(path)
+        
+class LoggerFactory(object):
+    
+    @staticmethod
+    def filelogger(path, buffer=2):
+        return FileLogger('FileLogger', path=path, buffer_length=buffer)
+    
+    @staticmethod
+    def streamlogger():
+        return Logger('StreamLogger')
+
+@singleton
+class StaticLogger(object):
+    instance = LoggerFactory.streamlogger()
+
+    def info(self, *items):
+        self.instance.info(*items)
+
+    def flush(self):
+        self.instance.flush()
+
+staticlogger = StaticLogger()

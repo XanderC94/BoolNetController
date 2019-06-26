@@ -40,7 +40,7 @@ def __fill_nx_legend(ax, legend, cmap):
 
 #########################################################################
 
-def plot_booleannetwork(bn: BooleanNetwork, I:list, O:list):
+def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
 
     # Build DiGraph #
 
@@ -53,11 +53,11 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list, O:list):
             dg.add_edges_from([(p, k) for p in node.predecessors])
 
     # Coloring #
-    color_legend = {'Input Nodes':0.5, 'Hidden Nodes':0.0, 'Output Nodes':1.0}
+    color_legend = {'I':0.5, 'H':0.0, 'O':1.0}
 
-    val_map = defaultdict(lambda: color_legend['Hidden Nodes'])
-    val_map.update([(k, color_legend['Input Nodes']) for k in I])
-    val_map.update([(k, color_legend['Output Nodes']) for k in O])
+    val_map = defaultdict(lambda: color_legend['H'])
+    val_map.update([(k, color_legend['I']) for k in I])
+    val_map.update([(k, color_legend['O']) for k in O])
 
     nodes_colors = [val_map[node] for node in dg.nodes()]
 

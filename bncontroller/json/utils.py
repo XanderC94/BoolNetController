@@ -68,24 +68,16 @@ def read_json(path: Path or str) -> dict:
 
     return _obj
 
-def write_json(obj, path: Path or str, indent = False):
-
-    def check(obj) -> dict:
-        if isinstance(obj, dict):
-            return obj
-        elif hasattr(obj, 'to_json') and callable(obj.to_json):
-            return obj.to_json()
-        else:
-            return vars(obj)
+def write_json(obj, path: Path or str, indent = False, default=lambda x: x.__dict__):
 
     _path = path if isinstance(path, Path) else Path(path)
-    _obj = check(obj)
+    _obj = jsonrepr(obj)
 
     with open(_path, 'w') as fp:
         if indent:
-            json.dump(_obj, fp, indent=4, default=lambda x: x.__dict__)
+            json.dump(_obj, fp, indent=4, default=default)
         else:
-            json.dump(_obj, fp, default=lambda x: x.__dict__)
+            json.dump(_obj, fp, default=default)
 
 
 def recursiveExtractDictWithIntKey(json)-> dict:

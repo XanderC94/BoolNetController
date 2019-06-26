@@ -10,6 +10,8 @@ from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
 config = parse_args_to_config()
 
+print(str(config.bn_model_path))
+
 logger = FileLogger('BoolNetControl', path = config.sim_log_path)
 
 logger.suppress(config.sim_suppress_logging)
@@ -23,7 +25,7 @@ controller = BNController(config, binarization_strategies={
 epuck = EPuck(config)
 
 epuck.position = config.sim_agent_position
-epuck.orientation = config.sim_agent_y_rot
+epuck.orientation = config.sim_agent_y_rot_rad
 
 dumper = SimulationDataDumper(config.sim_run_time_s, epuck.timestep)
 

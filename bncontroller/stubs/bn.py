@@ -5,57 +5,24 @@ from bncontroller.file.utils import collection_diff
 from bncontroller.json.utils import write_json
 import random
 
-def predecessors_t1(node: BooleanNode, N: list, I: list, O: list):
+def is_obn_consistent(nodes:list, I:list, O:list):
     '''
-    This predecessor function create a BN with the given properties:
-
-    * input nodes (I) have only 1 (external) predecessor.
-        That is, they are only predecessors to other nodes
-        which are not input nodes.
-    * hidden nodes (N - I) and outputs (O) have k predecessors
-    * outputs nodes (O) can't have another output node as predecessor 
-        nor be directly connected to input nodes.
-    
-    Moreover, Input have connectivity priority, 
-    that is the are chosen to be connected before any other node.
-    
-    As such, Inputs nodes have at least one exiting edge.
+    Return whether:
+        * each of Input Node i in I has at least 1 outgoing edges
+        * ...
     '''
-    predecessors = []
+    # Each I node must have at least 1 outgoing edge
+    i_edges = all(
+        any(
+            i in n.predecessors 
+            for n in nodes
+        ) 
+        for i in I
+    )
 
-    # inputs node must not be connected by other nodes
-    if node.label not in I: 
-        
-        # Exclude from the predecessor choice the node itself (no self-loops) 
-        exclusions = [node.label] #+ [n.label for n in nodes if len(n.predecessors) == n.arity]
-        priority = []
-     
-        # outputs nod should not interfer with one another
-        # Outputs should not be directly connected to inputs
-        if node.label in O:
-            exclusions += O
-            exclusions += I
-        else:
-            # First connect other nodes to Input
-            priority = [li for li in I if not any(li in n.predecessors for n in N)]
+    return i_edges
 
-        others = [n.label for n in N if n.label not in priority + exclusions]
-
-        pf = 0.8/len(priority) if len(priority) > 0 else 0
-        po = (0.2 if len(priority) > 0 else 1.0)/len(others)
-
-        choices = dict(
-            [(k, pf) for k in priority] +
-            [(k, po) for k in others]
-        )
-        
-        for _ in range(node.arity):
-            predecessors += random.choices(list(choices.keys()), weights=list(choices.values()))
-            choices[predecessors[len(predecessors) - 1]] = 0.0
-
-    return predecessors
-
-def predecessors_t2(node: BooleanNode, N: list, I: list, O: list):
+def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
     '''
     This predecessor function create a BN with the given properties:
 
@@ -70,36 +37,45 @@ def predecessors_t2(node: BooleanNode, N: list, I: list, O: list):
 
     As such, Inputs nodes have at least one exiting edge.
     '''
-    predecessors = []
+    predecessors = list()
 
     # inputs node must not be connected by other nodes
-    if node.label not in I: 
-        
-        # Exclude from the predecessor choice the node itself (no self-loops) 
-        exclusions = [node.label] #+ [n.label for n in nodes if len(n.predecessors) == n.arity]
-        priority = []
-     
-        # outputs nod should not interfer with one another
-        # Outputs should not be directly connected to inputs
-        if node.label in O:
-            exclusions += O
-        else:
-            # First connect other nodes to Input
-            priority = [li for li in I if not any(li in n.predecessors for n in N)]
+    if node.label in I: 
+        return predecessors
 
-        others = [n.label for n in N if n.label not in priority + exclusions]
+    # Exclude from the predecessor choice the node itself (no self-loops) 
+    exclusions = [node.label] # + O
+    priority = []
+    
+    # # outputs node should not interfer with one another
+    # # Outputs should not be directly connected to inputs (?)
+    if node.label in O:
+        exclusions += O
+    #     exclusions += I
+    
+    # Each node must be at least predecessor to another node
+    # priority = [
+    #     n1.label 
+    #     for n1 in N 
+    #     if n1.label not in exclusions # no-self loops
+    #     if not any(
+    #         n1.label in n2.predecessors 
+    #         for n2 in N
+    #     )
+    # ]
 
-        pf = 0.8/len(priority) if len(priority) > 0 else 0
-        po = (0.2 if len(priority) > 0 else 1.0)/len(others)
+    # if len(priority) > 0:
+    #     predecessors += random.choices(priority, k=1)
 
-        choices = dict(
-            [(k, pf) for k in priority] +
-            [(k, po) for k in others]
-        )
-        
-        for _ in range(node.arity):
-            predecessors += random.choices(list(choices.keys()), weights=list(choices.values()))
-            choices[predecessors[len(predecessors) - 1]] = 0.0
+    others = [
+        n.label 
+        for n in N 
+        if n.label not in exclusions + predecessors
+    ]
+
+    k = node.arity - len(predecessors)
+
+    predecessors += random.sample(others, k=k)
 
     return predecessors
 
@@ -116,13 +92,18 @@ def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
 
     _N = list(map(str, range(N)))
     _I = list(map(str, range(I))) 
-    _O = list(map(str, range(I, I+O))) 
-    _K = dict((l, K) if l not in _I else (l, 1) for l in _N)
+    _O = list(map(str, range(I, I + O))) 
+    _K = dict(
+        (l, K) 
+        if l not in _I else (l, 1)
+        # if l not in _I else (l, 0)
+        for l in _N
+    )
 
     return RBNFactory(
         _N, # labels 
         _K, # arities
-        predecessors_fun=lambda node, nodes: predecessors_t2(node, nodes, _I, _O),
+        predecessors_fun=lambda node, nodes: predecessors(node, nodes, _I, _O),
         bf_init=lambda *args: args[0] if len(args) == 1 else r_bool(P), 
         node_init=lambda label: False
     ), _I, _O
