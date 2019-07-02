@@ -5,18 +5,19 @@ DEF Hyperuranium WorldInfo {
 Viewpoint {
   fieldOfView 1.5
   orientation 1 0 0 4.71238898038469
-  position 0.0003051557522423154 1.8449004780514524 3.5003308478655397e-06
+  position 0.0003051557522423154 2.532653011796102 3.5003308477392056e-06
 }
 TexturedBackground {
 }
 DEF Cave RectangleArena {
-  floorSize 2 2
+  floorSize 3 3
   floorAppearance RoughConcrete {
   }
   wallAppearance Roughcast {
   }
 }
 DEF Fire PointLight {
+  attenuation 0 0 12.56
   location 0.75 0.3 -0.75
 }
 DEF Plato E-puck {
@@ -30,4 +31,6 @@ DEF Demiurge Robot {
   controller "demiurge"
   controllerArgs "--config_path=\".\""
   supervisor TRUE
+}
+isor TRUE
 }
