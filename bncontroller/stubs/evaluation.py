@@ -11,41 +11,34 @@ import subprocess, pandas, math, random, re
 
 __globals = dict(
     date = iso8106(ms=3),
-    score = -1.0,
+    score = float('+inf'),
     it = -1,
-    top_model_name = f'bn_{iso8106()}_'+'it{it}.json',
+    top_model_name = f'bn_{iso8106()}'+'{subfix}.json',
+    subopt_suffix = '_it{it}',
 )
 
 def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
     
     sim_config = generate_ad_hoc_sim_config(config)
 
+    edit_webots_worldfile(sim_config)
+
     data = run_simulation(sim_config, bn)
 
     new_score, rscore = aggregate_sim_data(sim_config.sim_light_position, data)
 
     logger.info(
-        'boot distance:', sim_config.sim_light_position.dist(sim_config.sim_agent_position),
-        'yrot:', sim_config.sim_agent_y_rot_rad / math.pi * 180,
-        'real distance:', rscore
+        'iDistance:', sim_config.sim_light_position.dist(sim_config.sim_agent_position),
+        f'yRot: {(sim_config.sim_agent_y_rot_rad / math.pi * 180)}°',
+        'fDistance:', rscore
     )
 
-    __globals['it'] += 1
-
-    if __globals['score'] < 0.0 or new_score < __globals['score']:
-
-        __globals['score'] = new_score
-
-        bnjson = bn.to_json()
-        
-        bnjson.update({'sim_info': dict()})
-        bnjson['sim_info'].update({'eval_score':__globals['score']})
-        bnjson['sim_info'].update({'y_rot':sim_config.sim_agent_y_rot_rad})
-        bnjson['sim_info'].update({'n_it':__globals['it']})
-
-        write_json(bnjson, config.bn_model_path / __globals['top_model_name'].format(
-            it=__globals['it']) if config.sd_save_suboptimal_models else ''
-        )
+    save_subopt_model(
+        new_score, 
+        rscore,
+        sim_config,
+        bn.to_json()
+    )
 
     return new_score
 
@@ -80,10 +73,18 @@ def generate_ad_hoc_sim_config(config:SimulationConfig, keyword='sim', p_quads=[
     sim_config.sim_log_path /= log_fname
     sim_config.sim_config_path /= config_fname
 
-    with open(sim_config.webots_world_path, 'r+') as fp:
+    return sim_config
+
+
+def edit_webots_worldfile(config:SimulationConfig):
+
+    if config.sim_config_path.is_dir():
+        raise Exception('Configuration path is not a file.')
+
+    with open(config.webots_world_path, 'r+') as fp:
 
         wdata=fp.readlines()
-        p = str(sim_config.sim_config_path).replace('\\', '\\\\')
+        p = str(config.sim_config_path).replace('\\', '/')
         for i in range(len(wdata)):
             
             spaces = '  ' if wdata[i].startswith('  ') else '\t'
@@ -94,8 +95,6 @@ def generate_ad_hoc_sim_config(config:SimulationConfig, keyword='sim', p_quads=[
 
         fp.seek(0)
         fp.write(''.join(wdata))
-
-    return sim_config
 
 def run_simulation(config : SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
@@ -126,6 +125,38 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
     final_pos = df[df['n_step'] == max_step]['position'].T.values[0]
 
     return (1 / score if score > 0 else float('+inf')), round(light_position.dist(final_pos), 5)
+
+
+def save_subopt_model(new_score:float, fdist:float, sim_config:SimulationConfig, bnjson:dict):
+
+    __globals['it'] += 1
+
+    if new_score < __globals['score']:
+
+        __globals['score'] = new_score
+        
+        bnjson.update({'sim_info': dict()})
+
+        bnjson['sim_info'].update({'eval_score':__globals['score']})
+        bnjson['sim_info'].update({'fdist':fdist})
+        bnjson['sim_info'].update({'idist':sim_config.sim_light_position.dist(sim_config.sim_agent_position)})
+        bnjson['sim_info'].update({'n_it':__globals['it']})
+        bnjson['sim_info'].update({'y_rot':sim_config.sim_agent_y_rot_rad})
+
+        model_dir = sim_config.bn_model_path if sim_config.bn_model_path.is_dir() else sim_config.bn_model_path.parent
+
+        if __globals['score'] <= sim_config.sd_save_suboptimal_models: 
+            # Save only if <sd_save_suboptimal_models> > score
+            write_json(bnjson, model_dir / __globals['top_model_name'].format(
+                subfix=__globals['subopt_suffix'].format(it=__globals['it'])
+            ))
+        elif not sim_config.sd_save_suboptimal_models: 
+            # Save only if <sd_save_suboptimal_models> = 0.0
+            write_json(bnjson, model_dir / __globals['top_model_name'].format(subfix=''))
+    
+        return 1
+    else:
+        return 0
 
 ###############################################################################################
 

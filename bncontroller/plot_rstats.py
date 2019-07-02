@@ -8,6 +8,7 @@ import random, math, argparse
 import numpy as np
 from pandas import DataFrame
 from pathlib import Path
+from collections import OrderedDict
 from bncontroller.json.utils import read_json
 from bncontroller.sim.config import parse_args_to_config, SimulationConfig
 
@@ -137,7 +138,7 @@ def plot_data(data:dict, config:SimulationConfig):
     bp2ax.set_title('Model Tests -- final Distance distribution (Less is Better)')
 
     bp2ax.set_xlabel('BN model')
-    bp2ax.set_ylabel('Score')
+    bp2ax.set_ylabel('Final Distance (m)')
 
     bp2ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
@@ -209,6 +210,7 @@ def plot_data(data:dict, config:SimulationConfig):
     sax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
     for i, k in enumerate(data):
+
         sax.scatter(
             x = data[k]['idist'],
             y = data[k]['scores'],
@@ -251,7 +253,7 @@ def plot_data(data:dict, config:SimulationConfig):
     s3dax.set_zlabel('Score')
 
     for i, k in enumerate(data):
-
+        
         s3dax.scatter(
             xs=data[k]['idist'],
             ys=[r * 180 /math.pi for r in data[k]['yrot']],
@@ -265,15 +267,23 @@ def plot_data(data:dict, config:SimulationConfig):
 
 #######################################################################
 
+def orderedby(x):
+
+    s = x.with_suffix('').name.split('_')
+    v1 = int(s[-1].replace('it', ''))
+    v2 = s[-2]
+
+    return (v2, v1)
+
 if __name__ == "__main__":
     
     config = parse_args_to_config()
 
-    data = dict()
+    data = OrderedDict()
 
     if config.test_data_path.is_dir():
 
-        for f in config.test_data_path.iterdir():
+        for f in sorted(config.test_data_path.iterdir(), key=orderedby):
             if f.is_file() and 'json' in f.suffix and f.name.startswith('rtest_data_bn'):
                 d = read_json(f)
                 data[f.with_suffix('').name] = DataFrame.from_dict(d)

@@ -22,7 +22,7 @@ class DefaultConfigOptions(Jsonkin):
         sd_max_iters = 10000, # stochastic descent max iterations
         sd_max_stalls = 1, # 1 -> Adaptive Walk, 2+ -> VNS 
         sd_minimization_target = 0.0, # value to which reduce the objective function 
-        sd_save_suboptimal_models = True, # value to which reduce the objective function
+        sd_save_suboptimal_models = 2e-06, # value to which reduce the objective function
 
         # Simulation Control Options #
 

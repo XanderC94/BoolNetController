@@ -66,19 +66,20 @@ if __name__ == "__main__":
 
         _d = defaultdict(list)
 
-        for i in range(config.sd_max_iters):
+        for i in range(config.test_n_agent_spawn_points):
             
             for yr in yrots:
 
                 sim_config = evaluation.generate_ad_hoc_sim_config(config, keyword=f'rtest')
+
                 sim_config.sim_agent_y_rot_rad = yr
                 sim_config.sim_agent_position = apos[i]
                 sim_config.sim_light_position = lpos[i]
 
+                evaluation.edit_webots_worldfile(sim_config)
+
                 data = evaluation.run_simulation(sim_config, bns[k])
                 new_score, rscore = evaluation.aggregate_sim_data(sim_config.sim_light_position, data)
-
-                # new_score = random.normalvariate(0.5, math.sqrt(0.5)) # only for test purpose
 
                 _d['scores'].append(new_score)
                 _d['apos'].append(sim_config.sim_agent_position)
