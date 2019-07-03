@@ -12,9 +12,6 @@ def is_runnable_config(config: SimulationConfig):
         and config.sim_config_path.suffix != str()
     )
 
-def webots(*args):
-    return subprocess.run([*args])
-
 if __name__ == "__main__":
 
     config = parse_args_to_config()
@@ -22,10 +19,10 @@ if __name__ == "__main__":
     if not is_runnable_config(config):
         raise Exception('Given config is not usable by the simulation, try complete sim_<path>s with a file.')
     
-    excode = webots(
+    excode = subprocess.run([
         str(config.webots_path), 
         *config.webots_launch_args, 
         str(config.webots_world_path)
-    )
+    ])
 
     exit(excode.returncode)
