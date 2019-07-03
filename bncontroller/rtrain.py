@@ -1,4 +1,3 @@
-
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.evaluation import search_bn_controller
@@ -15,7 +14,7 @@ if __name__ == "__main__":
  
     config = parse_args_to_config()
     
-    logger.instance = LoggerFactory.filelogger(config.sim_output_path / f'exp_{iso8106()}.log')
+    logger.instance = LoggerFactory.filelogger(config.app_output_path / f'exp_{iso8106()}.log')
 
     N = config.bn_n
     K = config.bn_k

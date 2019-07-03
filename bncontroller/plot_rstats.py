@@ -131,6 +131,15 @@ def plot_data(data:dict, config:SimulationConfig):
         rotation=15
     )
 
+    bpfig.subplots_adjust(
+        left=0.04,
+        right=0.96,
+        bottom=0.13,
+        top=0.96,
+        wspace= 0.0,
+        hspace=0.0
+    )
+
     # Model Tests -- rDist distribution #
 
     bp2fig, bp2ax = plotter.subplots()
@@ -154,6 +163,15 @@ def plot_data(data:dict, config:SimulationConfig):
         list(range(1, len(data) + 1)),
         list(data.keys()), 
         rotation=15
+    )
+
+    bp2fig.subplots_adjust(
+        left=0.04,
+        right=0.96,
+        bottom=0.13,
+        top=0.96,
+        wspace= 0.0,
+        hspace=0.0
     )
 
     # Model Tests -- TP / FP #
@@ -194,6 +212,15 @@ def plot_data(data:dict, config:SimulationConfig):
         mpatches.Patch(color='salmon', label='TN'),
     ])
 
+    bfig.subplots_adjust(
+        left=0.04,
+        right=0.96,
+        bottom=0.13,
+        top=0.96,
+        wspace= 0.0,
+        hspace=0.0
+    )
+
     plotter.show()
     
     # # Model Tests -- Scores / Initial Distance distribution #
@@ -218,6 +245,15 @@ def plot_data(data:dict, config:SimulationConfig):
             label=k
         )
     
+    sfig.subplots_adjust(
+        left=0.04,
+        right=0.96,
+        bottom=0.13,
+        top=0.96,
+        wspace= 0.0,
+        hspace=0.0
+    )
+
     interactive_legend(sax).show()
 
     # # Model Tests -- Scores / yRot distribution #
