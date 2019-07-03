@@ -48,7 +48,6 @@ class DefaultConfigOptions(Jsonkin):
         sim_config_path = Path('.'), # Directory or file where to store the simulation config
         sim_data_path = Path('.'), # Directory or file where to store the simulation data
         sim_log_path = Path('.'), # Directory or file where to store the simulation general log
-        app_output_path = Path('.'), # Directory or file where to store the simulation general log
 
         # Boolean Networks Generation Control Parameters #
 
@@ -67,6 +66,11 @@ class DefaultConfigOptions(Jsonkin):
         test_positives_threshold = 2e-06, # Specify a score threshold under which model are considered "good"
         test_data_path = Path('.'), # Path where to store test data
         
+        # Train control parameters#
+
+        app_output_path = Path('.'), # Directory or file where to store the simulation general log
+        train_generate_only = False, # Only generate training bn without running SD
+    
     )
 
     @staticmethod
@@ -115,7 +119,6 @@ class SimulationConfig(Jsonkin):
         self.sim_config_path = options['sim_config_path']
         self.sim_data_path = options['sim_data_path']
         self.sim_log_path = options['sim_log_path']
-        self.app_output_path = options['app_output_path']
         self.sim_suppress_logging = options['sim_suppress_logging']
         # Boolean Network #
         self.bn_model_path = options['bn_model_path']
@@ -130,7 +133,9 @@ class SimulationConfig(Jsonkin):
         self.test_agent_y_rot_step_rad = options['test_agent_y_rot_step_rad']
         self.test_positives_threshold = options['test_positives_threshold']
         self.test_data_path = options['test_data_path']
-
+        # Train #
+        self.app_output_path = options['app_output_path']
+        self.train_generate_only = options['train_generate_only']
     def __normalize(self, defaults:dict, **kwargs):
 
         norm = dict()

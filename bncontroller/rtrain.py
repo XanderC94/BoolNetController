@@ -2,11 +2,11 @@ from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.evaluation import search_bn_controller
 from bncontroller.sim.config import parse_args_to_config
-from bncontroller.json.utils import read_json
+from bncontroller.json.utils import read_json, write_json
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
-from bncontroller.file.utils import iso8106
 from pathlib import Path
 import time
+from bncontroller.stubs.globals import app_globals as __globals
 
 #########################################################################################################
 
@@ -14,7 +14,9 @@ if __name__ == "__main__":
  
     config = parse_args_to_config()
     
-    logger.instance = LoggerFactory.filelogger(config.app_output_path / f'exp_{iso8106()}.log')
+    date = __globals['date']
+
+    logger.instance = LoggerFactory.filelogger(config.app_output_path / f'exp_{date}.log')
 
     N = config.bn_n
     K = config.bn_k
@@ -33,6 +35,15 @@ if __name__ == "__main__":
             bn = bng.new_obn(I, O)
 
         logger.info('BN generated.')
+
+        p = config.bn_model_path / f'virgin_bn_{date}.json'
+
+        write_json(bn.to_json(), p)
+
+        logger.info(f'Virgin BN saved to {p}')
+
+        if config.train_generate_only:
+            exit(1)
 
     else: 
         bn = OpenBooleanNetwork.from_json(read_json(config.bn_model_path))

@@ -192,23 +192,23 @@ class OpenBooleanNetwork(BooleanNetwork):
     def __init__(self, nodes: list, input_nodes = [], output_nodes = []):
         super().__init__(nodes)
     
-        self.__input_nodes = input_nodes
-        self.__output_nodes = output_nodes
+        self.__input_nodes = sorted(list(set(input_nodes)))
+        self.__output_nodes = sorted(list(set(output_nodes)))
 
     @property
     def input_nodes(self):
-        return set(self.__input_nodes)
+        return self.__input_nodes
 
     @property
     def output_nodes(self):
-        return set(self.__output_nodes)
+        return self.__output_nodes
     
     def to_json(self):
         __json = super().to_json()
 
         __json.update({
-            'inputs': list(self.input_nodes),
-            'outputs': list(self.output_nodes)
+            'inputs': self.input_nodes,
+            'outputs': self.output_nodes
         })
 
         return __json

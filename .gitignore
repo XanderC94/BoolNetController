@@ -115,3 +115,6 @@ webots/transfer
 # webots/worlds
 *.wbproj
 *.old
+*.7z
+*.zip
+*.7zip

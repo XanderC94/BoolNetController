@@ -5,17 +5,10 @@ from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
 from bncontroller.boolnet.eval.search.parametric import parametric_vns
 from bncontroller.sim.logging.logger import staticlogger as logger
 from bncontroller.json.utils import read_json, write_json
-from bncontroller.file.utils import generate_file_name, iso8106
+from bncontroller.file.utils import generate_file_name
 from pathlib import Path
 import subprocess, pandas, math, random, re
-
-__globals = dict(
-    date = iso8106(ms=3),
-    score = float('+inf'),
-    it = -1,
-    top_model_name = f'bn_{iso8106()}'+'{subfix}.json',
-    subopt_suffix = '_it{it}',
-)
+from bncontroller.stubs.globals import app_globals as __globals
 
 def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
     
