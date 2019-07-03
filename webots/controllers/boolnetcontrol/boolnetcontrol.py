@@ -25,7 +25,7 @@ controller = BNController(config, binarization_strategies={
 epuck = EPuck(config)
 
 epuck.position = config.sim_agent_position
-epuck.orientation = config.sim_agent_y_rot_rad
+epuck.orientation = config.sim_agent_yrot_rad
 
 dumper = SimulationDataDumper(config.sim_run_time_s, epuck.timestep)
 

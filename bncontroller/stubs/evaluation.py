@@ -1,65 +1,74 @@
+'''
+BN Evaluation utility module
+'''
+import re
+import math
+import pandas
+import statistics
+import subprocess
+from itertools import product
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.stubs.bn import rbn_gen
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
 from bncontroller.boolnet.eval.search.parametric import parametric_vns
 from bncontroller.sim.logging.logger import staticlogger as logger
 from bncontroller.json.utils import read_json, write_json
 from bncontroller.file.utils import generate_file_name
-from pathlib import Path
-import subprocess, pandas, math, random, re
-from bncontroller.stubs.globals import app_globals as __globals
 
 def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
     
-    sim_config = generate_ad_hoc_sim_config(config)
-
-    edit_webots_worldfile(sim_config)
-
-    data = run_simulation(sim_config, bn)
-
-    new_score, rscore = aggregate_sim_data(sim_config.sim_light_position, data)
-
-    logger.info(
-        'iDistance:', sim_config.sim_light_position.dist(sim_config.sim_agent_position),
-        f'yRot: {(sim_config.sim_agent_y_rot_rad / math.pi * 180)}°',
-        'fDistance:', rscore
+    test_params = product(
+        config.globals['agent_spawn_points'], 
+        config.globals['light_spawn_points'], 
+        config.globals['agent_yrot']
     )
 
+    sim_config = generate_ad_hoc_sim_config(config)
+    edit_webots_worldfile(sim_config)
+
+    fscores = []
+    dscores = []
+
+    for apos, lpos, yrot in test_params:
+
+        sim_config.sim_agent_position = apos
+        sim_config.sim_light_position = lpos
+        sim_config.sim_agent_yrot_rad = yrot
+
+        data = run_simulation(sim_config, bn)
+
+        fscore, dscore = aggregate_sim_data(lpos, data)
+
+        logger.info(
+            'iDistance:', sim_config.sim_light_position.dist(sim_config.sim_agent_position),
+            f'yRot: {(sim_config.sim_agent_yrot_rad / math.pi * 180)}°',
+            'fDistance:', dscore,
+            'score: ', fscore,
+        )
+
+        fscores.append(fscore)
+        dscores.append(dscore)
+
+    new_score = statistics.median(sorted(fscores))
+    
     save_subopt_model(
         new_score, 
-        rscore,
+        statistics.median(sorted(dscores)),
         sim_config,
         bn.to_json()
     )
 
     return new_score
 
-def generate_ad_hoc_sim_config(config:SimulationConfig, keyword='sim', p_quads=[Quadrant.NPP, Quadrant.PPN]):
+def generate_ad_hoc_sim_config(config:SimulationConfig, keyword='sim'):
     
-    model_fname = generate_file_name(f'{keyword}_bn', uniqueness_gen= lambda: __globals['date'], ftype='json')
-    data_fname = generate_file_name(f'{keyword}_data', uniqueness_gen= lambda: __globals['date'], ftype='json')
-    log_fname = generate_file_name(f'{keyword}_log', uniqueness_gen= lambda: __globals['date'], ftype='json')
-    config_fname = generate_file_name(f'{keyword}_config', uniqueness_gen= lambda: __globals['date'], ftype='json')
+    model_fname = generate_file_name(f'{keyword}_bn', uniqueness_gen= lambda: sim_config.globals['date'], ftype='json')
+    data_fname = generate_file_name(f'{keyword}_data', uniqueness_gen= lambda: sim_config.globals['date'], ftype='json')
+    log_fname = generate_file_name(f'{keyword}_log', uniqueness_gen= lambda: sim_config.globals['date'], ftype='json')
+    config_fname = generate_file_name(f'{keyword}_config', uniqueness_gen= lambda: sim_config.globals['date'], ftype='json')
 
     # Create Sim Config based on the Experiment Config
     sim_config = SimulationConfig.from_json(config.to_json())
-    
-    sim_config.sim_light_position = r_point3d(
-        O=config.sim_light_position, 
-        R=config.sim_light_spawn_radius, 
-        axis=Axis.Y, 
-        quadrant=p_quads[0]
-    )
-
-    sim_config.sim_agent_position = r_point3d(
-        O=config.sim_agent_position, 
-        R=config.sim_agent_spawn_radius, 
-        axis=Axis.Y, 
-        quadrant=p_quads[-1]
-    )
-
-    sim_config.sim_agent_y_rot_rad = random.uniform(0, 2*math.pi) #
 
     sim_config.bn_model_path /= model_fname
     sim_config.sim_data_path /= data_fname
@@ -76,7 +85,7 @@ def edit_webots_worldfile(config:SimulationConfig):
 
     with open(config.webots_world_path, 'r+') as fp:
 
-        wdata=fp.readlines()
+        wdata = fp.readlines()
         p = str(config.sim_config_path).replace('\\', '/')
         for i in range(len(wdata)):
             
@@ -96,13 +105,11 @@ def run_simulation(config : SimulationConfig, bn: OpenBooleanNetwork) -> dict:
     write_json(config.to_json(), config.sim_config_path, indent=True) # Simulation Configuration
 
     # Run Webots    
-    excode = subprocess.run([
+    subprocess.run([
         str(config.webots_path), *config.webots_launch_args, str(config.webots_world_path)
     ])
-    
-    data = read_json(config.sim_data_path)
 
-    return data
+    return read_json(config.sim_data_path)
 
 def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
@@ -122,43 +129,44 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
 def save_subopt_model(new_score:float, fdist:float, sim_config:SimulationConfig, bnjson:dict):
 
-    __globals['it'] += 1
+    sim_config.globals['it'] += 1
+    ret = 0
+    if new_score < sim_config.globals['score']:
 
-    if new_score < __globals['score']:
-
-        __globals['score'] = new_score
+        sim_config.globals['score'] = new_score
         
         bnjson.update({'sim_info': dict()})
 
-        bnjson['sim_info'].update({'eval_score':__globals['score']})
+        bnjson['sim_info'].update({'eval_score':sim_config.globals['score']})
         bnjson['sim_info'].update({'fdist':fdist})
         bnjson['sim_info'].update({'idist':sim_config.sim_light_position.dist(sim_config.sim_agent_position)})
-        bnjson['sim_info'].update({'n_it':__globals['it']})
+        bnjson['sim_info'].update({'n_it':sim_config.globals['it']})
         bnjson['sim_info'].update({'y_rot':sim_config.sim_agent_y_rot_rad})
 
         model_dir = sim_config.bn_model_path if sim_config.bn_model_path.is_dir() else sim_config.bn_model_path.parent
 
-        if __globals['score'] <= sim_config.sd_save_suboptimal_models: 
+        if sim_config.globals['score'] <= sim_config.sd_save_suboptimal_models: 
             # Save only if <sd_save_suboptimal_models> > score
-            write_json(bnjson, model_dir / __globals['top_model_name'].format(
-                subfix=__globals['subopt_suffix'].format(it=__globals['it'])
+            write_json(bnjson, model_dir / sim_config.globals['top_model_name'].format(
+                subfix=sim_config.globals['subopt_suffix'].format(it=sim_config.globals['it'])
             ))
         elif not sim_config.sd_save_suboptimal_models: 
             # Save only if <sd_save_suboptimal_models> = 0.0
-            write_json(bnjson, model_dir / __globals['top_model_name'].format(subfix=''))
+            write_json(bnjson, model_dir / sim_config.globals['top_model_name'].format(subfix=''))
     
-        return 1
-    else:
-        return 0
+        ret = 1
+
+    return ret
 
 ###############################################################################################
 
-def search_bn_controller(config : SimulationConfig, bn: OpenBooleanNetwork):
+def search_bn_controller(config: SimulationConfig, bn: OpenBooleanNetwork):
 
     return parametric_vns(
         bn,
         evaluate=lambda bn: evaluation(config, bn),
         max_iters=config.sd_max_iters,
         max_stalls=config.sd_max_stalls,
-        min_target=config.sd_minimization_target
+        min_target=config.sd_minimization_target,
+        max_stagnation=config.sd_stagnation_threshold
     )

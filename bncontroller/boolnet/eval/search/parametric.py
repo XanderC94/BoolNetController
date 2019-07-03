@@ -27,7 +27,8 @@ def parametric_vns(
         scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         min_target=0.0,
         max_iters=10000, 
-        max_stalls=-1):
+        max_stalls=-1,
+        max_stagnation=2500):
 
     '''
     Metaheuristic technique highly inspired by the Variable Neighbourhood Search (VNS) and 
@@ -65,7 +66,11 @@ def parametric_vns(
 
     max_flips = sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes)
 
-    it, excluded, n_stalls, n_flips = 0, set(), 0, 1
+    it = 0
+    excluded = set()
+    n_stalls = 0
+    n_flips = 1
+    n_stagnation = 0
 
     while it < max_iters and dist > min_target:
         
@@ -93,6 +98,11 @@ def parametric_vns(
             bn = utils.edit_boolean_network(bn, flips)
 
             n_stalls += 1
+            
+            n_stagnation += 1
+
+            if n_stagnation >= max_stagnation:
+                it = max_iters
 
             if n_stalls == max_stalls:
                 n_stalls = 0

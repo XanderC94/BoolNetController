@@ -1,28 +1,32 @@
+'''
+Generate or load a BN and run Stochastic Descent Search Algoirthm
+'''
+import time
+import math
+import numpy as np
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.evaluation import search_bn_controller
 from bncontroller.sim.config import parse_args_to_config
 from bncontroller.json.utils import read_json, write_json
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
-from pathlib import Path
-import time
-from bncontroller.stubs.globals import app_globals as __globals
+from bncontroller.stubs.globals import APP_GLOBALS as GLOBALS
 
 #########################################################################################################
 
 if __name__ == "__main__":
  
     config = parse_args_to_config()
-    
-    date = __globals['date']
+
+    date = config.globals['date']
 
     logger.instance = LoggerFactory.filelogger(config.app_output_path / f'exp_{date}.log')
 
     N = config.bn_n
     K = config.bn_k
     P = config.bn_p
-    I = config.bn_inputs
-    O = config.bn_outputs
+    I = config.bn_n_inputs
+    O = config.bn_n_outputs
     
     bn = None
 
@@ -42,21 +46,22 @@ if __name__ == "__main__":
 
         logger.info(f'Virgin BN saved to {p}')
 
-        if config.train_generate_only:
-            exit(1)
-
-    else: 
+    else:
         bn = OpenBooleanNetwork.from_json(read_json(config.bn_model_path))
         config.bn_model_path = config.bn_model_path.parent
 
         logger.info('BN loaded.')
 
-    t = time.perf_counter()
+    if not config.train_generate_only:
 
-    search_bn_controller(config, bn)
+        t = time.perf_counter()
 
-    logger.info(f"Search time: {time.perf_counter()-t}s")
+        search_bn_controller(config, bn)
+
+        logger.info(f"Search time: {time.perf_counter()-t}s")
     
+    logger.info('Closing...')
+
     logger.flush()
 
     exit(1)

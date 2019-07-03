@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     config = parse_args_to_config()
 
-    i, o = config.bn_inputs, config.bn_outputs
+    i, o = config.bn_n_inputs, config.bn_n_outputs
 
     bn = BooleanNetwork.from_json(read_json(config.bn_model_path))
 
