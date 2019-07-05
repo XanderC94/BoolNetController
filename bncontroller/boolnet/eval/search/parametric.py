@@ -89,6 +89,7 @@ def parametric_vns(
 
         if new_dist < dist:
 
+            n_stagnation = 0
             n_stalls = 0
             n_flips = 1
             dist = new_dist
@@ -97,10 +98,9 @@ def parametric_vns(
 
             bn = utils.edit_boolean_network(bn, flips)
 
+            n_stagnation += 1
             n_stalls += 1
             
-            n_stagnation += 1
-
             if n_stagnation >= max_stagnation:
                 it = max_iters
 

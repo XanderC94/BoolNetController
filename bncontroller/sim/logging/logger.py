@@ -21,7 +21,10 @@ class Logger(object):
         self._logger.addHandler(self._sh)
         self._buffer_length = buffer_length
         self._log_buffer = []
-           
+    
+    def __call__(self, *items):
+        self.info(*items)
+
     def info(self, *items):
         if not self._logger.disabled:
             msg = ' '.join(map(str, items))

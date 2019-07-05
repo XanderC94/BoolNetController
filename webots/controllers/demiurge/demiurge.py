@@ -41,7 +41,7 @@ while demiurge.step(timestep) != -1 and n_steps != max_steps:
         try:
             ls = demiurge.getFromDef(config.webots_nodes_defs['PointLight'])
             ls.getField('intensity').setSFFloat(0.0)
-            print('Event Triggered')
+            # print('Event Triggered')
         except Exception as ex:
             print(ex)
 

@@ -1,7 +1,8 @@
 '''
-Generate or load a BN and run Stochastic Descent Search Algoirthm
+Generate or load a BN and run Stochastic Descent Search Algorithm
 '''
 import time
+import os
 import math
 import numpy as np
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
@@ -10,13 +11,14 @@ from bncontroller.stubs.evaluation import search_bn_controller
 from bncontroller.sim.config import parse_args_to_config
 from bncontroller.json.utils import read_json, write_json
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
-from bncontroller.stubs.globals import APP_GLOBALS as GLOBALS
 
 #########################################################################################################
 
 if __name__ == "__main__":
  
     config = parse_args_to_config()
+
+    config.fill_globals()
 
     date = config.globals['date']
 

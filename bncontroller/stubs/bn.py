@@ -1,7 +1,6 @@
 from bncontroller.boolnet.bnstructures import BooleanNode
 from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import r_bool
-from bncontroller.file.utils import collection_diff
 from bncontroller.json.utils import write_json
 import random
 

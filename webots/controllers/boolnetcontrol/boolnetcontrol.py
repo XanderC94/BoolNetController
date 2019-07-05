@@ -12,9 +12,11 @@ config = parse_args_to_config()
 
 print(str(config.bn_model_path))
 
-logger = FileLogger('BoolNetControl', path = config.sim_log_path)
+logger = lambda *items: None
 
-logger.suppress(config.sim_suppress_logging)
+if not config.sim_suppress_logging:
+    logger = FileLogger('BoolNetControl', path = config.sim_log_path)
+    logger.suppress(config.sim_suppress_logging)
 
 #-------------------------------------------
 
@@ -32,7 +34,7 @@ dumper = SimulationDataDumper(config.sim_run_time_s, epuck.timestep)
 
 epuck.run(
     controller, 
-    lambda string: logger.info(string), 
+    lambda string: logger(string), 
     lambda data: dumper.add_log_entry(data)
 )
 
@@ -41,7 +43,10 @@ dumper.dump_data(config.sim_data_path)
 # Cleanup code.
 
 dumper.clear()
-logger.flush()
+
+if not config.sim_suppress_logging:
+    logger.flush()
+
 epuck.cleanup()
 
 # --------------------------------------------

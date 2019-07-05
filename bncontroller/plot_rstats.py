@@ -6,11 +6,30 @@ import matplotlib.cm as cmx
 
 import random, math, argparse
 import numpy as np
+import re as regx
 from pandas import DataFrame
 from pathlib import Path
 from collections import OrderedDict
 from bncontroller.json.utils import read_json
 from bncontroller.sim.config import parse_args_to_config, SimulationConfig
+
+patterns = OrderedDict({
+    -1 : {
+        'pattern': r'in\d+',
+        'cleaner': lambda t: int(t.replace('in', '')),
+        'orderidx': 1
+    },
+    -2 : {
+        'pattern': r'it\d+',
+        'cleaner': lambda t: int(t.replace('it', '')),
+        'orderidx': 0
+    },
+    -3 : {
+        'pattern': r'\d{8,}T\d{6,}',
+        'cleaner': lambda t: t,
+        'orderidx': 2
+    },
+})
 
 ###############################################################################
 
@@ -306,10 +325,22 @@ def plot_data(data:dict, config:SimulationConfig):
 def orderedby(x):
 
     s = x.with_suffix('').name.split('_')
-    v1 = int(s[-1].replace('it', ''))
-    v2 = s[-2]
+    
+    vs = OrderedDict()
 
-    return (v2, v1)
+    for t in s[-3:]:
+        for k in patterns:
+            
+            m = regx.match(patterns[k]['pattern'], t)
+
+            if m is not None:
+                vs.update({
+                    patterns[k]['orderidx']:patterns[k]['cleaner'](t)
+                })
+    
+    r = [vs[k] for k in sorted(vs.keys(), reverse=True)]
+
+    return tuple(r) if len(r) else tuple(x)
 
 if __name__ == "__main__":
     
@@ -320,6 +351,7 @@ if __name__ == "__main__":
     if config.test_data_path.is_dir():
 
         for f in sorted(config.test_data_path.iterdir(), key=orderedby):
+            print(f)
             if f.is_file() and 'json' in f.suffix and f.name.startswith('rtest_data_bn'):
                 d = read_json(f)
                 data[f.with_suffix('').name] = DataFrame.from_dict(d)

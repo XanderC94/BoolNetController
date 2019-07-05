@@ -2,10 +2,6 @@ import json, datetime, logging
 from pathlib import Path
 from glob import glob
 
-def collection_diff(first, second):
-        _second = set(second)
-        return [item for item in first if item not in _second]
-
 def iso8106(format_type=0, ms=0):
     
     max_ms = 6
@@ -15,10 +11,13 @@ def iso8106(format_type=0, ms=0):
     else:
         return f'{datetime.datetime.now():%Y%m%dT%H%M%S-%f}'[:ms-max_ms]
 
-def generate_file_name(*args, uniqueness_gen = iso8106, ftype=''):
+def generate_file_name(*args, uniqueness_gen = iso8106, ftype='', name_format="{name}.{ext}"):
     '''
     '''
-    return '.'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen(), ftype)))
+    return name_format.format(
+        name='_'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen()))),
+        ext=ftype
+    )
 
 def getAllFilesIn(target:str or Path, extension:str) -> list:
 
