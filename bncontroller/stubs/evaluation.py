@@ -38,7 +38,7 @@ def compare_scores(minimize, maximize):
     elif isinstance(minimize, float) and isinstance(maximize, tuple):
         return minimize < maximize[0]
     else:
-        raise Exception(f'Uncomparable values {type(new)} and {type(old)}')
+        raise Exception(f'Uncomparable values {type(minimize)} and {type(maximize)}')
         
 ###############################################################################################
 
