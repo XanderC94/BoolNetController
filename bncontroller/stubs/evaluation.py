@@ -15,28 +15,28 @@ from bncontroller.sim.logging.logger import staticlogger as logger
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import generate_file_name
 
-def compare_scores(new, old):
+def compare_scores(minimize, maximize):
 
-    if isinstance(new, (float, int, bool)) and isinstance(old, (float, int, bool)):
-        return new < old
+    if isinstance(minimize, (float, int, bool)) and isinstance(maximize, (float, int, bool)):
+        return minimize < maximize
     # elif isinstance(new, list) and isinstance(old, list):
     #     nmean, nstdev = statistics.mean(new), statistics.stdev(new)
     #     omean, ostdev = statistics.mean(old), statistics.stdev(old)
 
     #     return nstdev < ostdev if nmean == omean else nmean < omean
-    elif isinstance(new, tuple) and isinstance(old, tuple):
-        nmean, nstdev, *_ = new
-        omean, ostdev, *_ = old
+    elif isinstance(minimize, tuple) and isinstance(maximize, tuple):
+        minmean, minstdev, *_ = minimize
+        maxmean, maxstdev, *_ = maximize
 
-        return nstdev < ostdev if nmean == omean else nmean < omean
+        return minstdev < maxstdev if minmean == maxmean else minmean < maxmean
     # elif isinstance(new, list) and isinstance(old, float):
     #     return statistics.mean(new) < old
     # elif isinstance(new, float) and isinstance(old, list):
     #     return new < statistics.mean(old)
-    elif isinstance(new, tuple) and isinstance(old, float):
-        return new[0] < old
-    elif isinstance(new, float) and isinstance(old, tuple):
-        return new < old[0]
+    elif isinstance(minimize, tuple) and isinstance(maximize, float):
+        return minimize[0] < maximize
+    elif isinstance(minimize, float) and isinstance(maximize, tuple):
+        return minimize < maximize[0]
     else:
         raise Exception(f'Uncomparable values {type(new)} and {type(old)}')
         
