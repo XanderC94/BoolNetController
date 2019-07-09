@@ -12,11 +12,38 @@ from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
 from bncontroller.boolnet.eval.search.parametric import parametric_vns
 from bncontroller.sim.logging.logger import staticlogger as logger
-from bncontroller.json.utils import read_json, write_json
+from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import generate_file_name
 
-def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
-    
+def compare_scores(new, old):
+
+    if isinstance(new, (float, int, bool)) and isinstance(old, (float, int, bool)):
+        return new < old
+    # elif isinstance(new, list) and isinstance(old, list):
+    #     nmean, nstdev = statistics.mean(new), statistics.stdev(new)
+    #     omean, ostdev = statistics.mean(old), statistics.stdev(old)
+
+    #     return nstdev < ostdev if nmean == omean else nmean < omean
+    elif isinstance(new, tuple) and isinstance(old, tuple):
+        nmean, nstdev, *_ = new
+        omean, ostdev, *_ = old
+
+        return nstdev < ostdev if nmean == omean else nmean < omean
+    # elif isinstance(new, list) and isinstance(old, float):
+    #     return statistics.mean(new) < old
+    # elif isinstance(new, float) and isinstance(old, list):
+    #     return new < statistics.mean(old)
+    elif isinstance(new, tuple) and isinstance(old, float):
+        return new[0] < old
+    elif isinstance(new, float) and isinstance(old, tuple):
+        return new < old[0]
+    else:
+        raise Exception(f'Uncomparable values {type(new)} and {type(old)}')
+        
+###############################################################################################
+
+def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork):
+
     test_params = product(
         config.globals['agent_spawn_points'], 
         config.globals['light_spawn_points'], 
@@ -38,26 +65,30 @@ def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork) -> float:
 
         data = run_simulation(sim_config, bn)
 
-        fscore, dscore = aggregate_sim_data(lpos, data)
+        fs, ds = aggregate_sim_data(lpos, data)
 
         logger.info(
             'iDistance:', sim_config.sim_light_position.dist(sim_config.sim_agent_position),
             f'yRot: {(sim_config.sim_agent_yrot_rad / math.pi * 180)}°',
-            'fDistance:', dscore,
-            'score: ', fscore,
+            'fDistance:', ds,
+            'score: ', fs,
         )
 
-        fscores.append(fscore)
-        dscores.append(dscore)
+        fscores.append(fs)
+        dscores.append(ds)
 
-    new_score = statistics.median(sorted(fscores))
+    new_score = statistics.mean(fscores), statistics.stdev(fscores)
     
-    save_subopt_model(
-        new_score, 
-        statistics.median(sorted(dscores)),
-        sim_config,
-        bn.to_json()
-    )
+    if compare_scores(new_score, config.globals['score']):
+        sim_config.globals['score'] = new_score
+
+        save_subopt_model(
+            new_score,
+            config,
+            bn.to_json()
+        )
+
+    sim_config.globals['it'] += 1
 
     return new_score
 
@@ -77,7 +108,6 @@ def generate_ad_hoc_sim_config(config:SimulationConfig, keyword='sim'):
     sim_config.sim_config_path /= config_fname
 
     return sim_config
-
 
 def edit_webots_worldfile(config:SimulationConfig):
 
@@ -117,7 +147,6 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
     df = pandas.DataFrame(sim_data['data'])
 
     df['aggr_light_values'] = df['light_values'].apply(lambda lvs: max(lvs.values()))
-    # df['aggr_light_values'] = df['light_values'].apply(lambda lvs: sum(lvs.values()))
 
     score = df['aggr_light_values'].sum(axis=0, skipna=True) 
 
@@ -127,41 +156,28 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     return (1 / score if score > 0 else float('+inf')), round(light_position.dist(final_pos), 5)
 
-
-def save_subopt_model(new_score:float, fdist:float, sim_config:SimulationConfig, bnjson:dict):
-
-    sim_config.globals['it'] += 1
-    ret = 0
-    if new_score < sim_config.globals['score']:
-
-        sim_config.globals['score'] = new_score
+def save_subopt_model(new_score:float, sim_config:SimulationConfig, bnjson:dict):
         
-        bnjson.update({'sim_info': dict()})
+    bnjson.update({'sim_info': dict()})
 
-        bnjson['sim_info'].update({'eval_score':sim_config.globals['score']})
-        bnjson['sim_info'].update({'fdist':fdist})
-        bnjson['sim_info'].update({'idist':sim_config.sim_light_position.dist(sim_config.sim_agent_position)})
-        bnjson['sim_info'].update({'n_it':sim_config.globals['it']})
-        bnjson['sim_info'].update({'y_rot':sim_config.sim_agent_yrot_rad})
+    bnjson['sim_info'].update({'eval_score':sim_config.globals['score']})
+    bnjson['sim_info'].update({'idist':sim_config.sim_light_position.dist(sim_config.sim_agent_position)})
+    bnjson['sim_info'].update({'n_it':sim_config.globals['it']})
 
-        model_dir = sim_config.bn_model_path if sim_config.bn_model_path.is_dir() else sim_config.bn_model_path.parent
+    model_dir = sim_config.bn_model_path if sim_config.bn_model_path.is_dir() else sim_config.bn_model_path.parent
 
-        if sim_config.globals['score'] <= sim_config.train_save_suboptimal_models: 
-            # Save only if <sd_save_suboptimal_models> >= score
-            write_json(bnjson, model_dir / sim_config.globals['top_model_name'].format(
-                date=sim_config.globals['date'],
-                subfix=sim_config.globals['subopt_suffix'].format(it=sim_config.globals['it'])
-            ))
-         
-        # Always save the last suboptimal model (overwrite)
+    if compare_scores(sim_config.globals['score'], sim_config.train_save_suboptimal_models): 
+        # Save only if <sd_save_suboptimal_models> >= score
         write_json(bnjson, model_dir / sim_config.globals['top_model_name'].format(
-            date=sim_config.globals['date'], 
-            subfix=''
+            date=sim_config.globals['date'],
+            subfix=sim_config.globals['subopt_suffix'].format(it=sim_config.globals['it'])
         ))
-    
-        ret = 1
-
-    return ret
+        
+    # Always save the last suboptimal model (overwrite)
+    write_json(bnjson, model_dir / sim_config.globals['top_model_name'].format(
+        date=sim_config.globals['date'], 
+        subfix=''
+    ))
 
 ###############################################################################################
 
@@ -170,6 +186,7 @@ def search_bn_controller(config: SimulationConfig, bn: OpenBooleanNetwork):
     return parametric_vns(
         bn,
         evaluate=lambda bn: evaluation(config, bn),
+        compare=lambda new, old: compare_scores(new, old),
         min_target=config.sd_minimization_target,
         max_iters=config.sd_max_iters,
         max_stalls=config.sd_max_stalls,

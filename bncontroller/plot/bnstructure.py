@@ -5,7 +5,7 @@ import matplotlib.pyplot as plotter
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 from bncontroller.sim.config import parse_args_to_config
-from bncontroller.json.utils import read_json
+from bncontroller.jsonlib.utils import read_json
 
 def __nodes_std_positioning(I, H, O, ydim=(25, 0, -25)):
 

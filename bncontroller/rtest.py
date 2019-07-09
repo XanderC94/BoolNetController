@@ -3,8 +3,8 @@ import itertools
 import numpy as np
 from pandas import DataFrame
 from collections import defaultdict
-from bncontroller.json.utils import read_json, write_json
-from bncontroller.file.utils import iso8106
+from bncontroller.jsonlib.utils import read_json, write_json
+from bncontroller.file.utils import iso8106, check_path
 from bncontroller.collections.utils import flat_tuple
 from bncontroller.sim.config import parse_args_to_config
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
@@ -44,7 +44,6 @@ if __name__ == "__main__":
     config = parse_args_to_config()
 
     def aggr(f, lp, ap, ar):
-
         return eval(f, dict(lp=lp, ap=ap, ar=ar))
 
     go = get_params_order(config.test_params_aggr_func)
@@ -52,6 +51,8 @@ if __name__ == "__main__":
     files = dict()
     bns = defaultdict(list)
     data = defaultdict(DataFrame)
+
+    check_path(config.test_data_path)
 
     if config.bn_model_path.is_dir():
         
@@ -115,9 +116,6 @@ if __name__ == "__main__":
             df = DataFrame(_d)
 
             data[k] = df
-
-            if not config.test_data_path.exists():
-                config.test_data_path.mkdir()
 
             fname = files[k].with_suffix('').name
             df.to_json(config.test_data_path / f'rtest_data_{fname}_in{i}.json')

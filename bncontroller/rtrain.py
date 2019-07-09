@@ -9,7 +9,8 @@ from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.stubs.evaluation import search_bn_controller
 from bncontroller.sim.config import parse_args_to_config
-from bncontroller.json.utils import read_json, write_json
+from bncontroller.jsonlib.utils import read_json, write_json
+from bncontroller.file.utils import check_path
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 
 #########################################################################################################
@@ -32,6 +33,8 @@ if __name__ == "__main__":
     
     bn = None
 
+    check_path(config.bn_model_path)
+        
     if config.bn_model_path.is_dir():
         bng, I, O, *_ = rbn_gen(N, K, P, I, O)
         bn = bng.new_obn(I, O)

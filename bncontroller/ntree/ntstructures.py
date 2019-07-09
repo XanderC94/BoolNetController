@@ -1,4 +1,4 @@
-from bncontroller.json.utils import jsonrepr, objrepr, Jsonkin
+from bncontroller.jsonlib.utils import jsonrepr, objrepr, Jsonkin
 from apted.helpers import Tree
 from apted import APTED
 

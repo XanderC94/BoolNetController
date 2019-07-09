@@ -1,7 +1,7 @@
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
 from bncontroller.ntree.ntstructures import NTree
-from bncontroller.json.utils import Jsonkin, jsonrepr
+from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
 import json
 
 class BooleanNode(Jsonkin):

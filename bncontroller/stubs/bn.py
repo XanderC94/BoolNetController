@@ -1,7 +1,7 @@
 from bncontroller.boolnet.bnstructures import BooleanNode
 from bncontroller.boolnet.bnutils import RBNFactory
 from bncontroller.boolnet.boolean import r_bool
-from bncontroller.json.utils import write_json
+from bncontroller.jsonlib.utils import write_json
 import random
 
 def is_obn_consistent(nodes:list, I:list, O:list):

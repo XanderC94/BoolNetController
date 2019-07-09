@@ -1,4 +1,4 @@
-from bncontroller.json.utils import Jsonkin
+from bncontroller.jsonlib.utils import Jsonkin
 import json, random, math, enum, numpy as np
 from collections import defaultdict
 from pathlib import Path
@@ -178,6 +178,6 @@ if __name__ == "__main__":
     #         )
     #     )
 
-    # from bncontroller.json.utils import write_json
+    # from bncontroller.jsonlib.utils import write_json
 
     # write_json(data, Path('./data.json'))

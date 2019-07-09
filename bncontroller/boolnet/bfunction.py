@@ -1,6 +1,6 @@
 import itertools, random, string, hashlib, unicodedata, json
 from bncontroller.boolnet.boolean import r_bool, truth_values, Boolean
-from bncontroller.json.utils import Jsonkin, tuple_from_json, tuple_to_json
+from bncontroller.jsonlib.utils import Jsonkin, tuple_from_json, tuple_to_json
 from collections import defaultdict
 
 class BooleanFunction(Jsonkin):

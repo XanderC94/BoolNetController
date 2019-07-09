@@ -2,7 +2,7 @@ import random
 from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.json.utils import write_json, read_json, objrepr
+from bncontroller.jsonlib.utils import write_json, read_json, objrepr
 
 def bnstate_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
     '''

@@ -3,7 +3,7 @@ from bncontroller.sim.robot.morphology import EPuckMorphology
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.data import SimulationStepData, Point3D
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.json.utils import read_json
+from bncontroller.jsonlib.utils import read_json
 
 class Controller(object):
 

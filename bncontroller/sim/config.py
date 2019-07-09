@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
-from bncontroller.json.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
+from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D, r_point3d, Quadrant, Axis
 from bncontroller.file.utils import iso8106
 from bncontroller.sim.robot.utils import DeviceName

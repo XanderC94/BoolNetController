@@ -28,6 +28,18 @@ def getAllFilesIn(target:str or Path, extension:str) -> list:
         [item for item in path.iterdir()] if path.is_dir() else [path]
     )
 
+def check_path(path: Path or str, create_dirs=True, dir_checker = lambda x: x.replace('.', '').isnumeric or x == ''):
+    '''
+    Returns 0:Dir, 1:File else raise Exception
+    '''
+    if not path.exists():
+        if dir_checker(path.suffix) and create_dirs:
+            path.mkdir(parents=create_dirs, exist_ok=False)
+        else:
+            raise Exception('Given path is pointing to an unexistent file.')
+    
+    return 0 if path.is_dir() else 1
+        
 if __name__ == "__main__":
     
     print(generate_file_name('a', 'b', 'c'))

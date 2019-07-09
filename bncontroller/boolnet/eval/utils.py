@@ -4,7 +4,6 @@ from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distan
 from multiset import FrozenMultiset
 import random, collections, math, itertools
 
-# Flip = collections.namedtuple('Flip', ['label', 'entry', 'new_bias'])
 Flip = collections.namedtuple('Flip', ['label', 'entry'])
 
 def tes_distance(C, T) -> float:
@@ -32,9 +31,6 @@ def sampling(flips, n_flips):
 
 def ncombinations(n, k):
     return math.factorial(n) / (math.factorial(k) * math.factorial(n-k))
-
-# def reverse_flips(flips):
-#     return set(Flip(f.label, f.entry, 1.0 - f.new_bias) for f in flips)
 
 def identity(x): 
     return x

@@ -1,7 +1,7 @@
 from pandas import DataFrame
 import argparse
 from pathlib import Path
-from bncontroller.json.utils import read_json
+from bncontroller.jsonlib.utils import read_json
 
 if __name__ == "__main__":
     
