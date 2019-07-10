@@ -8,13 +8,13 @@ import numpy as np
 from pathlib import Path
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.stubs.evaluation import search_bn_controller 
-from bncontroller.stubs.utils import generate_webots_worldfile
-from bncontroller.sim.config import generate_ad_hoc_config, SimulationConfig
+from bncontroller.stubs.evaluation import search_bn_controller
+from bncontroller.sim.config import SimulationConfig
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import check_path
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
+from bncontroller.sim.data import generate_spawn_points
 
 ####################################################################################
 
@@ -25,9 +25,7 @@ def generate_or_load_bn(
     
     bn = None
 
-    check_path(path)
-
-    if path.is_dir():
+    if check_path(path):
         bng, I, O, *_ = rbn_gen(N, K, P, I, O)
         bn = bng.new_obn(I, O)
 
@@ -57,12 +55,15 @@ if __name__ == "__main__":
     ### Load Configuration #########################################################
 
     template = parse_args_to_config()
+
+    template.globals['mode'] = 'rtrain'
     
     ### Init logger ################################################################
     
     logger.instance = LoggerFactory.filelogger(
-        template.app_output_path / 'exp_{date}.log'.format(
-            date=template.globals['date']
+        template.app_output_path / '{key}_{date}.log'.format(
+            key=template.globals['mode']
+            date=template.globals['date'],
         )
     )
 
@@ -78,27 +79,17 @@ if __name__ == "__main__":
         date=template.globals['date']
     )
     
-    ### Generate ad hoc configuration for training ################################
-    
-    config = generate_ad_hoc_config(template, keyword=f'rtrain')
-    
-    ### Generate simulation world file for training ################################
-
-    generate_webots_worldfile(
-        template.webots_world_path, 
-        config.webots_world_path,
-        config.sim_config_path
-    )
-
     ### Launch search algorithm ##############################################
 
-    if not config.train_generate_only:
+    if not template.train_generate_only:
         
-        config.fill_globals()
+        template.globals.update(
+            **generate_spawn_points(template)
+        )
 
         t = time.perf_counter()
 
-        search_bn_controller(config, bn)
+        search_bn_controller(template, bn)
 
         logger.info(f"Search time: {time.perf_counter()-t}s")
    

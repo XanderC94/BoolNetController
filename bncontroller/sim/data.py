@@ -145,39 +145,48 @@ class SimulationStepData(Jsonkin):
 
 ##################################################################
 
-if __name__ == "__main__":
-    
-    data = defaultdict(list)
-    p = Point3D(-0.9,0.0,0.9)
+def generate_spawn_points(config):
 
-    p2 = Point3D(1, 1, 1)
+    spawn_points = dict()
 
-    print(p.dist(p2))
+    # Generate Evaluation Point
+    spawn_points['agent_spawn_points'] = (
+        [config.sim_agent_position]
+        if not config.eval_n_agent_spawn_points else [
+            r_point3d(
+                O=config.sim_agent_position, 
+                R=config.eval_agent_spawn_radius_m, 
+                axis=Axis.Y, 
+                quadrant=Quadrant.PPN
+            )
+            for _ in range(config.eval_n_agent_spawn_points)    
+        ]
+    )
 
-    print(tuple(p))
+    # Generate Light Position
+    spawn_points['light_spawn_points'] = (
+        [config.sim_light_position]
+        if not config.eval_n_light_spawn_points else [
+            r_point3d(
+                O=config.sim_light_position, 
+                R=config.eval_light_spawn_radius_m, 
+                axis=Axis.Y, 
+                quadrant=Quadrant.PPN
+            )
+            for _ in range(config.eval_n_light_spawn_points)    
+        ]
+    )
 
-    for i in range(20):
-        # print(i, r_point3d())
-        print(i, r_point3d(O=p, R=0.3, axis=Axis.Y, quadrant=Quadrant.PPN))
+    # Generate Evaluation yRot
+    spawn_points['agent_yrots'] = (
+        [config.sim_agent_yrot_rad]
+        if not config.eval_agent_n_yrot_samples else np.arange(
+            config.eval_agent_yrot_start_rad,
+            2*math.pi + config.eval_agent_yrot_start_rad,
+            2*math.pi / config.eval_agent_n_yrot_samples
+        ) if config.eval_agent_n_yrot_samples > 0 else np.random.uniform(
+            0.0, 2*math.pi, max(1, config.eval_n_agent_spawn_points)
+        )
+    )
 
-    # for i in range(10):
-
-    #     p.x += 0.1
-    #     p.z += 0.1
-
-    #     print(p)
-
-    #     data['data'].append(
-    #         SimulationStepData(
-    #             i, 
-    #             Point3D(p.x, 0.0, p.z),
-    #             [0.0 for _ in range(20)],
-    #             [random.random() for _ in range(8)],
-    #             [random.random() for _ in range(8)],
-    #             [random.random() for _ in range(8)]
-    #         )
-    #     )
-
-    # from bncontroller.jsonlib.utils import write_json
-
-    # write_json(data, Path('./data.json'))
+    return spawn_points

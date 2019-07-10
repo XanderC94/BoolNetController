@@ -1,94 +1,50 @@
-import matplotlib.pyplot as plotter
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.colors as colors
-import matplotlib.patches as mpatches
-import matplotlib.cm as cmx
+import re as regx
+from pandas import DataFrame
+from pathlib import Path
+from bncontroller.jsonlib.utils import read_json
+#################################################################################
 
-###############################################################################
+fname_pattern = r'(\d{8,}T\d{6,})(?:.+it(\d+))?(?:.+in(\d+))?'
 
-def interactive_legend(ax=None):
-    if ax is None:
-        ax = plotter.gca()
-    if ax.legend_ is None:
-        ax.legend()
+def isnone(x:str):
+    return x is not None
 
-    return InteractiveLegend(ax.legend_)
+def str2num(x:str):
+        
+        if isinstance(x, str):
+            if x.isdigit():
+                return int(x)
+            elif x.isdecimal():
+                return float(x)
+        
+        return x
 
-class InteractiveLegend(object):
+def get_ids(x:str, pattern:str):
+    m = regx.search(pattern, x)
 
-    def __init__(self, legend):
+    return m.groups() if m is not None else None
 
-        self.legend = legend
-        self.fig = legend.axes.figure
+def orderedby(x:str, pattern:str):
+    
+    return tuple(
+        reversed(list(map(str2num, get_ids(x, pattern))))
+    )
 
-        self.lookup_artist, self.lookup_handle = self._build_lookups(legend)
-        self._setup_connections()
+def get_simple_name(s:str, pattern:str):
+    return '_'.join(filter(isnone, get_ids(s, pattern)))
 
-        self.update()
+def check_file(path:Path, starts_with:str, ext:str):
+    return path.is_file() and path.name.startswith(starts_with) and ext in path.suffix 
 
-    def _setup_connections(self):
-        for artist in self.legend.texts + self.legend.legendHandles:
-            artist.set_picker(10) # 10 points tolerance
+def get_data(f:Path, pattern:str, uniqueness=3):
+ 
+    ids = get_ids(f.name, pattern)
 
-        self.fig.canvas.mpl_connect('pick_event', self.on_pick)
-        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
-
-    def _build_lookups(self, legend):
-        labels = [t.get_text() for t in legend.texts]
-        handles = legend.legendHandles
-        label2handle = dict(zip(labels, handles))
-        handle2text = dict(zip(handles, legend.texts))
-
-        lookup_artist = {}
-        lookup_handle = {}
-        for artist in legend.axes.get_children():
-            if artist.get_label() in labels:
-                handle = label2handle[artist.get_label()]
-                lookup_handle[artist] = handle
-                lookup_artist[handle] = artist
-                lookup_artist[handle2text[handle]] = artist
-
-        lookup_handle.update(zip(handles, handles))
-        lookup_handle.update(zip(legend.texts, handles))
-
-        return lookup_artist, lookup_handle
-
-    def on_pick(self, event):
-        handle = event.artist
-        if handle in self.lookup_artist:
-            artist = self.lookup_artist[handle]
-            artist.set_visible(not artist.get_visible())
-            self.update()
-
-    def on_click(self, event):
-        if event.button == 3:
-            visible = False
-        elif event.button == 2:
-            visible = True
-        else:
-            return
-
-        for artist in self.lookup_artist.values():
-            artist.set_visible(visible)
-        self.update()
-
-    def update(self):
-        for artist in self.lookup_artist.values():
-            handle = self.lookup_handle[artist]
-            if artist.get_visible():
-                handle.set_visible(True)
-            else:
-                handle.set_visible(False)
-        self.fig.canvas.draw()
-
-    def show(self):
-        plotter.show()
-
-################################################################################
-
-def get_cmap(n, name='hsv'):
-    '''
-    Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
-    RGB color; the keyword argument name must be a standard mpl colormap name.
-    '''
-    return plotter.cm.get_cmap(name, n)
+    if ids is not None:
+        
+        return (
+            '_'.join(filter(isnone, ids[:max(1, uniqueness)])), 
+            DataFrame.from_dict(read_json(f))
+        )
+    else:
+        raise Exception('filename does not match pattern')

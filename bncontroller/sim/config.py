@@ -8,8 +8,8 @@ from pathlib import Path
 from argparse import ArgumentParser, Action
 from collections import defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
-from bncontroller.sim.data import Point3D, r_point3d, Quadrant, Axis
-from bncontroller.file.utils import iso8106, generate_file_name, check_path
+from bncontroller.sim.data import Point3D
+from bncontroller.file.utils import iso8106, get_fname, check_path, get_dir
 from bncontroller.sim.robot.utils import DeviceName
 
 CONFIG_CLI_NAMES = ['-c', '-cp', '--config_path', '--config']
@@ -94,11 +94,13 @@ class DefaultConfigOptions(Jsonkin):
             date=iso8106(ms=3),
             score=float('+inf'),
             it=-1,
-            top_model_name='bn_subopt_{date}'+'{subfix}.json',
-            subopt_suffix='_it{it}',
+            subopt_model_name='bn_subopt_{date}{it}.json',
+            it_suffix='_it{it}',
+            in_suffix='_in{it}',
             agent_spawn_points=[],
             light_spawn_points=[],
-            agent_yrots=[]
+            agent_yrots=[],
+            mode=''
         )
 
     )
@@ -264,47 +266,6 @@ class SimulationConfig(Jsonkin):
 
         return norm
 
-    def fill_globals(self):
-        # Generate Evaluation Point
-        self.globals['agent_spawn_points'] = (
-            [self.sim_agent_position]
-            if not self.eval_n_agent_spawn_points else [
-                r_point3d(
-                    O=self.sim_agent_position, 
-                    R=self.eval_agent_spawn_radius_m, 
-                    axis=Axis.Y, 
-                    quadrant=Quadrant.PPN
-                )
-                for _ in range(self.eval_n_agent_spawn_points)    
-            ]
-        )
-
-        # Generate Light Position
-        self.globals['light_spawn_points'] = (
-            [self.sim_light_position]
-            if not self.eval_n_light_spawn_points else [
-                r_point3d(
-                    O=self.sim_light_position, 
-                    R=self.eval_light_spawn_radius_m, 
-                    axis=Axis.Y, 
-                    quadrant=Quadrant.PPN
-                )
-                for _ in range(self.eval_n_light_spawn_points)    
-            ]
-        )
-
-        # Generate Evaluation yRot
-        self.globals['agent_yrots'] = (
-            [self.sim_agent_yrot_rad]
-            if not self.eval_agent_n_yrot_samples else np.arange(
-                self.eval_agent_yrot_start_rad,
-                2*math.pi + self.eval_agent_yrot_start_rad,
-                2*math.pi / self.eval_agent_n_yrot_samples
-            ) if self.eval_agent_n_yrot_samples > 0 else np.random.uniform(
-                0.0, 2*math.pi, max(1, self.eval_n_agent_spawn_points)
-            )
-        )
-
     def to_json(self) -> dict:
         
         return dict((k, jsonrepr(v)) for k, v in vars(self).items() if k != 'globals')
@@ -321,39 +282,38 @@ class SimulationConfig(Jsonkin):
 
 ###########################################################################################
 
-def generate_ad_hoc_config(config:SimulationConfig, keyword='sim'):
+def generate_sim_config(
+        config:SimulationConfig, 
+        keyword='',
+        world_fname='{name}_sim_world_{uniqueness}.{ext}',
+        config_fname='{name}_sim_config_{uniqueness}.{ext}',
+        data_fname='{name}_sim_data_{uniqueness}.{ext}',
+        log_fname='{name}_sim_log_{uniqueness}.{ext}',
+        model_fname='{name}_sim_bn_{uniqueness}.{ext}'
+    ):
     
-    model_fname = generate_file_name(f'{keyword}_bn', uniqueness_gen= lambda: config.globals['date'], ftype='json')
-    data_fname = generate_file_name(f'{keyword}_data', uniqueness_gen= lambda: config.globals['date'], ftype='json')
-    log_fname = generate_file_name(f'{keyword}_log', uniqueness_gen= lambda: config.globals['date'], ftype='json')
-    config_fname = generate_file_name(f'{keyword}_config', uniqueness_gen= lambda: config.globals['date'], ftype='json')
-    
-    sim_world_def_name = config.webots_world_path.with_suffix('').name
-    
-    sim_world_fname = generate_file_name(
-        f'{keyword}_{sim_world_def_name}', 
-        uniqueness_gen= lambda: config.globals['date'], 
-        ftype='wbt'
-    )
+    uniqueness = lambda: config.globals['date']
+
+    world_fname = get_fname(keyword, template=world_fname, uniqueness=uniqueness, ftype='wbt')
+    model_fname = get_fname(keyword, template=model_fname, uniqueness=uniqueness, ftype='json')
+    config_fname = get_fname(keyword, template=config_fname, uniqueness=uniqueness, ftype='json')
+    data_fname = get_fname(keyword, template=data_fname, uniqueness=uniqueness, ftype='json')
+    log_fname = get_fname(keyword, template=log_fname, uniqueness=uniqueness, ftype='log')
 
     # Create Sim Config based on the Experiment Config
     sim_config = SimulationConfig.from_json(config.to_json())
 
     sim_config.globals['template'] = config
     
-    sim_config.webots_world_path = sim_config.webots_world_path.parent / sim_world_fname
-    
-    sim_config.bn_model_path = (
-        sim_config.bn_model_path.parent 
-        if check_path(sim_config.bn_model_path, create_dirs=False)
-        else sim_config.bn_model_path
-    ) / model_fname
+    sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_dirs=True) / world_fname
 
-    sim_config.sim_config_path /= config_fname
+    sim_config.bn_model_path = get_dir(sim_config.bn_model_path, True) / model_fname
+
+    sim_config.sim_config_path = get_dir(sim_config.sim_config_path, True) / config_fname
         
-    sim_config.sim_data_path /= data_fname
+    sim_config.sim_data_path =  get_dir(sim_config.sim_data_path, True) / data_fname
 
-    sim_config.sim_log_path /= log_fname
+    sim_config.sim_log_path = get_dir(sim_config.sim_log_path, True) / log_fname
     
     return sim_config
 

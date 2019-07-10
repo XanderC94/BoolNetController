@@ -6,15 +6,16 @@ import math
 import pandas
 import statistics
 import subprocess
+import itertools
 from pathlib import Path
-from itertools import product
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.sim.config import SimulationConfig, CONFIG_CLI_NAMES
+from bncontroller.stubs.utils import generate_webots_worldfile
+from bncontroller.sim.config import SimulationConfig, CONFIG_CLI_NAMES, generate_sim_config
 from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
 from bncontroller.boolnet.eval.search.parametric import parametric_vns
 from bncontroller.sim.logging.logger import staticlogger as logger
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.file.utils import generate_file_name
+from bncontroller.file.utils import get_fname, get_dir
 
 def compare_scores(minimize, maximize):
 
@@ -43,49 +44,71 @@ def compare_scores(minimize, maximize):
         
 ###############################################################################################
 
-def evaluation(config: SimulationConfig, bn: OpenBooleanNetwork, compare = compare_scores):
+def evaluate(config:SimulationConfig, bn:OpenBooleanNetwork, on:tuple):
 
-    test_params = product(
-        config.globals['agent_spawn_points'], 
-        config.globals['light_spawn_points'], 
-        config.globals['agent_yrots']
-    )
+    lpos, apos, yrot, *_ = on
 
-    fscores = []
-    dscores = []
+    config.sim_agent_position = apos
+    config.sim_light_position = lpos
+    config.sim_agent_yrot_rad = yrot
 
-    for apos, lpos, yrot in test_params:
+    data = run_simulation(config, bn)
 
-        config.sim_agent_position = apos
-        config.sim_light_position = lpos
-        config.sim_agent_yrot_rad = yrot
+    fs, ds = aggregate_sim_data(lpos, data)
 
-        data = run_simulation(config, bn)
-
-        fs, ds = aggregate_sim_data(lpos, data)
-
-        logger.info(
-            'iDistance:', config.sim_light_position.dist(config.sim_agent_position),
-            f'yRot: {(config.sim_agent_yrot_rad / math.pi * 180)}°',
+    logger.info(
+            'iDistance:', lpos.dist(apos),
+            f'yRot: {(yrot / math.pi * 180)}°',
             'fDistance:', ds,
             'score: ', fs,
         )
 
-        fscores.append(fs)
-        dscores.append(ds)
+    return fs, ds
+
+def test_evaluation(template:SimulationConfig, bn:OpenBooleanNetwork, test_params):
+
+    ### Generate ad hoc configuration for training ################################
+    
+    config = generate_sim_config(template, keyword=template.globals['mode'])
+    
+    ### Generate simulation world file for training ################################
+    
+    if not config.webots_world_path.exists():
+
+        generate_webots_worldfile(
+            template.webots_world_path, 
+            config.webots_world_path,
+            config.sim_config_path
+        )
+
+    data = [evaluate(config, bn, tp) for tp in test_params] 
+    
+    return tuple(list(e) for e in zip(*data))
+
+###################################################################################
+
+def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare = compare_scores):
+
+    test_params = itertools.product(
+        template.globals['light_spawn_points'], 
+        template.globals['agent_spawn_points'], 
+        template.globals['agent_yrots']
+    )
+
+    fscores, dscores = test_evaluation(template, bn, test_params)
 
     new_score = statistics.mean(fscores), statistics.stdev(fscores)
-    
-    if compare(new_score, config.globals['score']):
-        config.globals['score'] = new_score
+
+    if compare(new_score, template.globals['score']):
+        template.globals['score'] = new_score
 
         save_subopt_model(
             new_score,
-            config,
+            template,
             bn.to_json()
         )
 
-    config.globals['it'] += 1
+    template.globals['it'] += 1
 
     return new_score
     
@@ -124,19 +147,19 @@ def save_subopt_model(new_score:float, config:SimulationConfig, bnjson:dict):
     bnjson['sim_info'].update({'idist':config.sim_light_position.dist(config.sim_agent_position)})
     bnjson['sim_info'].update({'n_it':config.globals['it']})
 
-    model_dir = config.bn_model_path if config.bn_model_path.is_dir() else config.bn_model_path.parent
+    model_dir = get_dir(config.bn_model_path)
 
     if compare_scores(config.globals['score'], config.train_save_suboptimal_models): 
         # Save only if <sd_save_suboptimal_models> >= score
-        write_json(bnjson, model_dir / config.globals['top_model_name'].format(
+        write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
             date=config.globals['date'],
-            subfix=config.globals['subopt_suffix'].format(it=config.globals['it'])
+            it=config.globals['it_suffix'].format(it=config.globals['it'])
         ))
         
     # Always save the last suboptimal model (overwrite)
-    write_json(bnjson, model_dir / config.globals['top_model_name'].format(
+    write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
         date=config.globals['date'], 
-        subfix=''
+        it=''
     ))
 
 ###############################################################################################
@@ -145,7 +168,7 @@ def search_bn_controller(config: SimulationConfig, bn: OpenBooleanNetwork):
 
     return parametric_vns(
         bn,
-        evaluate=lambda bn: evaluation(config, bn, compare=compare_scores),
+        evaluate=lambda bn: train_evaluation(config, bn, compare=compare_scores),
         compare=lambda minimize, maximize: compare_scores(minimize, maximize),
         min_target=config.sd_minimization_target,
         max_iters=config.sd_max_iters,

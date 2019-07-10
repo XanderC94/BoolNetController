@@ -6,14 +6,17 @@ import bncontroller.stubs.evaluation as evaluation
 from pathlib import Path
 from pandas import DataFrame
 from collections import defaultdict
+from bncontroller.file.utils import iso8106, check_path, get_fname
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.file.utils import iso8106, check_path
 from bncontroller.collectionslib.utils import flat_tuple
-from bncontroller.sim.config import generate_ad_hoc_config
+from bncontroller.sim.data import generate_spawn_points
+# from bncontroller.sim.config import generate_sim_config
+from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
+# from bncontroller.stubs.utils import generate_webots_worldfile
+from bncontroller.plot.utils import get_simple_name, fname_pattern
+# from bncontroller.plot.testdata import pattern
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.stubs.utils import generate_webots_worldfile
 
 #########################################################################################################
 
@@ -70,69 +73,73 @@ if __name__ == "__main__":
 
     template = parse_args_to_config()
 
-    ### Load Test Model(s) from Template paths ##########################################################
+    template.globals['mode'] = 'rtest'
 
-    files, bns = collect_bn_models(template.bn_model_path)
+    if not check_path(template.test_data_path):
+        raise Exception(
+            'Test dataset path in template configuration file should be a directory.'
+        )
     
-    ### Generate ad hoc configuration for testing #################################
-
-    config = generate_ad_hoc_config(template, keyword=f'rtest')
-    
-    ### Generate simulation world file for testing ################################
-
-    generate_webots_worldfile(
-        template.webots_world_path, 
-        config.webots_world_path,
-        config.sim_config_path
+    logger.instance = LoggerFactory.filelogger(
+        template.app_output_path / '{key}_{date}.log'.format(
+            key=template.globals['mode']
+            date=template.globals['date'],
+        )
     )
 
-    ### Test ######################################################################
+    ### Load Test Model(s) from Template paths ####################################
 
-    def aggr(f, lp, ap, ar):
+    files, bns = collect_bn_models(template.bn_model_path)
+
+    ### Prepare aggregation function evaluator ####################################
+
+    def aggregate(f, lp, ap, ar):
         return eval(f, dict(lp=lp, ap=ap, ar=ar))
 
-    go = get_params_order(config.test_params_aggr_func)
-
-    if check_path(template.test_data_path) == 1:
-        raise Exception('Test Data Path should be a directory.')
+    ### Test ######################################################################
     
-    for k in bns:
+    for i in range(template.test_n_instances):
+
+        template.globals.update(
+            **generate_spawn_points(template)
+        )
+        
+        for k in bns:
             
-        for i in range(config.test_n_instances):
+            logger.info(i, k)
 
-            config.fill_globals()
+            test_data = DataFrame()
 
-            print(i, k)
+            test_params = list(map( 
+                lambda t: tsort(
+                    flat_tuple(t), 
+                    get_params_order(template.test_params_aggr_func)
+                ),
+                itertools.product(
+                    *aggregate(
+                        template.test_params_aggr_func,
+                        template.globals['light_spawn_points'],
+                        template.globals['agent_spawn_points'], 
+                        template.globals['agent_yrots']
+                    )
+                )
+            ))
 
-            test_data = defaultdict(list)
+            fscores, dscores = evaluation.test_evaluation(template, bns[k], test_params)
 
-            test_params = itertools.product(
-                *aggr(
-                    config.test_params_aggr_func,
-                    config.globals['light_spawn_points'],
-                    config.globals['agent_spawn_points'], 
-                    config.globals['agent_yrots']
+            lpos, apos, yrot = tuple(list(t) for t in zip(*test_params))
+
+            test_data['score'] = fscores
+            test_data['fdist'] = dscores
+            test_data['lpos'] = lpos
+            test_data['apos'] = apos
+            test_data['yrot'] = yrot
+            test_data['idist'] = list(a.dist(b) for a, b in zip(lpos, apos))
+
+            test_data.to_json(
+                template.test_data_path / get_fname(
+                    'rtest_data', 
+                    get_simple_name(files[k].name, fname_pattern),
+                    template='{name}'+f'_in{i}.json',
                 )
             )
-
-            for tp in test_params:
-                
-                lpos, apos, yrot, *_ = tsort(flat_tuple(tp), go)
-                
-                config.sim_agent_yrot_rad = yrot
-                config.sim_agent_position = apos
-                config.sim_light_position = lpos
-                  
-                sim_data = evaluation.run_simulation(config, bns[k])
-                new_score, rscore = evaluation.aggregate_sim_data(config.sim_light_position, sim_data)
-
-                test_data['scores'].append(new_score)
-                test_data['apos'].append(apos)
-                test_data['lpos'].append(lpos)
-                test_data['yrot'].append(yrot)
-                test_data['idist'].append(apos.dist(lpos))
-                test_data['fdist'].append(rscore)
-
-            fname = files[k].with_suffix('').name
-            DataFrame(test_data).to_json(config.test_data_path / f'rtest_data_{fname}_in{i}.json')
-

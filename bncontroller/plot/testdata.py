@@ -7,15 +7,16 @@ import matplotlib.cm as cmx
 import random, math, argparse
 import numpy as np
 import re as regx
+import bncontroller.plot.utils as pu
 from pandas import DataFrame
 from pathlib import Path
 from collections import OrderedDict
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.parse.utils import parse_args
-from bncontroller.plot.utils import interactive_legend, get_cmap
-
-pattern = r'(\d{8,}T\d{6,})(?:.+it(\d+))?(?:.+in(\d+))?'
+from bncontroller.plot.ilegend import interactive_legend
+from bncontroller.plot.colors import get_cmap
+from bncontroller.plot.outputdata import plot_output
 
 #################################################################################
 
@@ -34,7 +35,7 @@ def plot_data(data:dict, positives_threshold:float):
     bpax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
     bpax.boxplot(
-        x=list(data[k]['scores'] for k in data),
+        x=list(data[k]['score'] for k in data),
         labels=list(data.keys()),
         whis=[5, 95], # 1.5,
         # meanline=True,
@@ -103,7 +104,7 @@ def plot_data(data:dict, positives_threshold:float):
 
     for k in data:
         
-        p = sum(s <= positives_threshold for s in data[k]['scores'])
+        p = sum(s <= positives_threshold for s in data[k]['score'])
 
         bax.bar(
             x = [x+1, x+2],
@@ -156,7 +157,7 @@ def plot_data(data:dict, positives_threshold:float):
 
         sax.scatter(
             x = data[k]['idist'],
-            y = data[k]['scores'],
+            y = data[k]['score'],
             color=cmap(i),
             label=k
         )
@@ -209,7 +210,7 @@ def plot_data(data:dict, positives_threshold:float):
         s3dax.scatter(
             xs=data[k]['idist'],
             ys=[r * 180 /math.pi for r in data[k]['yrot']],
-            zs=data[k]['scores'],
+            zs=data[k]['score'],
             # cmap=plotter.get_cmap('rainbow'),
             color= cmap(i), # np.random.rand(3,),
             label=k
@@ -244,56 +245,33 @@ def plot_data(data:dict, positives_threshold:float):
 
 #######################################################################
 
-def isnone(x:str):
-    return x is not None
+def collect_data(
+        paths:list, fpattern:str,
+        recursively=False, ds_merge_level=3, 
+        data_getter=pu.get_data):
 
-def str2num(x:str):
-        
-        if isinstance(x, str):
-            if x.isdigit():
-                return int(x)
-            elif x.isdecimal():
-                return float(x)
-        
-        return x
-
-def get_ids(x:str, pattern=pattern):
-    m = regx.search(pattern, x)
-
-    return tuple( 
-        m.groups()
-    ) if m is not None else tuple([x,])
-
-def orderedby(x:str, pattern=pattern):
-    
-    return tuple(
-        reversed(list(map(str2num, get_ids(x, pattern=pattern))))
-    )
-
-def get_simple_name(s:str, pattern=pattern):
-    return '_'.join(get_ids(s, pattern=pattern))
-
-def get_data(f:Path, uniqueness=3):
-
-    df = DataFrame.from_dict(read_json(f))
-    ids = get_ids(f.name)
-    name = '_'.join(filter(isnone, ids[:max(1, uniqueness)]))
-
-    return name, df
-
-######################################################################
-
-def collect_data(path:Path, recursively=False, ds_merge_level=3):
     data = OrderedDict()
-    for f in sorted(path.iterdir(), key=lambda x: orderedby(x.name)):
-        if f.is_file() and f.name.startswith('rtest_data') and 'json' in f.suffix:
-            print(f)
-            name, df = get_data(f, uniqueness=ds_merge_level)
-            data[name] = data[name].append(df) if name in data else df
-        elif f.is_dir() and recursively:
+
+    for p in paths:
+        
+        print(p)
+        
+        if p.is_file():
+            try:
+                name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
+                data[name] = data[name].append(df, ignore_index=True) if name in data else df
+            except Exception as ex:
+                pass
+
+        elif p.is_dir() and recursively:
+
             data = OrderedDict(
                 **data, 
-                **collect_data(f, recursively=recursively, ds_merge_level=ds_merge_level)
+                **collect_data(
+                    p, fpattern,
+                    recursively=recursively, 
+                    ds_merge_level=ds_merge_level
+                )
             )
 
     return data
@@ -321,16 +299,41 @@ if __name__ == "__main__":
 
     args = parse_args(parser=parser)
 
-    data = OrderedDict()
+    paths = (
+        sorted(
+            args.config.test_data_path.iterdir(), 
+            key=lambda x: pu.orderedby(x.name, pu.fname_pattern)
+        )
+        if args.config.test_data_path.is_dir()
+        else [args.config.test_data_path]
+    )
 
-    if args.config.test_data_path.is_dir():
-        data.update(**collect_data(
-            args.config.test_data_path, 
-            recursively=args.recursively, 
-            ds_merge_level=args.merge_level
-        ))
-    else:
-        name, df = get_data(args.config.test_data_path, uniqueness=args.merge_level)
-        data[name] = df
+    data = OrderedDict(**collect_data(
+        paths,
+        fpattern=r'rtest_data_(?:bn_subopt_)?' + pu.fname_pattern + '.json',
+        recursively=args.recursively, 
+        ds_merge_level=args.merge_level
+    ))
+
+    # def outputfilter(f:Path, pattern=pu.fname_pattern):
+
+    #     return pu.get_ids(f.name, pattern)[0] in set(
+    #         map(lambda p: pu.get_ids(p.name, pattern)[0], paths)
+    #     )
+
+    # outdata = OrderedDict(**collect_data(
+    #     filter(
+    #         outputfilter,
+    #         args.config.test_data_path.iterdir()
+    #     ),
+    #     fpattern=r'(exp|rtrain)_' + pu.fname_pattern,
+    #     recursively=args.recursively, 
+    #     ds_merge_level=args.merge_level
+    # ))
+
+    # for n, d in outdata.items():
+    #     plot_output(n, d) 
 
     plot_data(data, args.config.plot_positives_threshold)
+
+

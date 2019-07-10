@@ -1,7 +1,5 @@
-import json, datetime, logging
 from pathlib import Path
-from bncontroller.jsonlib.utils import write_json, read_json
-from bncontroller.file.utils import generate_file_name
+from bncontroller.jsonlib.utils import write_json
 
 class SimulationDataDumper(object):
     

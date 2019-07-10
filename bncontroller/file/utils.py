@@ -11,36 +11,40 @@ def iso8106(format_type=0, ms=0):
     else:
         return f'{datetime.datetime.now():%Y%m%dT%H%M%S-%f}'[:ms-max_ms]
 
-def generate_file_name(*args, uniqueness_gen = iso8106, ftype='', name_format="{name}.{ext}"):
+def get_fname(*args, uniqueness = iso8106, ftype='txt', template="{name}_{uniqueness}.{ext}"):
     '''
     '''
-    return name_format.format(
-        name='_'.join(filter(lambda s: s is not None and s != '', (*args, uniqueness_gen()))),
+    
+    return template.format(
+        name='_'.join(filter(lambda s: s is not None and s != '', list(args))),
+        uniqueness=uniqueness(),
         ext=ftype
     )
 
-def getAllFilesIn(target:str or Path, extension:str) -> list:
-
-    path = target if isinstance(target, Path) else Path(target)
-
-    return filter(
-        lambda f: extension in f.suffix,
-        [item for item in path.iterdir()] if path.is_dir() else [path]
-    )
-
-def check_path(path: Path or str, create_dirs=True, dir_checker = lambda x: x.replace('.', '').isnumeric or x == ''):
+def check_path(path: Path or str, create_dirs=True, dir_checker=lambda x: x.replace('.', '').isnumeric or x == ''):
     '''
-    Returns 0:Dir, 1:File else raise Exception
+    Returns 1:Dir, 0:File, else raise exception
     '''
     if not path.exists():
         if dir_checker(path.suffix) and create_dirs:
             path.mkdir(parents=create_dirs, exist_ok=False)
         else:
+            # check_path(path.parent, create_dirs=create_dirs, dir_checker=dir_checker)
+            # path.touch()
             raise Exception('Given path is pointing to an unexistent file.')
     
-    return 0 if path.is_dir() else 1
-        
+    return path.is_dir()
+
+def get_dir(path:Path, create_dirs=False):
+
+    return (
+        path
+        if check_path(path, create_dirs=create_dirs)
+        else path.parent
+    )
+
+
 if __name__ == "__main__":
     
-    print(generate_file_name('a', 'b', 'c'))
+    print(get_fname('a', 'b', 'c'))
     
