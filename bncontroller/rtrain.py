@@ -80,7 +80,7 @@ if __name__ == "__main__":
     
     ### Generate ad hoc configuration for training ################################
     
-    config = generate_ad_hoc_config(template, keyword=f'rtest')
+    config = generate_ad_hoc_config(template, keyword=f'rtrain')
     
     ### Generate simulation world file for training ################################
 

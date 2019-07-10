@@ -2,7 +2,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plotter
 from pandas import DataFrame
-from bncontroller.sim.config import parse_args_to_config
+from bncontroller.parse.utils import parse_args_to_config
 
 if __name__ == "__main__":
     

@@ -96,11 +96,12 @@ if __name__ == "__main__":
     if check_path(template.test_data_path) == 1:
         raise Exception('Test Data Path should be a directory.')
     
-    for i in range(config.test_n_instances):
+    for k in bns:
+            
+        for i in range(config.test_n_instances):
 
-        config.fill_globals()
+            config.fill_globals()
 
-        for k in bns:
             print(i, k)
 
             test_data = defaultdict(list)
@@ -116,7 +117,7 @@ if __name__ == "__main__":
 
             for tp in test_params:
                 
-                lpos, apos, yrot, *_ = tsort(flat_tuple(tp), go) 
+                lpos, apos, yrot, *_ = tsort(flat_tuple(tp), go)
                 
                 config.sim_agent_yrot_rad = yrot
                 config.sim_agent_position = apos
@@ -126,10 +127,10 @@ if __name__ == "__main__":
                 new_score, rscore = evaluation.aggregate_sim_data(config.sim_light_position, sim_data)
 
                 test_data['scores'].append(new_score)
-                test_data['apos'].append(config.sim_agent_position)
-                test_data['lpos'].append(config.sim_light_position)
-                test_data['yrot'].append(config.sim_agent_yrot_rad)
-                test_data['idist'].append(test_data['apos'][-1].dist(test_data['lpos'][-1]))
+                test_data['apos'].append(apos)
+                test_data['lpos'].append(lpos)
+                test_data['yrot'].append(yrot)
+                test_data['idist'].append(apos.dist(lpos))
                 test_data['fdist'].append(rscore)
 
             fname = files[k].with_suffix('').name
