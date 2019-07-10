@@ -62,7 +62,7 @@ if __name__ == "__main__":
     
     logger.instance = LoggerFactory.filelogger(
         template.app_output_path / '{key}_{date}.log'.format(
-            key=template.globals['mode']
+            key=template.globals['mode'],
             date=template.globals['date'],
         )
     )
