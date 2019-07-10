@@ -106,14 +106,4 @@ def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
         bf_init=lambda *args: args[0] if len(args) == 1 else r_bool(P), 
         node_init=lambda label: False
     ), _I, _O
-
-if __name__ == "__main__":
     
-    n, k, p, i, o = 20, 3, 0.5, 8, 2
-    bng, ia, oa, *_ = rbn_gen(n, k, p, i, o)
-
-    bn = bng.new()
-
-    print('Saving BN...')
-    
-    write_json(bn.to_json(), './bn_test_model.json', indent=True)

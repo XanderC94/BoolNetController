@@ -11,30 +11,15 @@ from pandas import DataFrame
 from pathlib import Path
 from collections import OrderedDict
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.sim.config import parse_args_to_config, SimulationConfig
+from bncontroller.sim.config import SimulationConfig
+from bncontroller.parse.utils import parse_args
 from bncontroller.plot.utils import interactive_legend, get_cmap
 
-patterns = OrderedDict({
-    -1 : {
-        'pattern': r'in\d+',
-        'cleaner': lambda t: int(t.replace('in', '')),
-        'orderidx': 1
-    },
-    -2 : {
-        'pattern': r'it\d+',
-        'cleaner': lambda t: int(t.replace('it', '')),
-        'orderidx': 0
-    },
-    -3 : {
-        'pattern': r'\d{8,}T\d{6,}',
-        'cleaner': lambda t: t,
-        'orderidx': 2
-    },
-})
+pattern = r'(\d{8,}T\d{6,})(?:.+it(\d+))?(?:.+in(\d+))?'
 
 #################################################################################
 
-def plot_data(data:dict, config:SimulationConfig):
+def plot_data(data:dict, positives_threshold:float):
 
     cmap = get_cmap(len(data), name='rainbow')
 
@@ -109,7 +94,7 @@ def plot_data(data:dict, config:SimulationConfig):
 
     bfig, bax = plotter.subplots(num=f'test_posneg_bars')
 
-    bax.set_title(f'Model Tests -- Pos / Neg -- score <= {config.test_positives_threshold}')
+    bax.set_title(f'Model Tests -- Pos / Neg -- score <= {positives_threshold}')
 
     bax.set_xlabel('BN model')
     bax.set_ylabel('P|N (%)')
@@ -118,7 +103,7 @@ def plot_data(data:dict, config:SimulationConfig):
 
     for k in data:
         
-        p = sum(s <= config.test_positives_threshold for s in data[k]['scores'])
+        p = sum(s <= positives_threshold for s in data[k]['scores'])
 
         bax.bar(
             x = [x+1, x+2],
@@ -257,44 +242,95 @@ def plot_data(data:dict, config:SimulationConfig):
 
     interactive_legend(f3dax).show()
 
-
 #######################################################################
 
-def orderedby(x):
+def isnone(x:str):
+    return x is not None
 
-    s = x.with_suffix('').name.split('_')
+def str2num(x:str):
+        
+        if isinstance(x, str):
+            if x.isdigit():
+                return int(x)
+            elif x.isdecimal():
+                return float(x)
+        
+        return x
+
+def get_ids(x:str, pattern=pattern):
+    m = regx.search(pattern, x)
+
+    return tuple( 
+        m.groups()
+    ) if m is not None else tuple([x,])
+
+def orderedby(x:str, pattern=pattern):
     
-    vs = OrderedDict()
+    return tuple(
+        reversed(list(map(str2num, get_ids(x, pattern=pattern))))
+    )
 
-    for t in s[-3:]:
-        for k in patterns:
-            
-            m = regx.match(patterns[k]['pattern'], t)
+def get_simple_name(s:str, pattern=pattern):
+    return '_'.join(get_ids(s, pattern=pattern))
 
-            if m is not None:
-                vs.update({
-                    patterns[k]['orderidx']:patterns[k]['cleaner'](t)
-                })
-    
-    r = [vs[k] for k in sorted(vs.keys(), reverse=True)]
+def get_data(f:Path, uniqueness=3):
 
-    return tuple(r) if len(r) else tuple(x)
+    df = DataFrame.from_dict(read_json(f))
+    ids = get_ids(f.name)
+    name = '_'.join(filter(isnone, ids[:max(1, uniqueness)]))
+
+    return name, df
+
+######################################################################
+
+def collect_data(path:Path, recursively=False, ds_merge_level=3):
+    data = OrderedDict()
+    for f in sorted(path.iterdir(), key=lambda x: orderedby(x.name)):
+        if f.is_file() and f.name.startswith('rtest_data') and 'json' in f.suffix:
+            print(f)
+            name, df = get_data(f, uniqueness=ds_merge_level)
+            data[name] = data[name].append(df) if name in data else df
+        elif f.is_dir() and recursively:
+            data = OrderedDict(
+                **data, 
+                **collect_data(f, recursively=recursively, ds_merge_level=ds_merge_level)
+            )
+
+    return data
+
+######################################################################
 
 if __name__ == "__main__":
     
-    config = parse_args_to_config()
+    parser = argparse.ArgumentParser('Test Data plotter arguments parser.')
+
+    parser.add_argument(
+        '-m', '--merge_level', 
+        default=3, 
+        type=int,
+        choices=[1, 2, 3],
+        help='Level of merge between dataset of the same model.'
+    )
+
+    parser.add_argument(
+        '-r', '--recursively', 
+        default=False,
+        help='Recursively explore directories for valid datasets.',
+        action='store_true'
+    )
+
+    args = parse_args(parser=parser)
 
     data = OrderedDict()
 
-    if config.test_data_path.is_dir():
-
-        for f in sorted(config.test_data_path.iterdir(), key=orderedby):
-            print(f)
-            if f.is_file() and 'json' in f.suffix and f.name.startswith('rtest_data_bn'):
-                d = read_json(f)
-                data[f.with_suffix('').name] = DataFrame.from_dict(d)
+    if args.config.test_data_path.is_dir():
+        data.update(**collect_data(
+            args.config.test_data_path, 
+            recursively=args.recursively, 
+            ds_merge_level=args.merge_level
+        ))
     else:
-        d = read_json(config.test_data_path)
-        data[config.test_data_path.with_suffix('').name] = DataFrame.from_dict(d)
+        name, df = get_data(args.config.test_data_path, uniqueness=args.merge_level)
+        data[name] = df
 
-    plot_data(data, config)
+    plot_data(data, args.config.plot_positives_threshold)

@@ -2,7 +2,7 @@
 
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.core import BNController
-from bncontroller.sim.config import parse_args_to_config
+from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.robot.binarization import light_sensor_binarization
 from bncontroller.sim.logging.logger import FileLogger

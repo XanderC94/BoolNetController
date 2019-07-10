@@ -23,14 +23,12 @@ DEF Fire PointLight {
 DEF Plato E-puck {
   translation -0.75 0 0.75
   rotation 0 -1 0 0.7853981801795871
-  controllerArgs "--config_path=\".\""
+  controllerArgs "--config=\".\""
 }
 DEF Demiurge Robot {
   translation 1 0 1
   name "Demiurge"
   controller "demiurge"
-  controllerArgs "--config_path=\".\""
+  controllerArgs "--config=\".\""
   supervisor TRUE
-}
-isor TRUE
 }

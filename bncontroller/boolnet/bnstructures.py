@@ -1,8 +1,8 @@
+import json
+from pathlib import Path
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.ntree.ntstructures import NTree
-from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
-import json
+from bncontroller.jsonlib.utils import Jsonkin, jsonrepr, read_json
 
 class BooleanNode(Jsonkin):
 
@@ -181,7 +181,12 @@ class BooleanNetwork(Jsonkin):
     @staticmethod
     def from_json(json:dict):
 
-        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
+        __json = json
+
+        if isinstance(json, (Path, str)):
+            __json = read_json(json)
+
+        nodes = [BooleanNode.from_json(node) for node in __json['nodes']]
 
         return BooleanNetwork(nodes)
 
@@ -216,7 +221,12 @@ class OpenBooleanNetwork(BooleanNetwork):
     @staticmethod
     def from_json(json:dict):
 
-        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
+        __json = json
+
+        if isinstance(json, (Path, str)):
+            __json = read_json(json)
+
+        nodes = [BooleanNode.from_json(node) for node in __json['nodes']]
         
-        return OpenBooleanNetwork(nodes, json['inputs'], json['outputs'])
+        return OpenBooleanNetwork(nodes, __json['inputs'], __json['outputs'])
         

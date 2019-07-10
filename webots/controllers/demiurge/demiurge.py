@@ -3,7 +3,7 @@
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, LED, DistanceSensor
 from controller import Supervisor
-from bncontroller.sim.config import parse_args_to_config
+from bncontroller.parse.utils import parse_args_to_config
 
 config = parse_args_to_config()
 

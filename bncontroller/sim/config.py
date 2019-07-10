@@ -3,14 +3,16 @@ Configuration class and utils module.
 '''
 
 import math
-import argparse
 import numpy as np
 from pathlib import Path
+from argparse import ArgumentParser, Action
 from collections import defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D, r_point3d, Quadrant, Axis
-from bncontroller.file.utils import iso8106
+from bncontroller.file.utils import iso8106, generate_file_name, check_path
 from bncontroller.sim.robot.utils import DeviceName
+
+CONFIG_CLI_NAMES = ['-c', '-cp', '--config_path', '--config']
 
 class DefaultConfigOptions(Jsonkin):
     
@@ -77,7 +79,7 @@ class DefaultConfigOptions(Jsonkin):
         
         # Model Test Control Parameters #
 
-        test_positives_threshold=2e-06, # Specify a score threshold under which model are considered "good"
+        plot_positives_threshold=2e-06, # Specify a score threshold under which model are considered "good"
         test_data_path=Path('.'), # Path where to store test data
         test_n_instances=1, # number of iterations of the test cycle
         test_params_aggr_func='lp,ap,ar', # how test parameters should be aggregated in the test loop
@@ -176,7 +178,7 @@ class SimulationConfig(Jsonkin):
 
     # Model Test Control Parameters #
 
-    * test_positives_threshold -- Specify a score threshold under which model are considered "good"
+    * plot_positives_threshold -- Specify a score threshold under which model are considered "good"
     * test_data_path -- Path where to store test data
     * test_n_instances -- Number of iterations of the test cycle
     * test_params_aggr_func -- how test parameters should be aggregated in the test loop
@@ -238,7 +240,7 @@ class SimulationConfig(Jsonkin):
         self.eval_agent_n_yrot_samples = options['eval_agent_n_yrot_samples']
 
         # Test #
-        self.test_positives_threshold = options['test_positives_threshold']
+        self.plot_positives_threshold = options['plot_positives_threshold']
         self.test_data_path = options['test_data_path']
         self.test_n_instances = options['test_n_instances']
         self.test_params_aggr_func = options['test_params_aggr_func']
@@ -308,22 +310,54 @@ class SimulationConfig(Jsonkin):
         return dict((k, jsonrepr(v)) for k, v in vars(self).items() if k != 'globals')
     
     @staticmethod
-    def from_json(json:dict):
-        return SimulationConfig(**json)
+    def from_json(json):
+
+        __json = json
+
+        if isinstance(json, (Path, str)):
+            __json = read_json(json)
+
+        return SimulationConfig(**__json)
 
 ###########################################################################################
 
-def parse_args_to_config() -> SimulationConfig:
+def generate_ad_hoc_config(config:SimulationConfig, keyword='sim'):
+    
+    model_fname = generate_file_name(f'{keyword}_bn', uniqueness_gen= lambda: config.globals['date'], ftype='json')
+    data_fname = generate_file_name(f'{keyword}_data', uniqueness_gen= lambda: config.globals['date'], ftype='json')
+    log_fname = generate_file_name(f'{keyword}_log', uniqueness_gen= lambda: config.globals['date'], ftype='json')
+    config_fname = generate_file_name(f'{keyword}_config', uniqueness_gen= lambda: config.globals['date'], ftype='json')
+    
+    sim_world_def_name = config.webots_world_path.with_suffix('').name
+    
+    sim_world_fname = generate_file_name(
+        f'{keyword}_{sim_world_def_name}', 
+        uniqueness_gen= lambda: config.globals['date'], 
+        ftype='wbt'
+    )
 
-    parser = argparse.ArgumentParser('BoolNet Controller Configuration Parsing Unit.')
+    # Create Sim Config based on the Experiment Config
+    sim_config = SimulationConfig.from_json(config.to_json())
 
-    parser.add_argument('-cp', '--config_path', type=Path)
+    sim_config.globals['template'] = config
+    
+    sim_config.webots_world_path = sim_config.webots_world_path.parent / sim_world_fname
+    
+    sim_config.bn_model_path = (
+        sim_config.bn_model_path.parent 
+        if check_path(sim_config.bn_model_path, create_dirs=False)
+        else sim_config.bn_model_path
+    ) / model_fname
 
-    args = parser.parse_args()
+    sim_config.sim_config_path /= config_fname
+        
+    sim_config.sim_data_path /= data_fname
 
-    json_config = read_json(args.config_path)
+    sim_config.sim_log_path /= log_fname
+    
+    return sim_config
 
-    return SimulationConfig(**json_config)
+###########################################################################################
 
 if __name__ == "__main__":
     
