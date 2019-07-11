@@ -1,21 +1,20 @@
 '''
 BN Evaluation utility module
 '''
-import re
 import math
-import pandas
 import statistics
 import subprocess
 import itertools
-from pathlib import Path
-from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
+from collections.abc import Iterable
+import pandas
 from bncontroller.stubs.utils import generate_webots_worldfile
-from bncontroller.sim.config import SimulationConfig, CONFIG_CLI_NAMES, generate_sim_config
-from bncontroller.sim.data import Point3D, r_point3d, Axis, Quadrant
-from bncontroller.boolnet.eval.search.parametric import parametric_vns
-from bncontroller.sim.logging.logger import staticlogger as logger
+from bncontroller.file.utils import get_dir
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.file.utils import get_fname, get_dir
+from bncontroller.sim.data import Point3D
+from bncontroller.sim.config import SimulationConfig, generate_sim_config
+from bncontroller.sim.logging.logger import staticlogger as logger
+from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
+from bncontroller.boolnet.eval.search.parametric import parametric_vns
 
 def compare_scores(minimize, maximize):
 
@@ -44,7 +43,7 @@ def compare_scores(minimize, maximize):
         
 ###############################################################################################
 
-def evaluate(config:SimulationConfig, bn:OpenBooleanNetwork, on:tuple):
+def evaluate(config: SimulationConfig, bn: OpenBooleanNetwork, on: tuple):
 
     lpos, apos, yrot, *_ = on
 
@@ -57,22 +56,22 @@ def evaluate(config:SimulationConfig, bn:OpenBooleanNetwork, on:tuple):
     fs, ds = aggregate_sim_data(lpos, data)
 
     logger.info(
-            'iDistance:', lpos.dist(apos),
-            f'yRot: {(yrot / math.pi * 180)}°',
-            'fDistance:', ds,
-            'score: ', fs,
-        )
+        'iDistance: (m)', lpos.dist(apos), '|',
+        'yRot: (deg)', (yrot / math.pi * 180), '|',
+        'fDistance: (m)', ds, '|',
+        'score: (m2/W)', fs, '|',
+    )
 
-    return fs, ds
+    return fs, ds, lpos, apos, yrot
 
-def test_evaluation(template:SimulationConfig, bn:OpenBooleanNetwork, test_params):
+def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_params: Iterable):
 
     ### Generate ad hoc configuration for training ################################
-    
+
     config = generate_sim_config(template, keyword=template.globals['mode'])
-    
+
     ### Generate simulation world file for training ################################
-    
+
     if not config.webots_world_path.exists():
 
         generate_webots_worldfile(
@@ -82,7 +81,7 @@ def test_evaluation(template:SimulationConfig, bn:OpenBooleanNetwork, test_param
         )
 
     data = [evaluate(config, bn, tp) for tp in test_params] 
-    
+
     return tuple(list(e) for e in zip(*data))
 
 ###################################################################################
@@ -95,15 +94,15 @@ def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare
         template.globals['agent_yrots']
     )
 
-    fscores, dscores = test_evaluation(template, bn, test_params)
+    fscores, *_ = test_evaluation(template, bn, test_params)
 
     new_score = statistics.mean(fscores), statistics.stdev(fscores)
 
     if compare(new_score, template.globals['score']):
+        
         template.globals['score'] = new_score
 
         save_subopt_model(
-            new_score,
             template,
             bn.to_json()
         )
@@ -112,7 +111,7 @@ def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare
 
     return new_score
     
-def run_simulation(config : SimulationConfig, bn: OpenBooleanNetwork) -> dict:
+def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     # Save model (inside or outside of the config? mumble rumble)
     write_json(bn.to_json(), config.bn_model_path) # BN Model
@@ -139,7 +138,7 @@ def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
 
     return (1 / score if score > 0 else float('+inf')), round(light_position.dist(final_pos), 5)
 
-def save_subopt_model(new_score:float, config:SimulationConfig, bnjson:dict):
+def save_subopt_model(config: SimulationConfig, bnjson:dict):
         
     bnjson.update({'sim_info': dict()})
 

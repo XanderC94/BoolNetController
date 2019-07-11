@@ -36,7 +36,8 @@ class Point3D(Jsonkin):
         return self
 
     def __iter__(self):
-        for c in [self.x, self.y, self.z]: yield c
+        for c in [self.x, self.y, self.z]: 
+            yield c
         
     def __add__(self, that):
         return Point3D(self.x + that.x, self.y + that.y, self.z + that.z)

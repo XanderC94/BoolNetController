@@ -1,26 +1,21 @@
-import os
-import math
 import itertools
-import numpy as np
-import bncontroller.stubs.evaluation as evaluation
 from pathlib import Path
 from pandas import DataFrame
 from collections import defaultdict
-from bncontroller.file.utils import iso8106, check_path, get_fname
-from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.collectionslib.utils import flat_tuple
-from bncontroller.sim.data import generate_spawn_points
-# from bncontroller.sim.config import generate_sim_config
+from collections.abc import Iterable
+import bncontroller.stubs.evaluation as evaluation
+from bncontroller.file.utils import check_path, get_fname
+from bncontroller.jsonlib.utils import read_json
+from bncontroller.collectionslib.utils import flat
+from bncontroller.sim.data import generate_spawn_points, Point3D
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
-# from bncontroller.stubs.utils import generate_webots_worldfile
 from bncontroller.plot.utils import get_simple_name, fname_pattern
-# from bncontroller.plot.testdata import pattern
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 
 #########################################################################################################
 
-def tsort(t:tuple, go:dict, wo:dict = dict(lp=0, ap=1, ar=2)):
+def sort(t:Iterable, go:dict, wo:dict = dict(lp=0, ap=1, ar=2)):
 
     r = list(t)
     
@@ -44,10 +39,12 @@ def get_params_order(string:str, lp='lp', ap='ap', ar='ar'):
         ar: ix.index(ari),
     }
 
-def collect_bn_models(path:Path, 
-    ffilter=lambda f: f.is_file() and 'json' in f.suffix and 'rtest' not in f.name):
-    
-    files = dict()
+def collect_bn_models(
+        path:Path, 
+        ffilter=lambda f: f.is_file() and 'json' in f.suffix and 'rtest' not in f.name
+    ):
+
+    paths = dict()
     bns = defaultdict(list)
 
     if path.is_dir():
@@ -56,14 +53,14 @@ def collect_bn_models(path:Path,
             if ffilter(f):
                 name = f.with_suffix('').name
                 bns[name] = OpenBooleanNetwork.from_json(read_json(f))
-                files[name] = f
+                paths[name] = f
 
     else:
         name = path.with_suffix('').name
         bns[name] = OpenBooleanNetwork.from_json(read_json(path))
-        files[name] = path
+        paths[name] = path
     
-    return files, bns
+    return paths, bns
 
 ###################################################################################
 
@@ -79,7 +76,7 @@ if __name__ == "__main__":
         raise Exception(
             'Test dataset path in template configuration file should be a directory.'
         )
-    
+
     logger.instance = LoggerFactory.filelogger(
         template.app_output_path / '{key}_{date}.log'.format(
             key=template.globals['mode'],
@@ -89,7 +86,7 @@ if __name__ == "__main__":
 
     ### Load Test Model(s) from Template paths ####################################
 
-    files, bns = collect_bn_models(template.bn_model_path)
+    paths, bns = collect_bn_models(template.bn_model_path)
 
     ### Prepare aggregation function evaluator ####################################
 
@@ -110,9 +107,9 @@ if __name__ == "__main__":
 
             test_data = DataFrame()
 
-            test_params = list(map( 
-                lambda t: tsort(
-                    flat_tuple(t), 
+            test_params = map( 
+                lambda t: sort(
+                    flat(t, to=tuple, exclude=Point3D), 
                     get_params_order(template.test_params_aggr_func)
                 ),
                 itertools.product(
@@ -123,11 +120,13 @@ if __name__ == "__main__":
                         template.globals['agent_yrots']
                     )
                 )
-            ))
+            )
 
-            fscores, dscores = evaluation.test_evaluation(template, bns[k], test_params)
+            sim_data = evaluation.test_evaluation(template, bns[k], test_params)
 
-            lpos, apos, yrot = tuple(list(t) for t in zip(*test_params))
+            fscores, dscores, lpos, apos, yrot, *_ = sim_data
+
+            # lpos, apos, yrot = tuple(list(t) for t in zip(*test_params))
 
             test_data['score'] = fscores
             test_data['fdist'] = dscores
@@ -139,7 +138,7 @@ if __name__ == "__main__":
             test_data.to_json(
                 template.test_data_path / get_fname(
                     'rtest_data', 
-                    get_simple_name(files[k].name, fname_pattern),
+                    get_simple_name(paths[k].name, fname_pattern),
                     template='{name}'+f'_in{i}.json',
                 )
             )

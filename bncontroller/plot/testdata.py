@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plotter
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.colors as colors
 import matplotlib.patches as mpatches
-import matplotlib.cm as cmx
 
-import random, math, argparse
+import random, math, argparse, itertools
 import numpy as np
 import re as regx
 import bncontroller.plot.utils as pu
@@ -17,6 +15,7 @@ from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
 from bncontroller.plot.outputdata import plot_output
+from bncontroller.collectionslib.utils import flat
 
 #################################################################################
 
@@ -268,7 +267,10 @@ def collect_data(
             data = OrderedDict(
                 **data, 
                 **collect_data(
-                    p, fpattern,
+                    sorted(
+                        p.iterdir(), 
+                        key=lambda x: pu.orderedby(x.name, pu.fname_pattern)
+                    ), fpattern,
                     recursively=recursively, 
                     ds_merge_level=ds_merge_level
                 )
@@ -292,19 +294,16 @@ if __name__ == "__main__":
 
     parser.add_argument(
         '-r', '--recursively', 
-        default=False,
-        help='Recursively explore directories for valid datasets.',
-        action='store_true'
+        default=True,
+        help='DO NOT Recursively explore directories for valid datasets.',
+        action='store_false'
     )
 
     args = parse_args(parser=parser)
 
     paths = (
-        sorted(
-            args.config.test_data_path.iterdir(), 
-            key=lambda x: pu.orderedby(x.name, pu.fname_pattern)
-        )
-        if args.config.test_data_path.is_dir()
+        args.config.test_data_path
+        if isinstance(args.config.test_data_path, list)
         else [args.config.test_data_path]
     )
 
