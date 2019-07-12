@@ -1,21 +1,25 @@
 import itertools
+import re
 from pathlib import Path
-from pandas import DataFrame
 from collections import defaultdict
 from collections.abc import Iterable
+from pandas import DataFrame
 import bncontroller.stubs.evaluation as evaluation
-from bncontroller.file.utils import check_path, get_fname
+from bncontroller.file.utils import check_path, get_fname, cpaths
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import flat
 from bncontroller.sim.data import generate_spawn_points, Point3D
+from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.plot.utils import get_simple_name, fname_pattern
+from bncontroller.plot.utils import get_simple_name, FNAME_PATTERN
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 
 #########################################################################################################
 
-def sort(t:Iterable, go:dict, wo:dict = dict(lp=0, ap=1, ar=2)):
+MODEL_NAME_PATTERN = r'bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
+
+def sort(t:Iterable, go:dict, wo=dict(lp=0, ap=1, ar=2)):
 
     r = list(t)
     
@@ -40,29 +44,42 @@ def get_params_order(string:str, lp='lp', ap='ap', ar='ar'):
     }
 
 def collect_bn_models(
-        path:Path, 
-        ffilter=lambda f: f.is_file() and 'json' in f.suffix and 'rtest' not in f.name
+        paths:Iterable, 
+        ffilter=lambda x: x.is_file() and re.match(MODEL_NAME_PATTERN, x.name)
     ):
 
-    paths = dict()
+    files = dict()
     bns = defaultdict(list)
 
-    if path.is_dir():
-        
-        for f in template.bn_model_path.iterdir():
-            if ffilter(f):
-                name = f.with_suffix('').name
-                bns[name] = OpenBooleanNetwork.from_json(read_json(f))
-                paths[name] = f
+    for path in paths:
+        if path.is_dir():
+            
+            f, bn, *_ = collect_bn_models(
+                path.iterdir(),
+                ffilter=ffilter
+            )
 
-    else:
-        name = path.with_suffix('').name
-        bns[name] = OpenBooleanNetwork.from_json(read_json(path))
-        paths[name] = path
+            bns.update(**bn)
+            files.update(**f)
+
+        elif ffilter(path):
+            name = path.with_suffix('').name
+            bns[name] = OpenBooleanNetwork.from_json(read_json(path))
+            files[name] = path
     
-    return paths, bns
+    return files, bns
 
 ###################################################################################
+
+def check_config(config:SimulationConfig):
+
+    if config.webots_world_path.is_dir():
+        raise Exception('Simulation world template should be a file not a dir.')
+
+    elif not check_path(template.test_data_path):
+        raise Exception(
+            'Test dataset path in template configuration file should be a directory.'
+        )
 
 if __name__ == "__main__":
 
@@ -70,12 +87,9 @@ if __name__ == "__main__":
 
     template = parse_args_to_config()
 
-    template.globals['mode'] = 'rtest'
+    check_config(template)
 
-    if not check_path(template.test_data_path):
-        raise Exception(
-            'Test dataset path in template configuration file should be a directory.'
-        )
+    template.globals['mode'] = 'rtest'
 
     logger.instance = LoggerFactory.filelogger(
         template.app_output_path / '{key}_{date}.log'.format(
@@ -86,7 +100,9 @@ if __name__ == "__main__":
 
     ### Load Test Model(s) from Template paths ####################################
 
-    paths, bns = collect_bn_models(template.bn_model_path)
+    files, bns = collect_bn_models(
+        cpaths(template.bn_model_path)
+    )
 
     ### Prepare aggregation function evaluator ####################################
 
@@ -126,8 +142,6 @@ if __name__ == "__main__":
 
             fscores, dscores, lpos, apos, yrot, *_ = sim_data
 
-            # lpos, apos, yrot = tuple(list(t) for t in zip(*test_params))
-
             test_data['score'] = fscores
             test_data['fdist'] = dscores
             test_data['lpos'] = lpos
@@ -138,7 +152,7 @@ if __name__ == "__main__":
             test_data.to_json(
                 template.test_data_path / get_fname(
                     'rtest_data', 
-                    get_simple_name(paths[k].name, fname_pattern),
+                    get_simple_name(files[k].name, FNAME_PATTERN),
                     template='{name}'+f'_in{i}.json',
                 )
             )

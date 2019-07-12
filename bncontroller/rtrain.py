@@ -2,9 +2,9 @@
 Generate or load a BN and run Stochastic Descent Search Algorithm
 '''
 import time
-import os
-import math
-import numpy as np
+# import os
+# import math
+# import numpy as np
 from pathlib import Path
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
@@ -48,6 +48,13 @@ def generate_or_load_bn(
 
     return bn
 
+def check_config(config:SimulationConfig):
+
+    if isinstance(config.bn_model_path, list):
+        raise Exception('Model path should be a dir or file')
+    elif config.webots_world_path.is_dir():
+        raise Exception('Simulation world template should be a file not a dir.') 
+
 ####################################################################################
 
 if __name__ == "__main__":
@@ -55,6 +62,8 @@ if __name__ == "__main__":
     ### Load Configuration #########################################################
 
     template = parse_args_to_config()
+
+    check_config(template)
 
     template.globals['mode'] = 'rtrain'
     

@@ -9,7 +9,9 @@ import bncontroller.plot.utils as pu
 from pandas import DataFrame
 from pathlib import Path
 from collections import OrderedDict
+from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
+from bncontroller.file.utils import cpaths
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
@@ -245,7 +247,7 @@ def plot_data(data:dict, positives_threshold:float):
 #######################################################################
 
 def collect_data(
-        paths:list, fpattern:str,
+        paths:Iterable, fpattern:str,
         recursively=False, ds_merge_level=3, 
         data_getter=pu.get_data):
 
@@ -256,20 +258,17 @@ def collect_data(
         print(p)
         
         if p.is_file():
-            try:
-                name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
-                data[name] = data[name].append(df, ignore_index=True) if name in data else df
-            except Exception as ex:
-                pass
+            name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
+            data[name] = data[name].append(df, ignore_index=True) if name in data else df
 
         elif p.is_dir() and recursively:
-
+            
             data = OrderedDict(
                 **data, 
                 **collect_data(
                     sorted(
                         p.iterdir(), 
-                        key=lambda x: pu.orderedby(x.name, pu.fname_pattern)
+                        key=lambda x: pu.orderedby(x.name, pu.FNAME_PATTERN)
                     ), fpattern,
                     recursively=recursively, 
                     ds_merge_level=ds_merge_level
@@ -301,15 +300,11 @@ if __name__ == "__main__":
 
     args = parse_args(parser=parser)
 
-    paths = (
-        args.config.test_data_path
-        if isinstance(args.config.test_data_path, list)
-        else [args.config.test_data_path]
-    )
+    # print(args.config.test_data_path)
 
     data = OrderedDict(**collect_data(
-        paths,
-        fpattern=r'rtest_data_(?:bn_subopt_)?' + pu.fname_pattern + '.json',
+        cpaths(args.config.test_data_path),
+        fpattern=r'rtest_data_(?:bn_subopt_)?' + pu.FNAME_PATTERN + '.json',
         recursively=args.recursively, 
         ds_merge_level=args.merge_level
     ))

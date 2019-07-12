@@ -1,9 +1,8 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plotter
-from pandas import DataFrame
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.plot.utils import get_simple_name, fname_pattern
+from bncontroller.plot.utils import get_simple_name, FNAME_PATTERN
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
@@ -55,7 +54,7 @@ if __name__ == "__main__":
 
     for f in files:
 
-        fname = get_simple_name(f.name, fname_pattern)
+        fname = get_simple_name(f.name, FNAME_PATTERN)
 
         data = parse_output(f)
         

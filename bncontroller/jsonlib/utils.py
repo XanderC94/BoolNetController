@@ -83,7 +83,7 @@ def read_json(path: Path or str) -> dict:
 
     return _obj
 
-def write_json(obj, path: Path or str, indent = False, default=lambda x: x.__dict__):
+def write_json(obj, path: Path or str, indent = False, default=jsonrepr):
 
     _path = path if isinstance(path, Path) else Path(path)
     _obj = jsonrepr(obj)

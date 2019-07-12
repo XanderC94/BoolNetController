@@ -110,7 +110,9 @@ def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare
     template.globals['it'] += 1
 
     return new_score
-    
+
+#################################################################################################
+
 def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     # Save model (inside or outside of the config? mumble rumble)

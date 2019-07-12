@@ -43,6 +43,13 @@ def get_dir(path:Path, create_dirs=False):
         else path.parent
     )
 
+def cpaths(p) -> list:
+    return p if isinstance(p, list) else (
+        list(p.iterdir())
+        if isinstance(p, Path) and p.is_dir()
+        else [p]
+    )
+
 
 if __name__ == "__main__":
     

@@ -175,12 +175,12 @@ class DefaultConfigOptions(Jsonkin):
         ),
         bn_n_inputs=DefaultOption(
             value=8,
-            alt=list,
+            alt=None,
             descr='''number or List of nodes of the BN to be reserved as inputs'''
         ),
         bn_n_outputs=DefaultOption(
             value=2,
-            alt=list,
+            alt=None,
             descr='''number or List of nodes of the BN to be reserved as outputs'''
         ),
 
@@ -500,13 +500,6 @@ def generate_sim_config(
 ###########################################################################################
 
 if __name__ == "__main__":
+
+    write_json(SimulationConfig(), './config_template.json')
     
-    c = SimulationConfig()
-
-    jr = c.to_json()
-
-    c2 = SimulationConfig.from_json(jr)
-
-    print(c2)
-
-    # write_json(SimulationConfig(), './config_template.json')
