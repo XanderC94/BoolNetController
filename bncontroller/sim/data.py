@@ -104,46 +104,6 @@ def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.NONE, quadrant=Quad
 
     return O + axis(quadrant(P))
 
-#########################################################################
-
-class SimulationStepData(Jsonkin):
-
-    def __init__(self,
-        n_step: int,
-        position: Point3D,
-        bnstate: dict,
-        light_values: list,
-        distance_values: list,
-        bumps_values: list):
-
-        self.n_step = n_step
-        self.bnstate = bnstate
-        self.position = position
-        self.light_values = light_values
-        self.distance_values = distance_values
-        self.bumps_values = bumps_values
-        
-    def to_json(self) -> dict:
-        return {
-            'n_step':self.n_step,
-            'position':self.position.to_json(),
-            'bnstate':self.bnstate,
-            'light_values':self.light_values,
-            'distance_values':self.distance_values,
-            'bumps_values':self.bumps_values,
-        }
-    
-    @staticmethod
-    def from_json(json:dict):
-        return SimulationStepData(
-            json['n_step'],
-            Point3D.from_json(json['position']),
-            json['bnstate'],
-            json['light_values'],
-            json['distance_values'],
-            json['bumps_values']
-        )
-
 ##################################################################
 
 def generate_spawn_points(config):
@@ -191,3 +151,43 @@ def generate_spawn_points(config):
     )
 
     return spawn_points
+    
+#########################################################################
+
+class SimulationStepData(Jsonkin):
+
+    def __init__(self,
+        n_step: int,
+        position: Point3D,
+        bnstate: dict,
+        light_values: list,
+        distance_values: list,
+        bumps_values: list):
+
+        self.n_step = n_step
+        self.bnstate = bnstate
+        self.position = position
+        self.light_values = light_values
+        self.distance_values = distance_values
+        self.bumps_values = bumps_values
+        
+    def to_json(self) -> dict:
+        return {
+            'n_step':self.n_step,
+            'position':self.position.to_json(),
+            'bnstate':self.bnstate,
+            'light_values':self.light_values,
+            'distance_values':self.distance_values,
+            'bumps_values':self.bumps_values,
+        }
+    
+    @staticmethod
+    def from_json(json:dict):
+        return SimulationStepData(
+            json['n_step'],
+            Point3D.from_json(json['position']),
+            json['bnstate'],
+            json['light_values'],
+            json['distance_values'],
+            json['bumps_values']
+        )

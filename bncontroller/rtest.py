@@ -5,14 +5,13 @@ from collections import defaultdict
 from collections.abc import Iterable
 from pandas import DataFrame
 import bncontroller.stubs.evaluation as evaluation
-from bncontroller.file.utils import check_path, get_fname, cpaths
+from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import flat
 from bncontroller.sim.data import generate_spawn_points, Point3D
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.plot.utils import get_simple_name, FNAME_PATTERN
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 
 #########################################################################################################
@@ -76,9 +75,17 @@ def check_config(config:SimulationConfig):
     if config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.')
 
-    elif not check_path(template.test_data_path):
+    elif not check_path(template.test_data_path, create_dirs=True):
         raise Exception(
             'Test dataset path in template configuration file should be a directory.'
+        )
+
+    if not all(p in config.test_params_aggr_func for p in ('lp', 'ar', 'ap')):
+        raise Exception(
+            '''
+            Aggregation function params must be named 
+            lp: light_points, ap: agent_points and ar: agent rotation
+            '''
         )
 
 if __name__ == "__main__":
@@ -150,9 +157,9 @@ if __name__ == "__main__":
             test_data['idist'] = list(a.dist(b) for a, b in zip(lpos, apos))
 
             test_data.to_json(
-                template.test_data_path / get_fname(
+                template.test_data_path / gen_fname(
                     'rtest_data', 
-                    get_simple_name(files[k].name, FNAME_PATTERN),
+                    get_simple_fname(files[k].name, FNAME_PATTERN, uniqueness=2),
                     template='{name}'+f'_in{i}.json',
                 )
             )

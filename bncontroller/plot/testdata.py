@@ -5,7 +5,9 @@ import matplotlib.patches as mpatches
 import random, math, argparse, itertools
 import numpy as np
 import re as regx
+import statistics
 import bncontroller.plot.utils as pu
+import bncontroller.file.utils as fu
 from pandas import DataFrame
 from pathlib import Path
 from collections import OrderedDict
@@ -34,6 +36,8 @@ def plot_data(data:dict, positives_threshold:float):
     bpax.set_ylabel('Score')
 
     bpax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+
+    bpax.set_ylim([0.0, 2.5e-05])
 
     bpax.boxplot(
         x=list(data[k]['score'] for k in data),
@@ -69,6 +73,8 @@ def plot_data(data:dict, positives_threshold:float):
 
     bp2ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
+    bp2ax.set_ylim([0.0, 2.6])
+
     bp2ax.boxplot(
         x=list(data[k]['fdist'] for k in data),
         labels=list(data.keys()),
@@ -100,6 +106,8 @@ def plot_data(data:dict, positives_threshold:float):
 
     bax.set_xlabel('BN model')
     bax.set_ylabel('P|N (%)')
+
+    bax.set_ylim([0, 1.1])
 
     x = 0
 
@@ -198,14 +206,16 @@ def plot_data(data:dict, positives_threshold:float):
 
     s3dax = plotter.figure(num=f'test_scores_by_iDist_yRot_scatter3d').gca(projection='3d')
 
-    s3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
-
     s3dax.set_title(f'Model Tests -- Scores / Initial Distance (m) / yRot (°) Distribution')
     
     s3dax.set_xlabel('Initial Distance (m)')
     s3dax.set_ylabel('yRot (°)')
     s3dax.set_zlabel('Score')
 
+    s3dax.set_zlim3d(0, 2.5e-05)
+
+    s3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
+    
     for i, k in enumerate(data):
         
         s3dax.scatter(
@@ -223,13 +233,15 @@ def plot_data(data:dict, positives_threshold:float):
 
     f3dax = plotter.figure(num=f'test_fDist_by_iDist_yRot_scatter3d').gca(projection='3d')
 
-    f3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
-
     f3dax.set_title(f'Model Tests -- Final Distance (m) / Initial Distance (m) / yRot (°) Distribution')
     
     f3dax.set_xlabel('Initial Distance (m)')
     f3dax.set_ylabel('yRot (°)')
     f3dax.set_zlabel('Final Distance (m)')
+
+    f3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
+
+    f3dax.set_zlim3d(0, 2.6)
 
     for i, k in enumerate(data):
         
@@ -251,31 +263,37 @@ def collect_data(
         recursively=False, ds_merge_level=3, 
         data_getter=pu.get_data):
 
-    data = OrderedDict()
+    sortbykey = lambda x: x[0]
 
-    for p in paths:
-        
-        print(p)
-        
-        if p.is_file():
-            name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
-            data[name] = data[name].append(df, ignore_index=True) if name in data else df
+    def go(paths:Iterable, recursively, ds_merge_level):
 
-        elif p.is_dir() and recursively:
+        data = OrderedDict()
+
+        for p in paths:
             
-            data = OrderedDict(
-                **data, 
-                **collect_data(
-                    sorted(
-                        p.iterdir(), 
-                        key=lambda x: pu.orderedby(x.name, pu.FNAME_PATTERN)
-                    ), fpattern,
-                    recursively=recursively, 
-                    ds_merge_level=ds_merge_level
-                )
-            )
+            print(p)
+            
+            if p.is_file():
+                name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
+                data[name] = data[name].append(df, ignore_index=True) if name in data else df
 
-    return data
+            elif p.is_dir() and recursively:
+                
+                data.update(
+                    **data, 
+                    **go(
+                        sorted(
+                            p.iterdir(), 
+                            key=lambda x: pu.orderedby(x.name, fu.FNAME_PATTERN)
+                        ),
+                        recursively=recursively, 
+                        ds_merge_level=ds_merge_level
+                    )
+                )
+
+        return data
+
+    return OrderedDict(sorted(go(paths, recursively, ds_merge_level).items(), key=sortbykey))
 
 ######################################################################
 
@@ -304,29 +322,10 @@ if __name__ == "__main__":
 
     data = OrderedDict(**collect_data(
         cpaths(args.config.test_data_path),
-        fpattern=r'rtest_data_(?:bn_subopt_)?' + pu.FNAME_PATTERN + '.json',
+        fpattern=r'rtest_data_(?:bn_subopt_)?' + f'{fu.FNAME_PATTERN}.json',
         recursively=args.recursively, 
         ds_merge_level=args.merge_level
     ))
-
-    # def outputfilter(f:Path, pattern=pu.fname_pattern):
-
-    #     return pu.get_ids(f.name, pattern)[0] in set(
-    #         map(lambda p: pu.get_ids(p.name, pattern)[0], paths)
-    #     )
-
-    # outdata = OrderedDict(**collect_data(
-    #     filter(
-    #         outputfilter,
-    #         args.config.test_data_path.iterdir()
-    #     ),
-    #     fpattern=r'(exp|rtrain)_' + pu.fname_pattern,
-    #     recursively=args.recursively, 
-    #     ds_merge_level=args.merge_level
-    # ))
-
-    # for n, d in outdata.items():
-    #     plot_output(n, d) 
 
     plot_data(data, args.config.plot_positives_threshold)
 

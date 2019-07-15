@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from pathlib import Path, WindowsPath, PosixPath, _windows_flavour, _posix_flavour
 
 def collection_diff(first: Iterable, second: Iterable):
-
     return [item for item in first if item not in set(second)]
 
 def flat(x: Iterable, to=list, exclude=(dict, str)):

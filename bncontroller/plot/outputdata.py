@@ -1,8 +1,9 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plotter
+import bncontroller.plot.colors as colors
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.plot.utils import get_simple_name, FNAME_PATTERN
+from bncontroller.file.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
@@ -14,6 +15,8 @@ def plot_output(dataset:str, data:list):
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Score')
 
+    ax.set_xlim([-10, 2500])
+    ax.set_ylim([0.0, 3.5e-05])
     ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
     ax.plot(data, color='r')
@@ -45,16 +48,13 @@ if __name__ == "__main__":
     
     config = parse_args_to_config()
 
-    files = (
-        list(config.app_output_path.iterdir()) 
-        if config.app_output_path.is_dir() 
-        else [config.app_output_path]
-    )
+    files = cpaths(config.app_output_path, recursive=3)
+
     plots = list()
 
-    for f in files:
+    for f in filter(is_file, files):
 
-        fname = get_simple_name(f.name, FNAME_PATTERN)
+        fname = get_simple_fname(f.name, FNAME_PATTERN, uniqueness=1)
 
         data = parse_output(f)
         

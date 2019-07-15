@@ -68,12 +68,6 @@ def objrepr(json_repr, obj_type, alt_type=None):
             return alt_type(objrepr(item, obj_type) for item in json_repr)
         else:
             return obj_type(json_repr)
-        
-def check_to_json_existence(value):
-    if hasattr(value, 'to_json') and callable(value.to_json):
-        return value.to_json() 
-    else:
-        return value
 
 def read_json(path: Path or str) -> dict:
     _path = path if isinstance(path, Path) else Path(path)
@@ -93,13 +87,3 @@ def write_json(obj, path: Path or str, indent = False, default=jsonrepr):
             json.dump(_obj, fp, indent=4, default=default)
         else:
             json.dump(_obj, fp, default=default)
-
-
-def recursiveExtractDictWithIntKey(json)-> dict:
-    connectivities = {}
-    for K,V in json.items():
-        if isinstance(V, dict):
-            connectivities.update({int(K): recursiveExtractDictWithIntKey(V)})
-        else:
-            connectivities.update({int(K): V})
-    return connectivities

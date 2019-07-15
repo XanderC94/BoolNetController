@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Action
 from collections import defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D
-from bncontroller.file.utils import iso8106, get_fname, check_path, get_dir
+from bncontroller.file.utils import iso8106, gen_fname, check_path, get_dir
 from bncontroller.sim.robot.utils import DeviceName
 from collections import namedtuple
 
@@ -69,16 +69,21 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''-1 -> Adaptive Walk, 0+ -> VNS'''
         ),  
-        sd_minimization_target=DefaultOption(
-            value=0.0,
-            alt=tuple,
-            descr='''value to which reduce the objective function'''
-        ), #  
         sd_max_stagnation=DefaultOption(
             value=1250,
             alt=None,
             descr='''close the algorithm if no further improvement are found after i iteration'''
         ),
+        sd_minimization_target=DefaultOption(
+            value=0.0,
+            alt=tuple,
+            descr='''value to which reduce the objective function'''
+        ), #  
+        # sd_min_target_delta=DefaultOption(
+        #     value=0.001,
+        #     alt=tuple,
+        #     descr='''value to which reduce the objective function'''
+        # ), #  
 
         # Simulation Control Options #
 
@@ -474,11 +479,11 @@ def generate_sim_config(
     
     uniqueness = lambda: config.globals['date']
 
-    world_fname = get_fname(keyword, template=world_fname, uniqueness=uniqueness, ftype='wbt')
-    model_fname = get_fname(keyword, template=model_fname, uniqueness=uniqueness, ftype='json')
-    config_fname = get_fname(keyword, template=config_fname, uniqueness=uniqueness, ftype='json')
-    data_fname = get_fname(keyword, template=data_fname, uniqueness=uniqueness, ftype='json')
-    log_fname = get_fname(keyword, template=log_fname, uniqueness=uniqueness, ftype='log')
+    world_fname = gen_fname(keyword, template=world_fname, uniqueness=uniqueness, ftype='wbt')
+    model_fname = gen_fname(keyword, template=model_fname, uniqueness=uniqueness, ftype='json')
+    config_fname = gen_fname(keyword, template=config_fname, uniqueness=uniqueness, ftype='json')
+    data_fname = gen_fname(keyword, template=data_fname, uniqueness=uniqueness, ftype='json')
+    log_fname = gen_fname(keyword, template=log_fname, uniqueness=uniqueness, ftype='log')
 
     # Create Sim Config based on the Experiment Config
     sim_config = SimulationConfig.from_json(config.to_json())

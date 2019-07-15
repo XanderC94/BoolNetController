@@ -12,7 +12,12 @@ def default_evaluation_strategy(bn: OpenBooleanNetwork, target_tes: NTree, thres
     return utils.tes_distance(tes, target_tes)
 
 def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set):
+    '''
+    Default scrambling strategy for vns algorithm.
+    Scrambling = flips generation + boolean network edit
 
+    returns the modified bn, the applied flips and their hashset
+    '''
     terminal_nodes = list(
         n.label 
         for n in bn.nodes 
@@ -27,6 +32,11 @@ def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set)
     return bn, flips, set(map(hash, flips))
 
 def default_compare_strategy(minimize, maximize):
+    '''
+    Default compare strategy for vns algorithm.
+
+    return minimize < maximize
+    '''
     return minimize < maximize
 
 ###############################################################################
@@ -72,7 +82,7 @@ def parametric_vns(
             If set to -1 it won't be considered
     '''
 
-    dist = evaluate(bn)
+    score = evaluate(bn)
 
     max_flips = sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes)
 
@@ -82,11 +92,11 @@ def parametric_vns(
     n_flips = 1
     n_stagnation = 0
 
-    while it < max_iters and compare(min_target, dist):
+    while it < max_iters and compare(min_target, score):
         
         bn, flips, excluded = scramble(bn, n_flips, excluded)
 
-        new_dist = evaluate(bn)
+        new_score = evaluate(bn)
 
         logger.info(
             'it:', it, 
@@ -94,16 +104,16 @@ def parametric_vns(
             'stalls:', n_stalls,
             'stagnation: ', n_stagnation,
             'dist --',
-            'old:', dist,  
-            'new:', new_dist
+            'old:', score,  
+            'new:', new_score
         )
         
-        if compare(new_dist, dist):
+        if compare(new_score, score):
 
             n_stagnation = 0
             n_stalls = 0
             n_flips = 1
-            dist = new_dist
+            score = new_score
 
         else:
 

@@ -18,14 +18,19 @@ from bncontroller.sim.data import generate_spawn_points
 
 ####################################################################################
 
-def generate_or_load_bn(
-        path: Path, 
-        N:int, K:int, P:float, I:int, O:int, 
-        date:str):
+def generate_or_load_bn(template: SimulationConfig):
     
+    path=template.bn_model_path
+    N=template.bn_n
+    K=template.bn_k
+    P=template.bn_p
+    I=template.bn_n_inputs
+    O=template.bn_n_outputs
+    date=template.globals['date']
+
     bn = None
 
-    if check_path(path):
+    if check_path(path, create_dirs=True):
         bng, I, O, *_ = rbn_gen(N, K, P, I, O)
         bn = bng.new_obn(I, O)
 
@@ -43,8 +48,7 @@ def generate_or_load_bn(
 
     else:
         bn = OpenBooleanNetwork.from_json(read_json(path))
-
-        logger.info('BN loaded.')
+        logger.info(f'BN loaded from {path}.')
 
     return bn
 
@@ -65,8 +69,11 @@ if __name__ == "__main__":
 
     check_config(template)
 
-    template.globals['mode'] = 'rtrain'
-    
+    template.globals['mode'] = (
+        'rtrain' 
+        if check_path(template.bn_model_path, create_dirs=True) 
+        else 'renhance' 
+    )
     ### Init logger ################################################################
     
     logger.instance = LoggerFactory.filelogger(
@@ -78,15 +85,7 @@ if __name__ == "__main__":
 
     ### BN Generation / Loading ####################################################
 
-    bn = generate_or_load_bn(
-        path=template.bn_model_path, 
-        N=template.bn_n,
-        K=template.bn_k,
-        P=template.bn_p,
-        I=template.bn_n_inputs,
-        O=template.bn_n_outputs,
-        date=template.globals['date']
-    )
+    bn = generate_or_load_bn(template)
     
     ### Launch search algorithm ##############################################
 

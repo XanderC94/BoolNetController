@@ -1,4 +1,4 @@
-from bncontroller.sim.config import parse_args_to_config
+from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.sim.config import SimulationConfig
 import subprocess
 from pathlib import Path
