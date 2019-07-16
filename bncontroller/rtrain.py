@@ -8,13 +8,14 @@ import time
 from pathlib import Path
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.stubs.evaluation import search_bn_controller
-from bncontroller.sim.config import SimulationConfig
+from bncontroller.boolnet.eval.search.parametric import parametric_vns
+from bncontroller.stubs.evaluation import compare_scores, train_evaluation
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import check_path
-from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.sim.data import generate_spawn_points
+from bncontroller.sim.config import SimulationConfig
+from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 
 ####################################################################################
 
@@ -62,7 +63,7 @@ def check_config(config:SimulationConfig):
 ####################################################################################
 
 if __name__ == "__main__":
- 
+
     ### Load Configuration #########################################################
 
     template = parse_args_to_config()
@@ -97,7 +98,15 @@ if __name__ == "__main__":
 
         t = time.perf_counter()
 
-        search_bn_controller(template, bn)
+        parametric_vns(
+            bn,
+            evaluate=lambda bn: train_evaluation(template, bn, compare=compare_scores),
+            compare=lambda minimize, maximize: compare_scores(minimize, maximize),
+            min_target=template.sd_minimization_target,
+            max_iters=template.sd_max_iters,
+            max_stalls=template.sd_max_stalls,
+            max_stagnation=template.sd_max_stagnation
+        )
 
         logger.info(f"Search time: {time.perf_counter()-t}s")
    

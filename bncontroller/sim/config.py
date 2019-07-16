@@ -64,6 +64,11 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''stochastic descent max iterations'''
         ),
+        sd_min_flips=DefaultOption(
+            value=1,
+            alt=None,
+            descr='''stochastic descent min flipped TT entries by iteration'''
+        ),
         sd_max_stalls=DefaultOption(
             value=1,
             alt=None,
@@ -297,7 +302,6 @@ class DefaultConfigOptions(Jsonkin):
 ################################################################################################
 
 class SimulationConfig(Jsonkin):
-
     '''      
     * app_output_path -- Directory or file where to store the simulation general log
     
@@ -312,9 +316,10 @@ class SimulationConfig(Jsonkin):
     # Stochastic Descent Algorithm Control Parameters #
 
     * sd_max_iters -- stochastic descent max iterations
+    * sd_min_flips -- stochastic descent min flipped entries by iteration
     * sd_max_stalls -- 1 -> Adaptive Walk, 2+ -> VNS 
-    * sd_minimization_target -- value to which reduce the objective function 
     * sd_max_stagnation -- close the algorithm if no further improvement are found after i iteration
+    * sd_minimization_target -- value to which reduce the objective function 
 
     # Simulation Control Options #
 
@@ -385,9 +390,10 @@ class SimulationConfig(Jsonkin):
 
         # Stochastic Descent Search
         self.sd_max_iters = options['sd_max_iters']
+        self.sd_min_flips = options['sd_min_flips']
         self.sd_max_stalls = options['sd_max_stalls']
-        self.sd_minimization_target = options['sd_minimization_target']
         self.sd_max_stagnation = options['sd_max_stagnation']
+        self.sd_minimization_target = options['sd_minimization_target']
 
         # Simulation #
         self.sim_run_time_s = options['sim_run_time_s']

@@ -93,6 +93,19 @@ class BooleanFunction(Jsonkin):
             _bf[params] = Boolean.from_json(e['hold'])
         
         return _bf
+    
+    def as_logic_expr(self, pnames:list) -> str:
+        terms = []
+        
+        if pnames:
+            for tte in self.__truth_table:
+                if self[tte]:
+                    terms.append('({expr})'.format(
+                        expr=' & '.join([f'{n}' if p else f'!{n}' for p, n in zip(tte, pnames)])
+                    ))
+
+        return ' | '.join(terms)
+
 
 if __name__ == "__main__":
 

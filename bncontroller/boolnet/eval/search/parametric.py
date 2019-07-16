@@ -47,6 +47,7 @@ def parametric_vns(
         scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         compare=lambda minimize, maximize: default_compare_strategy(minimize, maximize),
         min_target=0.0,
+        min_flips=1,
         max_iters=10000, 
         max_stalls=-1,
         max_stagnation=2500):
@@ -89,7 +90,7 @@ def parametric_vns(
     it = 0
     excluded = set()
     n_stalls = 0
-    n_flips = 1
+    n_flips = min_flips
     n_stagnation = 0
 
     while it < max_iters and compare(min_target, score):

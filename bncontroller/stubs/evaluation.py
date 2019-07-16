@@ -53,7 +53,7 @@ def evaluate(config: SimulationConfig, bn: OpenBooleanNetwork, on: tuple):
 
     data = run_simulation(config, bn)
 
-    fs, ds = aggregate_sim_data(lpos, data)
+    fs, ds = phototaxis_score(lpos, data)
 
     logger.info(
         'iDistance: (m)', lpos.dist(apos), '|',
@@ -111,6 +111,26 @@ def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare
 
     return new_score
 
+################################################################################################
+
+def selector_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare = compare_scores):
+
+    # 1. Save bn to EBNF format on file
+    # 2. Process Attractors and ATM with R
+    # 3. If we get 2 (n_target_attractors) attractors
+    #       and transitions A -> and B -> A have probability > p
+    # 3.1. Then save attractors and ATM in some way
+    # 3.2. Else score = +Inf
+
+    # 4. Run the BN without NOISE (no external disturbances) for x iterations:
+    # 4.1. First with selector node (always node 0 ?) OFF (no "sound")
+    #   => Attractor 1/2 should be displayed
+    # 4.2. Then with selector node ON
+    #   => Attractor 2/1 should be displayed
+    # If All the conditions are satisfied return 1 as evaluation score, else 0
+
+    pass
+
 #################################################################################################
 
 def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
@@ -126,7 +146,7 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     return read_json(config.sim_data_path)
 
-def aggregate_sim_data(light_position: Point3D, sim_data: dict) -> float:
+def phototaxis_score(light_position: Point3D, sim_data: dict) -> float:
 
     df = pandas.DataFrame(sim_data['data'])
 
@@ -164,15 +184,4 @@ def save_subopt_model(config: SimulationConfig, bnjson:dict):
     ))
 
 ###############################################################################################
-
-def search_bn_controller(config: SimulationConfig, bn: OpenBooleanNetwork):
-
-    return parametric_vns(
-        bn,
-        evaluate=lambda bn: train_evaluation(config, bn, compare=compare_scores),
-        compare=lambda minimize, maximize: compare_scores(minimize, maximize),
-        min_target=config.sd_minimization_target,
-        max_iters=config.sd_max_iters,
-        max_stalls=config.sd_max_stalls,
-        max_stagnation=config.sd_max_stagnation
-    )
+    

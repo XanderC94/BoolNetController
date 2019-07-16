@@ -98,6 +98,9 @@ class BooleanNode(Jsonkin):
     def from_json(json:dict):
         return BooleanNode(json['id'], json['inputs'], BooleanFunction.from_json(json['bf']), json['istate'])
 
+    def to_ebnf(self):
+        return self.bf.as_logic_expr([f'n{x}' for x in self.predecessors])
+
 ##########################################################################################################
 
 class BooleanNetwork(Jsonkin):
@@ -153,7 +156,8 @@ class BooleanNetwork(Jsonkin):
         return len(self.__nodes)
     
     def __iter__(self):
-        for p in self.to_pairlist(): yield p
+        for p in self.to_pairlist():
+            yield p
 
     def __call__(self):
         '''
@@ -166,7 +170,7 @@ class BooleanNetwork(Jsonkin):
         oldstate = dict(self.state) # Copy old state
 
         for node in self.nodes:
-            if len(node.predecessors) > 0:
+            if node.predecessors:
                 fparams = [oldstate[node.predecessors[i]] for i in range(node.arity)]
                 node.evaluate(tuple(fparams))
 
@@ -189,6 +193,23 @@ class BooleanNetwork(Jsonkin):
         nodes = [BooleanNode.from_json(node) for node in __json['nodes']]
 
         return BooleanNetwork(nodes)
+    
+    
+    def to_ebnf(self):
+
+        expr_format = '{target}, {factor}'
+
+        def ebnf_str(x):
+            return f'n{x}'
+
+        return '''targets, factors\n{expressions}\n'''.format(
+            expressions='\n'.join(
+                [expr_format.format(
+                    target=f'n{k}',
+                    factor=node.to_ebnf()
+                ) for k, node in self]
+            )
+        )
 
 #############################################################################
 

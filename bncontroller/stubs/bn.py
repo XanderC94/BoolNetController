@@ -13,7 +13,7 @@ def is_obn_consistent(nodes:list, I:list, O:list):
     # Each I node must have at least 1 outgoing edge
     i_edges = all(
         any(
-            i in n.predecessors 
+            i in n.predecessors
             for n in nodes
         ) 
         for i in I
