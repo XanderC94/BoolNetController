@@ -8,7 +8,7 @@ def generate_webots_worldfile(template_path: Path, target_path:Path, config_path
     if template_path.is_dir() or target_path.is_dir():
         raise Exception('Simuation world path is not a file.') 
 
-    check_path(target_path.parent, create_dirs=True)
+    check_path(target_path.parent, create_if_dir=True)
 
     TEMPLATE = r'\s*controllerArgs\s\"(?:{names})=\\\"(.*)\\\"\"\n'
 

@@ -75,7 +75,7 @@ def check_config(config:SimulationConfig):
     if config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.')
 
-    elif not check_path(template.test_data_path, create_dirs=True):
+    elif not check_path(template.test_data_path, create_if_dir=True):
         raise Exception(
             'Test dataset path in template configuration file should be a directory.'
         )

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from bncontroller.boolnet.bfunction import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
+from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.jsonlib.utils import Jsonkin, jsonrepr, read_json
 
 class BooleanNode(Jsonkin):
@@ -112,6 +113,7 @@ class BooleanNetwork(Jsonkin):
     def __init__(self, nodes: list):
 
         self.__nodes = {}
+        self.__atm = None
 
         for node in nodes:
             self[node.label] = node 
@@ -180,7 +182,7 @@ class BooleanNetwork(Jsonkin):
         """
         Return a (valid) json representation (dict) of this object.
         """
-        return dict(nodes=[jsonrepr(v) for v  in self.nodes])
+        return dict(nodes=[jsonrepr(v) for v in self.nodes])
 
     @staticmethod
     def from_json(json:dict):
@@ -194,13 +196,9 @@ class BooleanNetwork(Jsonkin):
 
         return BooleanNetwork(nodes)
     
-    
     def to_ebnf(self):
 
         expr_format = '{target}, {factor}'
-
-        def ebnf_str(x):
-            return f'n{x}'
 
         return '''targets, factors\n{expressions}\n'''.format(
             expressions='\n'.join(
@@ -210,6 +208,16 @@ class BooleanNetwork(Jsonkin):
                 ) for k, node in self]
             )
         )
+
+    def get_atm(self, atm_ws_path=Path('./atm-workspace.txt'), encoding='UTF-8', from_cache=False):
+        if from_cache and self.__atm:
+            return self.__atm
+        else:      
+            self.__atm = ATM(self.to_ebnf(), atm_ws_path=atm_ws_path, encoding=encoding)
+            return self.__atm
+
+    def set_atm(self, atm:ATM):
+        self.__atm = atm
 
 #############################################################################
 

@@ -14,10 +14,12 @@ from bncontroller.sim.data import Point3D
 from bncontroller.sim.config import SimulationConfig, generate_sim_config
 from bncontroller.sim.logging.logger import staticlogger as logger
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.boolnet.eval.search.parametric import parametric_vns
+from bncontroller.boolnet.eval.search.parametric import parametric_vns, VNSPublicContext
 
-def compare_scores(minimize, maximize):
-
+def minimize_scores(minimize, maximize):
+    '''
+    Comparator able to match numerics and tuples
+    '''
     if isinstance(minimize, (float, int, bool)) and isinstance(maximize, (float, int, bool)):
         return minimize < maximize
     # elif isinstance(new, list) and isinstance(old, list):
@@ -38,6 +40,8 @@ def compare_scores(minimize, maximize):
         return minimize[0] < maximize
     elif isinstance(minimize, float) and isinstance(maximize, tuple):
         return minimize < maximize[0]
+    elif maximize is None:
+        return True
     else:
         raise Exception(f'Uncomparable values {type(minimize)} and {type(maximize)}')
         
@@ -86,7 +90,9 @@ def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_par
 
 ###################################################################################
 
-def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare = compare_scores):
+def train_evaluation(
+        template: SimulationConfig, bn: OpenBooleanNetwork, 
+        vns_ctx: VNSPublicContext, compare = minimize_scores):
 
     test_params = itertools.product(
         template.globals['light_spawn_points'], 
@@ -98,22 +104,29 @@ def train_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare
 
     new_score = statistics.mean(fscores), statistics.stdev(fscores)
 
-    if compare(new_score, template.globals['score']):
-        
-        template.globals['score'] = new_score
+    logger.info(
+        'it:', vns_ctx.it, 
+        'flips:', vns_ctx.n_flips, 
+        'stalls:', vns_ctx.n_stalls,
+        'stagnation: ', vns_ctx.stagnation,
+        'dist --',
+        'old:', vns_ctx.score,  
+        'new:', new_score
+    )
 
+    if compare(new_score, vns_ctx.score):
+        
         save_subopt_model(
             template,
-            bn.to_json()
+            bn.to_json(), 
+            vns_ctx
         )
-
-    template.globals['it'] += 1
 
     return new_score
 
 ################################################################################################
 
-def selector_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare = compare_scores):
+def selector_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, compare = minimize_scores):
 
     # 1. Save bn to EBNF format on file
     # 2. Process Attractors and ATM with R
@@ -146,6 +159,8 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     return read_json(config.sim_data_path)
 
+######################################################################################################
+
 def phototaxis_score(light_position: Point3D, sim_data: dict) -> float:
 
     df = pandas.DataFrame(sim_data['data'])
@@ -160,21 +175,23 @@ def phototaxis_score(light_position: Point3D, sim_data: dict) -> float:
 
     return (1 / score if score > 0 else float('+inf')), round(light_position.dist(final_pos), 5)
 
-def save_subopt_model(config: SimulationConfig, bnjson:dict):
+#####################################################################################################
+
+def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContext):
         
     bnjson.update({'sim_info': dict()})
 
-    bnjson['sim_info'].update({'eval_score':config.globals['score']})
+    bnjson['sim_info'].update({'eval_score':ctx.score})
     bnjson['sim_info'].update({'idist':config.sim_light_position.dist(config.sim_agent_position)})
-    bnjson['sim_info'].update({'n_it':config.globals['it']})
+    bnjson['sim_info'].update({'n_it':ctx.it})
 
     model_dir = get_dir(config.bn_model_path)
 
-    if compare_scores(config.globals['score'], config.train_save_suboptimal_models): 
+    if minimize_scores(ctx.score, config.train_save_suboptimal_models): 
         # Save only if <sd_save_suboptimal_models> >= score
         write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
             date=config.globals['date'],
-            it=config.globals['it_suffix'].format(it=config.globals['it'])
+            it=config.globals['it_suffix'].format(it=ctx.it)
         ))
         
     # Always save the last suboptimal model (overwrite)

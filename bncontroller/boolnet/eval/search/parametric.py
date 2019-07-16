@@ -1,8 +1,8 @@
+from collections import namedtuple
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.ntree.ntstructures import NTree
 from bncontroller.boolnet.tes import bn_to_tes
 import bncontroller.boolnet.eval.utils as utils
-from bncontroller.sim.logging.logger import staticlogger as logger
 
 ###############################################################################
 
@@ -11,7 +11,7 @@ def default_evaluation_strategy(bn: OpenBooleanNetwork, target_tes: NTree, thres
     tes = bn_to_tes(bn, thresholds)
     return utils.tes_distance(tes, target_tes)
 
-def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set):
+def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set={}):
     '''
     Default scrambling strategy for vns algorithm.
     Scrambling = flips generation + boolean network edit
@@ -41,17 +41,69 @@ def default_compare_strategy(minimize, maximize):
 
 ###############################################################################
 
+VNSPublicContext = namedtuple(
+        'VNSPublicContext',  
+        ["it", "score", "n_flips", "n_stalls", "stagnation"]
+    )
+
+class VNSContext(object):
+
+    def __init__(self, 
+            it = 0,
+            n_stalls = 0,
+            n_flips = 0,
+            stagnation = 0,
+            score = float('-inf')):
+
+        self.it = it
+        self.n_stalls = n_stalls
+        self.n_flips = n_flips
+        self.stagnation = stagnation
+        self.score = score
+        self.stop = False
+        self.excluded = set()
+    
+    @property
+    def public(self):
+        return VNSPublicContext(
+            it=self.it,
+            score=self.score,
+            n_flips=self.n_flips,
+            n_stalls=self.n_stalls,
+            stagnation=self.stagnation
+        )
+
+# class VNSParams(object):
+
+#     def __init__(self, 
+#             min_target=0.0,
+#             min_flips=1,
+#             max_flips=-1,
+#             max_iters=10000, 
+#             max_stalls=-1,
+#             max_stagnation=2500):
+
+#         self.min_target=min_target,
+#         self.min_flips=min_flips,
+#         self.max_flips=max_flips,
+#         self.max_iters=max_iters, 
+#         self.max_stalls=max_stalls,
+#         self.max_stagnation=max_stagnation 
+
+################################################################################
+
 def parametric_vns(
         bn: OpenBooleanNetwork,
-        evaluate=lambda bn: default_evaluation_strategy(bn, NTree.empty(), []),
-        scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         compare=lambda minimize, maximize: default_compare_strategy(minimize, maximize),
+        evaluate=lambda bn, vns: default_evaluation_strategy(bn, NTree.empty(), []),
+        scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
+        tidy=lambda bn, flips: utils.edit_boolean_network(bn, flips),
         min_target=0.0,
         min_flips=1,
+        max_flips=-1,
         max_iters=10000, 
         max_stalls=-1,
         max_stagnation=2500):
-
     '''
     Metaheuristic technique highly inspired by the Variable Neighbourhood Search (VNS) and 
     proposed in
@@ -83,56 +135,44 @@ def parametric_vns(
             If set to -1 it won't be considered
     '''
 
-    score = evaluate(bn)
+    vns = VNSContext(n_flips = min_flips)
 
-    max_flips = sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes)
+    vns.score = evaluate(bn, vns.public)
 
-    it = 0
-    excluded = set()
-    n_stalls = 0
-    n_flips = min_flips
-    n_stagnation = 0
+    if bn is not None and max_stalls >= 0 and max_flips <= 0:
+        max_flips = sum(2**n.arity for n in bn.nodes) 
 
-    while it < max_iters and compare(min_target, score):
+    check_param = lambda a, b: b >= 0 and a >= b
+    
+    while vns.it < max_iters and not vns.stop and compare(min_target, vns.score):
+
+        bn, flips, vns.excluded = scramble(bn, vns.n_flips, vns.excluded)
+
+        new_score = evaluate(bn, vns.public)
         
-        bn, flips, excluded = scramble(bn, n_flips, excluded)
+        if compare(new_score, vns.score):
 
-        new_score = evaluate(bn)
-
-        logger.info(
-            'it:', it, 
-            'flips:', len(flips), '/', n_flips, 
-            'stalls:', n_stalls,
-            'stagnation: ', n_stagnation,
-            'dist --',
-            'old:', score,  
-            'new:', new_score
-        )
-        
-        if compare(new_score, score):
-
-            n_stagnation = 0
-            n_stalls = 0
-            n_flips = 1
-            score = new_score
+            vns.stagnation = 0
+            vns.n_stalls = 0
+            vns.n_flips = min_flips
+            vns.score = new_score
 
         else:
 
-            bn = utils.edit_boolean_network(bn, flips)
+            bn = tidy(bn, flips)
 
-            n_stagnation += 1
-            n_stalls += 1
+            vns.stagnation += 1
+            vns.n_stalls += 1
             
-            if max_stagnation > 0 and n_stagnation >= max_stagnation:
-                it = max_iters
+            if check_param(vns.n_stalls, max_stalls):
+                vns.n_stalls = 0
+                vns.n_flips += 1
 
-            if max_stalls > 0 and n_stalls >= max_stalls:
-                n_stalls = 0
-                n_flips += 1
-                
-                if n_flips > max_flips:
-                    it = max_iters
+            vns.stop = (
+                check_param(vns.stagnation, max_stagnation) 
+                or check_param(vns.n_flips, max_flips + 1)
+            )
         
-        it += 1
+        vns.it += 1
 
-    return bn
+    return bn, vns.public

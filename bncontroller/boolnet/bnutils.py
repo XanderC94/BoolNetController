@@ -15,6 +15,11 @@ def bnstate_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = la
 
 ################################################################################################
 
+def compact_state(state:dict):
+    return [int(v) for k, v in sorted(state.items())]
+
+################################################################################################
+
 def default_neighbors_generator(node: BooleanNode, nodes:list):
 
     return [random.choice([

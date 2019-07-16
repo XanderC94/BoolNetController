@@ -168,6 +168,11 @@ class DefaultConfigOptions(Jsonkin):
             alt=list,
             descr='''Directory or file where to store the bn model'''
         ),
+        bn_selector_path=DefaultOption(
+            value=Path('.'),
+            alt=None,
+            descr='''Directory or file where to store the bn selector model'''
+        ),
         bn_n=DefaultOption(
             value=20,
             alt=None,
@@ -192,6 +197,27 @@ class DefaultConfigOptions(Jsonkin):
             value=2,
             alt=None,
             descr='''number or List of nodes of the BN to be reserved as outputs'''
+        ),
+        bn_target_n_attractors=DefaultOption(
+            value=2,
+            alt=None,
+            descr='''number of wanted attractors'''
+        ),
+        bn_target_p_attractors=DefaultOption(
+            value={
+                'a0': {'a1':0.1}, 
+                'a1': {'a0':0.1}
+            },
+            alt=None,
+            descr='''probability to jump from an attractor to another different from itself.'''
+        ),
+        bn_in_attr_map=DefaultOption(
+            value=[
+                [False],
+                [True]
+            ],
+            alt=None,
+            descr='''specifify the input values to apply to input nodes for that attractor'''
         ),
 
         # Evaluation Parameters
@@ -268,8 +294,6 @@ class DefaultConfigOptions(Jsonkin):
         globals=DefaultOption(
             value=dict(
                 date=iso8106(ms=3),
-                score=float('+inf'),
-                it=-1,
                 subopt_model_name='bn_subopt_{date}{it}.json',
                 it_suffix='_it{it}',
                 in_suffix='_in{it}',
@@ -411,11 +435,15 @@ class SimulationConfig(Jsonkin):
 
         # Boolean Network #
         self.bn_model_path = options['bn_model_path']
+        self.bn_selector_path = options['bn_selector_path']
         self.bn_n = options['bn_n']
         self.bn_k = options['bn_k']
         self.bn_p = options['bn_p']
         self.bn_n_inputs = options['bn_n_inputs']
         self.bn_n_outputs = options['bn_n_outputs']
+        self.bn_target_n_attractors = options['bn_target_n_attractors']
+        self.bn_target_p_attractors = options['bn_target_p_attractors']
+        self.bn_in_attr_map = options['bn_in_attr_map']
 
         # Evaluation Parameters
         self.eval_light_spawn_radius_m = options['eval_light_spawn_radius_m']
@@ -496,15 +524,15 @@ def generate_sim_config(
 
     sim_config.globals['template'] = config
     
-    sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_dirs=True) / world_fname
+    sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
 
-    sim_config.bn_model_path = get_dir(sim_config.bn_model_path, True) / model_fname
+    sim_config.bn_model_path = get_dir(sim_config.bn_model_path, create_if_dir=True) / model_fname
 
-    sim_config.sim_config_path = get_dir(sim_config.sim_config_path, True) / config_fname
+    sim_config.sim_config_path = get_dir(sim_config.sim_config_path, create_if_dir=True) / config_fname
         
-    sim_config.sim_data_path = get_dir(sim_config.sim_data_path, True) / data_fname
+    sim_config.sim_data_path = get_dir(sim_config.sim_data_path, create_if_dir=True) / data_fname
 
-    sim_config.sim_log_path = get_dir(sim_config.sim_log_path, True) / log_fname
+    sim_config.sim_log_path = get_dir(sim_config.sim_log_path, create_if_dir=True) / log_fname
 
     return sim_config
 

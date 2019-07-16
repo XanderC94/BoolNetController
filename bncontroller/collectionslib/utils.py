@@ -18,4 +18,7 @@ def flat(x: Iterable, to=list, exclude=(dict, str)):
 
     return to(l)
 
+def transpose(x:Iterable):
+    return list(map(list, zip(*x)))
+
 ################################################################

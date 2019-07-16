@@ -9,7 +9,7 @@ from pathlib import Path
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
 from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
 from bncontroller.boolnet.eval.search.parametric import parametric_vns
-from bncontroller.stubs.evaluation import compare_scores, train_evaluation
+from bncontroller.stubs.evaluation import minimize_scores, train_evaluation
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import check_path
@@ -19,7 +19,7 @@ from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactor
 
 ####################################################################################
 
-def generate_or_load_bn(template: SimulationConfig):
+def generate_or_load_bn(template: SimulationConfig, save_virgin=False):
     
     path=template.bn_model_path
     N=template.bn_n
@@ -31,7 +31,7 @@ def generate_or_load_bn(template: SimulationConfig):
 
     bn = None
 
-    if check_path(path, create_dirs=True):
+    if check_path(path, create_if_dir=True):
         bng, I, O, *_ = rbn_gen(N, K, P, I, O)
         bn = bng.new_obn(I, O)
 
@@ -41,11 +41,12 @@ def generate_or_load_bn(template: SimulationConfig):
 
         logger.info('BN generated.')
 
-        p = path / f'virgin_bn_{date}.json'
+        if save_virgin:
+            p = path / f'virgin_bn_{date}.json'
 
-        write_json(bn.to_json(), p)
+            write_json(bn.to_json(), p)
 
-        logger.info(f'Virgin BN saved to {p}')
+            logger.info(f'Virgin BN saved to {p}')
 
     else:
         bn = OpenBooleanNetwork.from_json(read_json(path))
@@ -72,7 +73,7 @@ if __name__ == "__main__":
 
     template.globals['mode'] = (
         'rtrain' 
-        if check_path(template.bn_model_path, create_dirs=True) 
+        if check_path(template.bn_model_path, create_if_dir=True) 
         else 'renhance' 
     )
     ### Init logger ################################################################
@@ -86,7 +87,7 @@ if __name__ == "__main__":
 
     ### BN Generation / Loading ####################################################
 
-    bn = generate_or_load_bn(template)
+    bn = generate_or_load_bn(template, save_virgin=True)
     
     ### Launch search algorithm ##############################################
 
@@ -98,17 +99,30 @@ if __name__ == "__main__":
 
         t = time.perf_counter()
 
-        parametric_vns(
+        bn, ctx = parametric_vns(
             bn,
-            evaluate=lambda bn: train_evaluation(template, bn, compare=compare_scores),
-            compare=lambda minimize, maximize: compare_scores(minimize, maximize),
+            evaluate=lambda bn, ct: train_evaluation(template, bn, ct, compare=minimize_scores),
+            compare=lambda minimize, maximize: minimize_scores(minimize, maximize),
             min_target=template.sd_minimization_target,
+            min_flips=template.sd_min_flips,
+            max_flips=sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes),
             max_iters=template.sd_max_iters,
             max_stalls=template.sd_max_stalls,
             max_stagnation=template.sd_max_stagnation
         )
 
         logger.info(f"Search time: {time.perf_counter()-t}s")
+    
+        logger.info(ctx)
+
+        savepath = template.bn_model_path / '{mode}_output_bn_{date}.json'.format(
+            mode=template.globals['mode'],
+            date=template.globals['date']
+        )
+
+        write_json(bn, savepath)
+
+        logger.info(f'Output model saved to {savepath}.')
    
     logger.info('Closing...')
 

@@ -13,7 +13,9 @@ setup(name='BoolNetController',
           'numpy',
           'apted', 
           'networkx',
-          'multiset',
-          'singleton-decorator'
+        #   'multiset',
+          'singleton-decorator',
+          'rpy2',
+        #   'Truths'
       ],
       zip_safe=False)

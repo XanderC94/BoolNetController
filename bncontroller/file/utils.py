@@ -58,7 +58,7 @@ def check_file(path:Path, starts_with:str, ext:str):
 
 DEFAULT_DIR_CHECKER = lambda x: x.replace('.', '').isnumeric() or x == ''
 
-def check_path(path: Path or str, create_dirs=False, dir_checker=DEFAULT_DIR_CHECKER):
+def check_path(path: Path or str, create_if_dir=False, create_if_file=False, dir_checker=DEFAULT_DIR_CHECKER):
     '''
     Check whether is a directory or a file.
     If is a directory (check through the dir_checker function)
@@ -68,8 +68,11 @@ def check_path(path: Path or str, create_dirs=False, dir_checker=DEFAULT_DIR_CHE
     Returns 1:Dir, 0:File, else raise exception
     '''
     if not path.exists():
-        if dir_checker(path.suffix) and create_dirs:
-            path.mkdir(parents=create_dirs, exist_ok=False)
+        if dir_checker(path.suffix) and create_if_dir:
+            path.mkdir(parents=create_if_dir, exist_ok=False)
+        elif create_if_file:
+            check_path(path.parent, create_if_dir=True)
+            path.touch()
         else:
             raise Exception('Given path is pointing to an unexistent file.')
     
@@ -81,14 +84,14 @@ def is_dir(p:Path):
 def is_file(p:Path):
     return p.is_file()
 
-def get_dir(path:Path, create_dirs=False, dir_checker=DEFAULT_DIR_CHECKER):
+def get_dir(path:Path, create_if_dir=False, create_if_file=False, dir_checker=DEFAULT_DIR_CHECKER):
     '''
     Return path if path is dir (checked through check_path), else path.parent
     If path is file and doesn't exists it raises an Exception
     '''
     return (
         path
-        if check_path(path, create_dirs=create_dirs, dir_checker=dir_checker)
+        if check_path(path, create_if_dir=create_if_dir, create_if_file=create_if_file, dir_checker=dir_checker)
         else path.parent
     )
 

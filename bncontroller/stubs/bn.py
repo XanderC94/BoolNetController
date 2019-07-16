@@ -78,7 +78,7 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
 
     return predecessors
 
-def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
+def rbn_gen(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) -> (RBNFactory, list, list):
     """
     Generates a Random Boolean Network Generator which bn have the following properties:
 
@@ -102,7 +102,7 @@ def rbn_gen(N:int, K:int, P:float, I:int, O:int) -> (RBNFactory, list, list):
     return RBNFactory(
         _N, # labels 
         _K, # arities
-        predecessors_fun=lambda node, nodes: predecessors(node, nodes, _I, _O),
+        predecessors_fun=lambda node, nodes: pred_func(node, nodes, _I, _O),
         bf_init=lambda *args: args[0] if len(args) == 1 else r_bool(P), 
         node_init=lambda label: False
     ), _I, _O
