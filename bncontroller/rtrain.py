@@ -103,7 +103,7 @@ if __name__ == "__main__":
             bn,
             evaluate=lambda bn, ct: train_evaluation(template, bn, ct, compare=minimize_scores),
             compare=lambda minimize, maximize: minimize_scores(minimize, maximize),
-            min_target=template.sd_minimization_target,
+            target_score=template.sd_target_score,
             min_flips=template.sd_min_flips,
             max_flips=sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes),
             max_iters=template.sd_max_iters,

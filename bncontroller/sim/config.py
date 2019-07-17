@@ -79,12 +79,12 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''close the algorithm if no further improvement are found after i iteration'''
         ),
-        sd_minimization_target=DefaultOption(
+        sd_target_score=DefaultOption(
             value=0.0,
             alt=tuple,
             descr='''value to which reduce the objective function'''
         ), #  
-        # sd_min_target_delta=DefaultOption(
+        # sd_target_score_delta=DefaultOption(
         #     value=0.001,
         #     alt=tuple,
         #     descr='''value to which reduce the objective function'''
@@ -343,7 +343,7 @@ class SimulationConfig(Jsonkin):
     * sd_min_flips -- stochastic descent min flipped entries by iteration
     * sd_max_stalls -- 1 -> Adaptive Walk, 2+ -> VNS 
     * sd_max_stagnation -- close the algorithm if no further improvement are found after i iteration
-    * sd_minimization_target -- value to which reduce the objective function 
+    * sd_target_score -- value to which reduce the objective function 
 
     # Simulation Control Options #
 
@@ -417,7 +417,7 @@ class SimulationConfig(Jsonkin):
         self.sd_min_flips = options['sd_min_flips']
         self.sd_max_stalls = options['sd_max_stalls']
         self.sd_max_stagnation = options['sd_max_stagnation']
-        self.sd_minimization_target = options['sd_minimization_target']
+        self.sd_target_score = options['sd_target_score']
 
         # Simulation #
         self.sim_run_time_s = options['sim_run_time_s']

@@ -76,14 +76,14 @@ class VNSContext(object):
 # class VNSParams(object):
 
 #     def __init__(self, 
-#             min_target=0.0,
+#             target_score=0.0,
 #             min_flips=1,
 #             max_flips=-1,
 #             max_iters=10000, 
 #             max_stalls=-1,
 #             max_stagnation=2500):
 
-#         self.min_target=min_target,
+#         self.target_score=target_score,
 #         self.min_flips=min_flips,
 #         self.max_flips=max_flips,
 #         self.max_iters=max_iters, 
@@ -98,7 +98,7 @@ def parametric_vns(
         evaluate=lambda bn, vns: default_evaluation_strategy(bn, NTree.empty(), []),
         scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         tidy=lambda bn, flips: utils.edit_boolean_network(bn, flips),
-        min_target=0.0,
+        target_score=0.0,
         min_flips=1,
         max_flips=-1,
         max_iters=10000, 
@@ -118,11 +118,11 @@ def parametric_vns(
         * evaluate -> the given strategy to evaluate the scrambled bn at each iteration
         * compare -> the given strategy to be applied to the output of the evaluation strategy.
             This strategy is both applied to check algorithm termination 
-            (evaluation output matches in some way the min_target parameter)
+            (evaluation output matches in some way the target_score parameter)
             and to choose if keeping or discarting changes to the bn.
             By default is: minimize < maximize, 
             that is if the value to be minimized is less than the value to be maximized.
-        * min_target -> the value of the evaluation strategy at which the algorithm will stop
+        * target_score -> the value of the evaluation strategy at which the algorithm will stop
         * max_iters -> global max number of iterations of the stochastic descent
         * max_stalls -> max number of iterations without improvement. 
             When reached it increases the number of flips by 1.
@@ -144,7 +144,7 @@ def parametric_vns(
 
     check_param = lambda a, b: b >= 0 and a >= b
     
-    while vns.it < max_iters and not vns.stop and compare(min_target, vns.score):
+    while vns.it < max_iters and not vns.stop and compare(target_score, vns.score):
 
         bn, flips, vns.excluded = scramble(bn, vns.n_flips, vns.excluded)
 
