@@ -1,30 +1,9 @@
 import random
-from bncontroller.boolnet.bnstructures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
-from bncontroller.boolnet.bfunction import BooleanFunction
+from bncontroller.boolnet.structures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
+from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.jsonlib.utils import write_json, read_json, objrepr
-
-def bnstate_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
-    '''
-    Return the distance between 2 states of a BN.
-    The default criterium count the number of states 
-    that don't hold the same value.
-    '''
-    ds = [comp(s2[k1], v1) for k1, v1 in s1.items()]
-    return crit(ds)
-
-################################################################################################
-
-def compact_state(state:dict):
-    return [int(v) for k, v in sorted(state.items())]
-
-################################################################################################
-
-def default_neighbors_generator(node: BooleanNode, nodes:list):
-
-    return [random.choice([
-        n.label for n in nodes if n.label != node.label
-    ]) for _ in range(node.arity)]
+from bncontroller.boolnet.utils import random_neighbors_generator
 
 class RBNFactory(object):
     """
@@ -41,7 +20,7 @@ class RBNFactory(object):
     def __init__(self,
             n: int or list, 
             k: int or list or dict, 
-            predecessors_fun = lambda node, nodes: default_neighbors_generator(node, nodes), 
+            predecessors_fun = lambda node, nodes: random_neighbors_generator(node, nodes), 
             bf_init = lambda *args: r_bool(), 
             node_init = lambda label: r_bool()):
         
@@ -108,51 +87,8 @@ class RBNFactory(object):
 
         return OpenBooleanNetwork(nodes, input_nodes=I, output_nodes=O)
 
-#################################################################################################
+    def new_selector(self, I, O) -> BoolNetSelector:
 
-if __name__ == "__main__":
-    
-    import time
+        nodes = self.__r_connect_nodes(self.__build_nodes())
 
-    def test_bn(bn, max_iters = 1000):
-
-        print('Performance test...')
-        
-        s1 = bn.state
-    
-        d, it, t = -1, 0, time.perf_counter()
-
-        while d != 0 and it < max_iters:
-            s2 = bn()
-            
-            print(s2)
-            d = bnstate_distance(s1, s2)
-            # print(d)
-
-            s1 = s2
-            it += 1
-        
-        print(time.perf_counter() - t)
-
-    n, k, p, i, o = 20, 2, 0.5, 8, 2
-    bn = RBNFactory(n, k, bf_init=lambda *args: r_bool(p), node_init=lambda i:False).new()
-
-    # print('Saving BN...')
-    # write_json(bn.to_json(), './bn.json', indent=True)
-
-    # print(bn)
-
-    test_bn(bn)
-    
-
-    rbn = objrepr(
-        read_json("D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\models\\bn_test_model.json"), 
-        BooleanNetwork
-    )
-
-    for i in range(8):
-        rbn[i].state = True
-
-    print(rbn.state)
-    
-    test_bn(rbn)
+        return BoolNetSelector(nodes, input_nodes=I, output_nodes=O)

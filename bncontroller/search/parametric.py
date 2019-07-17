@@ -1,50 +1,30 @@
+from typing import Callable
 from collections import namedtuple
-from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.ntree.ntstructures import NTree
-from bncontroller.boolnet.tes import bn_to_tes
-import bncontroller.boolnet.eval.utils as utils
+from bncontroller.boolnet.structures import BooleanNetwork
+import bncontroller.search.utils as utils
+import bncontroller.type.comparators as comparators
 
 ###############################################################################
 
-def default_evaluation_strategy(bn: OpenBooleanNetwork, target_tes: NTree, thresholds: list) -> float:
-
-    tes = bn_to_tes(bn, thresholds)
-    return utils.tes_distance(tes, target_tes)
-
-def default_scramble_strategy(bn: OpenBooleanNetwork, n_flips:int, excluded:set={}):
+def default_scramble_strategy(bn: BooleanNetwork, n_flips:int, excluded:set={}):
     '''
     Default scrambling strategy for vns algorithm.
     Scrambling = flips generation + boolean network edit
 
     returns the modified bn, the applied flips and their hashset
     '''
-    terminal_nodes = list(
-        n.label 
-        for n in bn.nodes 
-        if n.label not in bn.output_nodes and not any(n.label in x.predecessors for x in bn.nodes)
-    )
-
-    do_not_flip = excluded.union(set(map(hash, bn.input_nodes + terminal_nodes)))
-
-    flips = utils.generate_flips(bn, n_flips, excluded=do_not_flip, flip_map=hash)
+    
+    flips = utils.generate_flips(bn, n_flips, excluded=excluded, flip_map=hash)
     bn = utils.edit_boolean_network(bn, flips)
 
     return bn, flips, set(map(hash, flips))
 
-def default_compare_strategy(minimize, maximize):
-    '''
-    Default compare strategy for vns algorithm.
-
-    return minimize < maximize
-    '''
-    return minimize < maximize
-
 ###############################################################################
 
 VNSPublicContext = namedtuple(
-        'VNSPublicContext',  
-        ["it", "score", "n_flips", "n_stalls", "stagnation"]
-    )
+    'VNSPublicContext',  
+    ["it", "score", "n_flips", "n_stalls", "stagnation"]
+)
 
 class VNSContext(object):
 
@@ -93,9 +73,9 @@ class VNSContext(object):
 ################################################################################
 
 def parametric_vns(
-        bn: OpenBooleanNetwork,
-        compare=lambda minimize, maximize: default_compare_strategy(minimize, maximize),
-        evaluate=lambda bn, vns: default_evaluation_strategy(bn, NTree.empty(), []),
+        bn: BooleanNetwork,
+        evaluate:Callable[[BooleanNetwork, VNSPublicContext], object],
+        compare=lambda a, b: comparators.lesser(a, b),
         scramble=lambda bn, nf, e: default_scramble_strategy(bn, nf, e),
         tidy=lambda bn, flips: utils.edit_boolean_network(bn, flips),
         target_score=0.0,
@@ -120,8 +100,7 @@ def parametric_vns(
             This strategy is both applied to check algorithm termination 
             (evaluation output matches in some way the target_score parameter)
             and to choose if keeping or discarting changes to the bn.
-            By default is: minimize < maximize, 
-            that is if the value to be minimized is less than the value to be maximized.
+            By default is: old < new (score minimization).
         * target_score -> the value of the evaluation strategy at which the algorithm will stop
         * max_iters -> global max number of iterations of the stochastic descent
         * max_stalls -> max number of iterations without improvement. 

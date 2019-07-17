@@ -1,6 +1,6 @@
-from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.boolnet.eval.search.parametric import default_scramble_strategy, default_compare_strategy
-from bncontroller.boolnet.eval.utils import edit_boolean_network
+from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.search.parametric import default_scramble_strategy, default_compare_strategy
+from bncontroller.search.utils import edit_boolean_network
 
 def online_evaluation(bn: OpenBooleanNetwork, sensors_values: dict):
     pass

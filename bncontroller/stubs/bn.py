@@ -1,8 +1,11 @@
-from bncontroller.boolnet.bnstructures import BooleanNode
-from bncontroller.boolnet.bnutils import RBNFactory
-from bncontroller.boolnet.boolean import r_bool
-from bncontroller.jsonlib.utils import write_json
 import random
+from bncontroller.boolnet.structures import BooleanNode
+from bncontroller.boolnet.factory import RBNFactory
+from bncontroller.boolnet.boolean import r_bool
+
+################################################################################
+
+################################################################################
 
 def is_obn_consistent(nodes:list, I:list, O:list):
     '''
@@ -20,6 +23,8 @@ def is_obn_consistent(nodes:list, I:list, O:list):
     )
 
     return i_edges
+
+##################################################################################
 
 def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
     '''
@@ -77,6 +82,8 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
     predecessors += random.sample(others, k=k)
 
     return predecessors
+
+######################################################################################################
 
 def rbn_gen(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) -> (RBNFactory, list, list):
     """

@@ -4,7 +4,7 @@ from pathlib import Path
 from collections import defaultdict
 from collections.abc import Iterable
 from pandas import DataFrame
-import bncontroller.stubs.evaluation as evaluation
+from bncontroller.stubs.evaluation.controllers import test_evaluation
 from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import flat
@@ -12,7 +12,7 @@ from bncontroller.sim.data import generate_spawn_points, Point3D
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
+from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 #########################################################################################################
 
@@ -145,7 +145,7 @@ if __name__ == "__main__":
                 )
             )
 
-            sim_data = evaluation.test_evaluation(template, bns[k], test_params)
+            sim_data = test_evaluation(template, bns[k], test_params)
 
             fscores, dscores, lpos, apos, yrot, *_ = sim_data
 

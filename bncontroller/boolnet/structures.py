@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from bncontroller.boolnet.bfunction import BooleanFunction
+from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
-from bncontroller.jsonlib.utils import Jsonkin, jsonrepr, read_json
+from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
 
 class BooleanNode(Jsonkin):
 
@@ -187,12 +187,7 @@ class BooleanNetwork(Jsonkin):
     @staticmethod
     def from_json(json:dict):
 
-        __json = json
-
-        if isinstance(json, (Path, str)):
-            __json = read_json(json)
-
-        nodes = [BooleanNode.from_json(node) for node in __json['nodes']]
+        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
 
         return BooleanNetwork(nodes)
     
@@ -250,12 +245,7 @@ class OpenBooleanNetwork(BooleanNetwork):
     @staticmethod
     def from_json(json:dict):
 
-        __json = json
-
-        if isinstance(json, (Path, str)):
-            __json = read_json(json)
-
-        nodes = [BooleanNode.from_json(node) for node in __json['nodes']]
+        nodes = [BooleanNode.from_json(node) for node in json['nodes']]
         
-        return OpenBooleanNetwork(nodes, __json['inputs'], __json['outputs'])
+        return OpenBooleanNetwork(nodes, json['inputs'], json['outputs'])
         

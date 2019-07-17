@@ -2,14 +2,13 @@
 Generate or load a BN and run Stochastic Descent Search Algorithm
 '''
 import time
-# import os
-# import math
-# import numpy as np
 from pathlib import Path
 from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
-from bncontroller.boolnet.bnstructures import OpenBooleanNetwork
-from bncontroller.boolnet.eval.search.parametric import parametric_vns
-from bncontroller.stubs.evaluation import minimize_scores, train_evaluation
+from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.search.parametric import parametric_vns
+from bncontroller.stubs.evaluation.controllers import train_evaluation
+from bncontroller.stubs.comparators import compare_train_scores
+from bncontroller.stubs.scrambling import train_scramble_strategy
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.file.utils import check_path
@@ -101,8 +100,9 @@ if __name__ == "__main__":
 
         bn, ctx = parametric_vns(
             bn,
-            evaluate=lambda bn, ct: train_evaluation(template, bn, ct, compare=minimize_scores),
-            compare=lambda minimize, maximize: minimize_scores(minimize, maximize),
+            compare=lambda a, b: compare_train_scores(a, b),
+            evaluate=lambda bn, ct: train_evaluation(template, bn, ct, compare=compare_train_scores),
+            scramble=lambda bn, nf, e: train_scramble_strategy(bn, nf, e),
             target_score=template.sd_target_score,
             min_flips=template.sd_min_flips,
             max_flips=sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes),

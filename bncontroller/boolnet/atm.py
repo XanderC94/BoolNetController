@@ -10,9 +10,10 @@ rJSONlite = importr('jsonlite')
 
 class AttractorsTransitionMatrix(object):
     '''
-    Attractors Transition Matrix for Boolenat Networks.
+    Attractors Transition Matrix for Boolean Networks.
 
-    It bridges with R API of BoolNet to produce Attractors and ATM.
+    Bridges R-lang C API of BoolNet to produce Attractors and ATM 
+    of a given BN in extended Boolean Network Format (ebnf).
     '''
 
     def __init__(self, 

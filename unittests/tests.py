@@ -1,8 +1,8 @@
 import unittest, copy, random, apted
 from bncontroller.boolnet.boolean import Boolean
-from bncontroller.boolnet.bfunction import BooleanFunction
-from bncontroller.ntree.ntstructures import NTree
-from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance, tree_level_arities
+from bncontroller.boolnet.function import BooleanFunction
+from bncontroller.ntree.structures import NTree
+from bncontroller.ntree.utils import tree_edit_distance, tree_histogram_distance, tree_level_arities
 
 class TestBoolean(unittest.TestCase):
 

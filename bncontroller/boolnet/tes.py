@@ -1,5 +1,5 @@
-from bncontroller.boolnet.bnstructures import BooleanNetwork
-from bncontroller.ntree.ntstructures import NTree
+from bncontroller.boolnet.structures import BooleanNetwork
+from bncontroller.ntree.structures import NTree
 
 def bn_to_tes(bn:BooleanNetwork, thresholds: list) -> NTree:
     """

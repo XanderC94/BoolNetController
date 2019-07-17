@@ -1,7 +1,7 @@
 import datetime
 import re as regx
 from pathlib import Path
-from bncontroller.jsonlib.types import isnotnone, hasnotnone, str2num
+from bncontroller.type.utils import isnotnone, hasnotnone, str2num
 
 FNAME_PATTERN = r'(D?\d{8,}T\d{6,})(?:.*it([+-]?\d+))?(?:.*in([+-]?\d+))?'
 

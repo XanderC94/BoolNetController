@@ -1,6 +1,6 @@
-from bncontroller.boolnet.bnstructures import BooleanNetwork
-from bncontroller.ntree.ntstructures import NTree
-from bncontroller.ntree.ntutils import tree_edit_distance, tree_histogram_distance
+from bncontroller.boolnet.structures import BooleanNetwork
+from bncontroller.ntree.structures import NTree
+from bncontroller.ntree.utils import tree_edit_distance, tree_histogram_distance
 from multiset import FrozenMultiset
 import random, collections, math, itertools
 
