@@ -11,10 +11,11 @@ import bncontroller.stubs.utils as stub_utils
 import bncontroller.stubs.aggregators as aggregators
 
 from bncontroller.sim.config import SimulationConfig, generate_sim_config
-from bncontroller.sim.logging.logger import staticlogger as logger
+from bncontroller.jsonlib.utils import read_json
 from bncontroller.type.comparators import Comparator
 from bncontroller.search.parametric import VNSPublicContext
 from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.sim.logging.logger import staticlogger as logger
 
 ###############################################################################################
 
@@ -35,9 +36,11 @@ def evaluate_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: 
     config.sim_light_position = lpos
     config.sim_agent_yrot_rad = yrot
 
-    data = stub_utils.run_simulation(config, bn)
+    stub_utils.run_simulation(config, bn)
 
-    fs, fpos = aggregators.phototaxis_score(data)
+    fs, fpos = aggregators.phototaxis_score(
+        read_json(config.sim_data_path)
+    )
 
     ds = round(lpos.dist(fpos), 5)
 
@@ -63,7 +66,10 @@ def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_par
         stub_utils.generate_webots_worldfile(
             template.webots_world_path, 
             config.webots_world_path,
-            config.sim_config_path
+            stub_utils.ArenaParams(
+                floor_size=(3, 3),
+                controller_args=template.sim_config_path
+            )
         )
 
     data = [evaluate_bncontroller(config, bn, tp) for tp in test_params] 

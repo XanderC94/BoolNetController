@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Action
 from collections import defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D
-from bncontroller.file.utils import iso8106, gen_fname, check_path, get_dir
+from bncontroller.file.utils import iso8106, gen_fname, get_dir
 from bncontroller.sim.robot.utils import DeviceName
 from collections import namedtuple
 

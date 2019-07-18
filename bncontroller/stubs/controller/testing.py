@@ -2,7 +2,6 @@ import itertools
 from collections.abc import Iterable
 from pandas import DataFrame
 from bncontroller.stubs.controller.evaluation import test_evaluation
-from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import flat
 from bncontroller.sim.data import generate_spawn_points, Point3D
