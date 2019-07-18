@@ -118,3 +118,5 @@ webots/transfer
 *.7z
 *.zip
 *.7zip
+*.wbt
+tmp/

@@ -1,5 +1,8 @@
 import random
-from bncontroller.boolnet.structures import BooleanNode
+import re
+import asyncio
+from bncontroller.type.utils import isnotnone
+from bncontroller.boolnet.structures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
 
 def bnstates_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
     '''
@@ -25,3 +28,44 @@ def random_neighbors_generator(node: BooleanNode, nodes:list):
     return [random.choice([
         n.label for n in nodes if n.label != node.label
     ]) for _ in range(node.arity)]
+
+def get_terminal_nodes(bn:BooleanNetwork):
+
+    excluded = set(bn.output_nodes) if isinstance(bn, OpenBooleanNetwork) else set()
+
+    return [
+        n.label 
+        for n in bn.nodes 
+        if not (
+            n.label in excluded 
+            or any(n.label in x.predecessors for x in bn.nodes)
+        )
+    ]
+
+
+def search_attractors(states: list, attractors: dict) -> str:
+    '''
+    Search and return which of the specified attractors is found inside the state trajectory.
+
+    Attractors are such that they are present more than once inside a single trajectory, 
+    usually consecutively in absence noise.
+
+    '''
+    attrpatterns = dict(
+        (ak, r','.join(map(binstate, attractors[ak])))
+        for ak in attractors
+    )
+
+    ststring = ','.join(map(binstate, states))
+    
+    async def search_pattern(label, pattern, string):
+        m = re.findall(pattern, string)
+        return label if  m != None and len(m) > 1 else None
+
+    async def asynctask(string, patterns):
+        return list(filter(
+            isnotnone,
+            await asyncio.gather(*[search_pattern(l, p, string) for l, p in patterns.items()])
+        ))
+    
+    return asyncio.run(asynctask(ststring, attrpatterns))

@@ -45,8 +45,6 @@ def generate_available_flips(bn: BooleanNetwork, excluded=set(), flip_map=identi
         if flip_map(node.label) not in excluded:
             for i in range(2**node.arity):
                 
-                # e, r = node.bf.by_index(i)
-
                 pFlip = Flip(node.label, i)
 
                 if flip_map(pFlip) not in excluded:
@@ -80,30 +78,6 @@ def generate_flips(bn: BooleanNetwork, n_flips, excluded=set(), flip_map=identit
     return sampling(free_flips, n_flips)
 
 ###################################################################################
-
-def generate_flips_blob(bn:BooleanNetwork, n_flips, already_flipped=set(), max_it = 1000):
-
-    flips, hflip, it = set(), None, 0
-
-    free_flips = generate_available_flips(
-        bn, 
-        excluded=already_flipped, 
-        flip_map=hash
-    )
-
-    while it < max_it:
-
-        flips = sampling(free_flips, n_flips)
-        hflip = hash(FrozenMultiset(flips))
-
-        if hash(hflip) not in already_flipped:
-            it = max_it
-
-        it += 1
-
-    return flips, hflip
-
-######################################################################################
 
 def edit_boolean_network(bn: BooleanNetwork, flips: list):
     """

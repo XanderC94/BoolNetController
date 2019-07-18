@@ -41,7 +41,7 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''path to webots world file'''
         ),
-        webots_launch_args=DefaultOption(
+        webots_launch_opts=DefaultOption(
             value=["--mode=fast", "--batch", "--minimize"],
             alt=None,
             descr='''simulator command line arguements'''
@@ -222,11 +222,6 @@ class DefaultConfigOptions(Jsonkin):
 
         # Evaluation Parameters
 
-        train_save_suboptimal_models=DefaultOption(
-            value=2e-06,
-            alt=None,
-            descr='''save bn model with score under the specified threshold'''
-        ),
         eval_agent_spawn_radius_m=DefaultOption(
             value=0.5,
             alt=None,
@@ -262,7 +257,7 @@ class DefaultConfigOptions(Jsonkin):
 
         plot_positives_threshold=DefaultOption(
             value=2e-06,
-            alt=None,
+            alt=list,
             descr='''Specify a score threshold under which model are considered "good"'''
         ),
         test_data_path=DefaultOption(
@@ -283,6 +278,11 @@ class DefaultConfigOptions(Jsonkin):
         
         # Train control parameters#
 
+        train_save_suboptimal_models=DefaultOption(
+            value=2e-06,
+            alt=tuple,
+            descr='''save bn model with score under the specified threshold'''
+        ),
         train_generate_only=DefaultOption(
             value=False,
             alt=None,
@@ -333,7 +333,7 @@ class SimulationConfig(Jsonkin):
     
     * webots_path -- Path to webots executable
     * webots_world_path -- Path to webots world file
-    * webots_launch_args -- commandline arguments of the simulator
+    * webots_launch_opts -- commandline arguments of the simulator
     * webots_quit_on_termination -- quit the simulator after completing the evaluation
     * webots_nodes_defs -- Specify the Node Defs of the simulated world
 
@@ -408,7 +408,7 @@ class SimulationConfig(Jsonkin):
         # Webots #
         self.webots_path = options['webots_path']
         self.webots_world_path = options['webots_world_path']
-        self.webots_launch_args = options['webots_launch_args']
+        self.webots_launch_opts = options['webots_launch_opts']
         self.webots_quit_on_termination = options['webots_quit_on_termination']
         self.webots_nodes_defs = options['webots_nodes_defs']
 
@@ -525,11 +525,13 @@ def generate_sim_config(
     sim_config.globals['template'] = config
     
     sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
-
-    sim_config.bn_model_path = get_dir(sim_config.bn_model_path, create_if_dir=True) / model_fname
-
-    sim_config.sim_config_path = get_dir(sim_config.sim_config_path, create_if_dir=True) / config_fname
-        
+    
+    # get_dir(sim_config.bn_model_path, create_if_dir=True) 
+    sim_config.bn_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / model_fname 
+    
+    # get_dir(sim_config.sim_config_path, create_if_dir=True)
+    sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 
+    
     sim_config.sim_data_path = get_dir(sim_config.sim_data_path, create_if_dir=True) / data_fname
 
     sim_config.sim_log_path = get_dir(sim_config.sim_log_path, create_if_dir=True) / log_fname

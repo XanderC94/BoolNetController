@@ -2,14 +2,14 @@ import json
 from pathlib import Path
 from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
+from bncontroller.boolnet.atm import DEFAULT_ATM_WS_PATH, AttractorsTransitionMatrix as ATM
 from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
 
 class BooleanNode(Jsonkin):
 
-    def __init__(self, label:str, predecessors: list, bf: BooleanFunction, init_state=r_bool()):
+    def __init__(self, label:str, predecessors: list or dict, bf: BooleanFunction, init_state=r_bool()):
         self.__label = str(label)
-        self.__predecessors = sorted(predecessors)
+        self.__predecessors = tuple(predecessors)
         self.__boolfun = bf
         self.__hash = hash(str(self.__label))
         self.__init_state = bool(init_state)
@@ -32,12 +32,15 @@ class BooleanNode(Jsonkin):
         return self.bf.arity
 
     @property
-    def predecessors(self) -> list:
+    def predecessors(self) -> dict:
         return self.__predecessors
     
     @predecessors.setter
     def predecessors(self, nodes: list):
-        self.__predecessors = sorted(nodes)
+        self.__predecessors = tuple(nodes)
+    
+    def has_predecessor(self, label:str):
+        return label in self.predecessors
 
     @property
     def state(self) -> bool:
@@ -56,9 +59,14 @@ class BooleanNode(Jsonkin):
         '''
         self.__state.bias = bool(new_state)
     
-    def evaluate(self, params: tuple) -> bool:
+    def evaluate(self, params: dict or tuple) -> bool:
         '''
-        Evaluate the encapsulated boolean function for the given bool tuple.
+        Evaluate the encapsulated boolean function for the given params.
+
+        Params are a dict the like of a tuple.
+
+        Returns the current node state.
+
         Equivalent to call the <BooleanNode.__call__> property.
         '''
         return self(params)
@@ -72,14 +80,17 @@ class BooleanNode(Jsonkin):
     def __hash__(self):
         return self.__hash
     
-    def __call__(self, params: tuple) -> bool:
+    def __call__(self, params: dict or tuple) -> bool:
         '''
-        Evaluate the encapsulated boolean function for the given bool tuple.
+        Evaluate the encapsulated boolean function for the given params.
+
+        Params are a dict the like of a tuple.
 
         Returns the current node state.
         
         Equivalent to call the <BooleanNode.evaluate> method
         '''
+       
         self.state = self.bf(params) 
         return self.state
 
@@ -138,7 +149,7 @@ class BooleanNetwork(Jsonkin):
     def to_pairlist(self):
         return self.__nodes.items()
     
-    def step(self):
+    def update(self):
         '''
         Evaluate the new network state.
 
@@ -173,7 +184,10 @@ class BooleanNetwork(Jsonkin):
 
         for node in self.nodes:
             if node.predecessors:
-                fparams = [oldstate[node.predecessors[i]] for i in range(node.arity)]
+                fparams = [
+                    oldstate[node.predecessors[i]] 
+                    for i in range(node.arity)
+                ]
                 node.evaluate(tuple(fparams))
 
         return self.state
@@ -204,15 +218,12 @@ class BooleanNetwork(Jsonkin):
             )
         )
 
-    def get_atm(self, atm_ws_path=Path('./atm-workspace.txt'), encoding='UTF-8', from_cache=False):
-        if from_cache and self.__atm:
+    def get_atm(self, from_cache=False):
+        if from_cache and self.__atm and self.__atm.id == hash(self.to_ebnf()):
             return self.__atm
         else:      
-            self.__atm = ATM(self.to_ebnf(), atm_ws_path=atm_ws_path, encoding=encoding)
+            self.__atm = ATM(self.to_ebnf())
             return self.__atm
-
-    def set_atm(self, atm:ATM):
-        self.__atm = atm
 
 #############################################################################
 

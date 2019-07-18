@@ -59,7 +59,7 @@ class BNController(Controller):
             # print(self.__bn.state)
     
         # Update network state
-        bn_state = self.__bn.step()
+        bn_state = self.__bn.update()
 
         # print(bn_state)
 

@@ -1,16 +1,17 @@
 from pathlib import Path
 
-import bncontroller.stubs.selector as selector_utils
+from bncontroller.stubs.selector.utils import is_bnselector_consistent
 
 from bncontroller.type.utils import isnotnone, first
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.utils import compact_state, search_attractors
 from bncontroller.search.parametric import VNSPublicContext
 
-def step1_evaluation(bn: BoolNetSelector, path:Path, tna:int, tpa:dict):
+def step1_evaluation(bn: BoolNetSelector, tna:int, tpa:dict):
     
-    atm = bn.get_atm(atm_ws_path=path / 'atm-workspace.txt', from_cache=True)
-    return selector_utils.is_bnselector_consistent(bn, atm, tna, tpa)
+    atm = bn.get_atm(from_cache=True)
+    return is_bnselector_consistent(bn, atm, tna, tpa)
 
 def step2_evaluation(template: SimulationConfig, bn: BoolNetSelector, vns_ctx: VNSPublicContext):
     
@@ -24,12 +25,12 @@ def step2_evaluation(template: SimulationConfig, bn: BoolNetSelector, vns_ctx: V
             bn[i].state = input_values[i]
         
         states = [
-            selector_utils.compact_state(bn.step())
+            compact_state(bn.update())
             for _ in range(int(template.sim_run_time_s / template.sim_timestep_ms))
         ]
         
         # Search which attractractors have developed in the run
-        attr = selector_utils.search_attractors(states, bn.get_atm(from_cache=True).dattractors)
+        attr = search_attractors(states, bn.get_atm(from_cache=True).dattractors)
 
         # In this case we want than only one attractor shall appear for each input
         # in absence of noise

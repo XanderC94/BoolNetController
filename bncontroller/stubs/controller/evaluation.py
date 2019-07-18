@@ -9,17 +9,26 @@ from collections.abc import Iterable
 
 import bncontroller.stubs.utils as stub_utils
 import bncontroller.stubs.aggregators as aggregators
-import bncontroller.stubs.comparators as comparators
 
 from bncontroller.sim.config import SimulationConfig, generate_sim_config
 from bncontroller.sim.logging.logger import staticlogger as logger
-from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.type.comparators import Comparator
 from bncontroller.search.parametric import VNSPublicContext
+from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 ###############################################################################################
 
 def evaluate_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: tuple):
+    '''
+    Evaluate the given BN model as a robot controller on the given set of points/parameters.
 
+    Returns:
+        * function score
+        * final distance
+        * light initial position
+        * agent initial position
+        * agent y-axis rotation
+    '''
     lpos, apos, yrot, *_ = on
 
     config.sim_agent_position = apos
@@ -28,7 +37,9 @@ def evaluate_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: 
 
     data = stub_utils.run_simulation(config, bn)
 
-    fs, ds = aggregators.phototaxis_score(lpos, data)
+    fs, fpos = aggregators.phototaxis_score(data)
+
+    ds = round(lpos.dist(fpos), 5)
 
     logger.info(
         'iDistance: (m)', lpos.dist(apos), '|',
@@ -63,7 +74,7 @@ def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_par
 
 def train_evaluation(
         template: SimulationConfig, bn: OpenBooleanNetwork, 
-        vns_ctx: VNSPublicContext, compare=comparators.compare_train_scores):
+        ctx: VNSPublicContext, compare:Comparator):
 
     test_params = itertools.product(
         template.globals['light_spawn_points'], 
@@ -76,21 +87,21 @@ def train_evaluation(
     new_score = statistics.mean(fscores), statistics.stdev(fscores)
 
     logger.info(
-        'it:', vns_ctx.it, 
-        'flips:', vns_ctx.n_flips, 
-        'stalls:', vns_ctx.n_stalls,
-        'stagnation: ', vns_ctx.stagnation,
+        'it:', ctx.it, 
+        'flips:', ctx.n_flips, 
+        'stalls:', ctx.n_stalls,
+        'stagnation: ', ctx.stagnation,
         'dist --',
-        'old:', vns_ctx.score,  
+        'old:', ctx.score,  
         'new:', new_score
     )
 
-    if compare(new_score, vns_ctx.score):
+    if compare(new_score, ctx.score):
         
         stub_utils.save_subopt_model(
             template,
             bn.to_json(), 
-            vns_ctx,
+            ctx,
             compare
         )
 

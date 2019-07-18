@@ -1,5 +1,5 @@
+import json
 from pathlib import Path
-from bncontroller.jsonlib.utils import Jsonkin, json
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
 from rpy2.robjects.packages import importr
@@ -7,6 +7,8 @@ from rpy2.robjects.packages import importr
 rBoolNet = importr('BoolNet')
 rDiffeRenTES = importr('diffeRenTES')
 rJSONlite = importr('jsonlite')
+
+DEFAULT_ATM_WS_PATH = Path('./tmp/atm-workspace.txt')
 
 class AttractorsTransitionMatrix(object):
     '''
@@ -16,16 +18,15 @@ class AttractorsTransitionMatrix(object):
     of a given BN in extended Boolean Network Format (ebnf).
     '''
 
-    def __init__(self, 
-            ebnf_str: str, 
-            atm_ws_path=Path('./atm-workspace.txt'), 
-            encoding='UTF-8'):
+    def __init__(self, ebnf_str: str):
 
-        atm_ws_path.write_text(ebnf_str, encoding=encoding)
+        self.id = hash(ebnf_str)
 
-        net = rBoolNet.loadNetwork(str(atm_ws_path))
+        Path(DEFAULT_ATM_WS_PATH).write_text(ebnf_str, encoding='UTF-8')
+        
+        net = rBoolNet.loadNetwork(str(DEFAULT_ATM_WS_PATH))
 
-        atm_ws_path.unlink()
+        # atm_ws_path.unlink()
 
         jATM = json.loads(rJSONlite.toJSON(
             rDiffeRenTES.getATM(
@@ -58,3 +59,4 @@ class AttractorsTransitionMatrix(object):
             transpose(atm),
             [transpose(a[:-1]) for _, a in attractors.items()]   
         )
+        

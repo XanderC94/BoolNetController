@@ -1,56 +1,29 @@
-import itertools
 import re
 from pathlib import Path
 from collections import defaultdict
 from collections.abc import Iterable
-from pandas import DataFrame
-from bncontroller.stubs.evaluation.controllers import test_evaluation
-from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.collectionslib.utils import flat
-from bncontroller.sim.data import generate_spawn_points, Point3D
 from bncontroller.sim.config import SimulationConfig
-from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.stubs.controller.testing import test_bncontrollers
+from bncontroller.stubs.utils import clean_generated_worlds, clean_tmpdir
+from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
+from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 
 #########################################################################################################
 
 MODEL_NAME_PATTERN = r'bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
 
-def sort(t:Iterable, go:dict, wo=dict(lp=0, ap=1, ar=2)):
-
-    r = list(t)
-    
-    for gk, wk in dict((go[k], wo[k]) for k in wo).items():
-        
-        r[wk] = t[gk] 
-
-    return r
-
-def get_params_order(string:str, lp='lp', ap='ap', ar='ar'):
-
-    lpi = string.find(lp)
-    api = string.find(ap)
-    ari = string.find(ar)
-
-    ix = sorted([lpi, api, ari])
-
-    return {
-        lp: ix.index(lpi),
-        ap: ix.index(api),
-        ar: ix.index(ari),
-    }
-
 def collect_bn_models(
-        paths:Iterable, 
+        paths: Iterable or Path, 
         ffilter=lambda x: x.is_file() and re.match(MODEL_NAME_PATTERN, x.name)
     ):
 
     files = dict()
     bns = defaultdict(list)
 
-    for path in paths:
+    for path in cpaths(paths):
         if path.is_dir():
             
             f, bn, *_ = collect_bn_models(
@@ -107,55 +80,17 @@ if __name__ == "__main__":
 
     ### Load Test Model(s) from Template paths ####################################
 
-    files, bns = collect_bn_models(
-        cpaths(template.bn_model_path)
-    )
-
-    ### Prepare aggregation function evaluator ####################################
-
-    def aggregate(f, lp, ap, ar):
-        return eval(f, dict(lp=lp, ap=ap, ar=ar))
+    files, bns = collect_bn_models(template.bn_model_path)
 
     ### Test ######################################################################
     
     for i in range(template.test_n_instances):
 
-        template.globals.update(
-            **generate_spawn_points(template)
-        )
-        
-        for k in bns:
-            
-            logger.info(i, k)
+        logger.info(f'Test instance n°{i}')
 
-            test_data = DataFrame()
+        instance_data = test_bncontrollers(template, bns)
 
-            test_params = map( 
-                lambda t: sort(
-                    flat(t, to=tuple, exclude=Point3D), 
-                    get_params_order(template.test_params_aggr_func)
-                ),
-                itertools.product(
-                    *aggregate(
-                        template.test_params_aggr_func,
-                        template.globals['light_spawn_points'],
-                        template.globals['agent_spawn_points'], 
-                        template.globals['agent_yrots']
-                    )
-                )
-            )
-
-            sim_data = test_evaluation(template, bns[k], test_params)
-
-            fscores, dscores, lpos, apos, yrot, *_ = sim_data
-
-            test_data['score'] = fscores
-            test_data['fdist'] = dscores
-            test_data['lpos'] = lpos
-            test_data['apos'] = apos
-            test_data['yrot'] = yrot
-            test_data['idist'] = list(a.dist(b) for a, b in zip(lpos, apos))
-
+        for k, test_data in instance_data.items():
             test_data.to_json(
                 template.test_data_path / gen_fname(
                     'rtest_data', 
@@ -163,3 +98,8 @@ if __name__ == "__main__":
                     template='{name}'+f'_in{i}.json',
                 )
             )
+
+    clean_generated_worlds(template.webots_world_path)
+    clean_tmpdir()
+
+    exit(1)

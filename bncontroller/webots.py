@@ -21,7 +21,7 @@ if __name__ == "__main__":
     
     excode = subprocess.run([
         str(config.webots_path), 
-        *config.webots_launch_args, 
+        *config.webots_launch_opts, 
         str(config.webots_world_path)
     ])
 

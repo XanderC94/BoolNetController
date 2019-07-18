@@ -6,7 +6,12 @@ def collection_diff(first: Iterable, second: Iterable):
     return [item for item in first if item not in set(second)]
 
 def flat(x: Iterable, to=list, exclude=(dict, str)):
+    '''
+    Flatten any Collection of collections to a desired colletion. 
+    It's not recursive so only flatten top level collections.
 
+    can be specified withc collections type to exclude from being flattened.
+    '''
     l = []
 
     for e in x:

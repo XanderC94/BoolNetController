@@ -3,18 +3,16 @@ Generate or load a BN and run Stochastic Descent Search Algorithm
 '''
 import time
 from pathlib import Path
-from bncontroller.stubs.bn import rbn_gen, is_obn_consistent
-from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.search.parametric import parametric_vns
-from bncontroller.stubs.evaluation.controllers import train_evaluation
-from bncontroller.stubs.comparators import compare_train_scores
-from bncontroller.stubs.scrambling import train_scramble_strategy
+
+from bncontroller.stubs.controller.training import train_bncontroller
+from bncontroller.stubs.bn import bn_generator, is_obn_consistent
+from bncontroller.stubs.utils import clean_generated_worlds, clean_tmpdir
+from bncontroller.sim.config import SimulationConfig
+from bncontroller.file.utils import check_path
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.file.utils import check_path
-from bncontroller.sim.data import generate_spawn_points
-from bncontroller.sim.config import SimulationConfig
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
+from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 ####################################################################################
 
@@ -31,7 +29,7 @@ def generate_or_load_bn(template: SimulationConfig, save_virgin=False):
     bn = None
 
     if check_path(path, create_if_dir=True):
-        bng, I, O, *_ = rbn_gen(N, K, P, I, O)
+        bng, I, O, *_ = bn_generator(N, K, P, I, O)
         bn = bng.new_obn(I, O)
 
         while not is_obn_consistent(bn.nodes, I, O):
@@ -92,26 +90,11 @@ if __name__ == "__main__":
 
     if not template.train_generate_only:
         
-        template.globals.update(
-            **generate_spawn_points(template)
-        )
-
         t = time.perf_counter()
 
-        bn, ctx = parametric_vns(
-            bn,
-            compare=lambda a, b: compare_train_scores(a, b),
-            evaluate=lambda bn, ct: train_evaluation(template, bn, ct, compare=compare_train_scores),
-            scramble=lambda bn, nf, e: train_scramble_strategy(bn, nf, e),
-            target_score=template.sd_target_score,
-            min_flips=template.sd_min_flips,
-            max_flips=sum(2**n.arity for n in bn.nodes if n not in bn.input_nodes),
-            max_iters=template.sd_max_iters,
-            max_stalls=template.sd_max_stalls,
-            max_stagnation=template.sd_max_stagnation
-        )
+        bn, ctx = train_bncontroller(template, bn)
 
-        logger.info(f"Search time: {time.perf_counter()-t}s")
+        logger.info(f"Search time: {time.perf_counter() - t}s")
     
         logger.info(ctx)
 
@@ -127,5 +110,8 @@ if __name__ == "__main__":
     logger.info('Closing...')
 
     logger.flush()
+
+    clean_generated_worlds(template.webots_world_path)
+    clean_tmpdir()
 
     exit(1)

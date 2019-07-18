@@ -16,7 +16,7 @@ def is_obn_consistent(nodes:list, I:list, O:list):
     # Each I node must have at least 1 outgoing edge
     i_edges = all(
         any(
-            i in n.predecessors
+            n.has_predecessor(i)
             for n in nodes
         ) 
         for i in I
@@ -85,7 +85,7 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
 
 ######################################################################################################
 
-def rbn_gen(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) -> (RBNFactory, list, list):
+def bn_generator(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) -> (RBNFactory, list, list):
     """
     Generates a Random Boolean Network Generator which bn have the following properties:
 

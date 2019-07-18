@@ -1,13 +1,22 @@
 import re
 import subprocess
+import shutil
 from pathlib import Path
 from bncontroller.sim.config import CONFIG_CLI_NAMES
 from bncontroller.file.utils import check_path
 from bncontroller.jsonlib.utils import read_json, write_json
+from bncontroller.type.comparators import Comparator
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.search.parametric import VNSPublicContext
 from bncontroller.file.utils import get_dir
+
+class SimulationArena(object):
+
+    def __init__(self):
+
+        self.floor_size = (3, 3)
+        self.controller_args = str(Path('.'))
 
 def generate_webots_worldfile(template_path: Path, target_path:Path, config_path:Path):
 
@@ -45,7 +54,7 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     # Run Webots    
     subprocess.run([
-        str(config.webots_path), *config.webots_launch_args, str(config.webots_world_path)
+        str(config.webots_path), *config.webots_launch_opts, str(config.webots_world_path)
     ])
 
     return read_json(config.sim_data_path)
@@ -53,7 +62,7 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 #####################################################################################
 
 
-def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContext, compare):
+def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContext, compare:Comparator):
         
     bnjson.update({'sim_info': dict()})
 
@@ -75,3 +84,12 @@ def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContex
         date=config.globals['date'], 
         it=''
     ))
+
+def clean_generated_worlds(template_world:Path):
+    parts = template_world.name.split('.')
+    for p in template_world.parent.iterdir():
+        if any(part in p.name for part in parts) and ('wbt' in p.suffix or 'wbproj' in p.suffix):
+            p.unlink()
+
+def clean_tmpdir():
+    shutil.rmtree('./tmp/')

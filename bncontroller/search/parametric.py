@@ -33,7 +33,7 @@ class VNSContext(object):
             n_stalls = 0,
             n_flips = 0,
             stagnation = 0,
-            score = float('-inf')):
+            score = None):
 
         self.it = it
         self.n_stalls = n_stalls

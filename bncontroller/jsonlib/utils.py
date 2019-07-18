@@ -59,12 +59,11 @@ def objrepr(json_repr, obj_type, alt_type=None):
     Deserializer from JSON repr to defined object type
     '''
 
-    # print(json_repr, obj_type, alt_type)
-
     if isinstance(json_repr, dict) and issubclass(obj_type, Jsonkin):
         return obj_type.from_json(json_repr)
     else:
-        if alt_type and isinstance(json_repr, alt_type) and isinstance(json_repr, Iterable):
+        
+        if alt_type and isinstance(json_repr, (alt_type, list)) and isinstance(json_repr, Iterable):
             return alt_type(objrepr(item, obj_type) for item in json_repr)
         else:
             return obj_type(json_repr)

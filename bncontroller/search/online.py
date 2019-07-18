@@ -1,5 +1,5 @@
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.search.parametric import default_scramble_strategy, default_compare_strategy
+from bncontroller.search.parametric import default_scramble_strategy, comparators
 from bncontroller.search.utils import edit_boolean_network
 
 def online_evaluation(bn: OpenBooleanNetwork, sensors_values: dict):
@@ -35,7 +35,7 @@ def onlineVNS(
         monad:OnlineVNSData,
         evaluate=lambda bn:online_evaluation(bn, {}), 
         scramble=default_scramble_strategy, 
-        compare=default_compare_strategy):
+        compare=comparators.lesser):
 
     if monad.score is None:
         monad.score = evaluate(monad.bn)
