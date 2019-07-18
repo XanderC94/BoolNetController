@@ -7,13 +7,12 @@ from bncontroller.sim.config import SimulationConfig
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.stubs.controller.testing import test_bncontrollers
-from bncontroller.stubs.utils import clean_generated_worlds, clean_tmpdir
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 
 #########################################################################################################
 
-MODEL_NAME_PATTERN = r'bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
+MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
 
 def collect_bn_models(
         paths: Iterable or Path, 
@@ -22,6 +21,7 @@ def collect_bn_models(
 
     files = dict()
     bns = defaultdict(list)
+
 
     for path in cpaths(paths):
         if path.is_dir():
@@ -38,7 +38,7 @@ def collect_bn_models(
             name = path.with_suffix('').name
             bns[name] = OpenBooleanNetwork.from_json(read_json(path))
             files[name] = path
-    
+  
     return files, bns
 
 ###################################################################################
@@ -98,8 +98,5 @@ if __name__ == "__main__":
                     template='{name}'+f'_in{i}.json',
                 )
             )
-
-    clean_generated_worlds(template.webots_world_path)
-    clean_tmpdir()
 
     exit(1)

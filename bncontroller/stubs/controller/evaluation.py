@@ -68,7 +68,7 @@ def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_par
             config.webots_world_path,
             stub_utils.ArenaParams(
                 floor_size=(3, 3),
-                controller_args=template.sim_config_path
+                controller_args=config.sim_config_path
             )
         )
 

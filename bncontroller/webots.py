@@ -37,7 +37,4 @@ if __name__ == "__main__":
 
     proc_closure = stub_utils.run_simulation(config, bn)
 
-    stub_utils.clean_generated_worlds(template.webots_world_path)
-    stub_utils.clean_tmpdir()
-
     exit(proc_closure.returncode)

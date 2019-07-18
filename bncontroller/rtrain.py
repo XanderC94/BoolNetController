@@ -6,7 +6,6 @@ from pathlib import Path
 
 from bncontroller.stubs.controller.training import train_bncontroller
 from bncontroller.stubs.bn import bn_generator, is_obn_consistent
-from bncontroller.stubs.utils import clean_generated_worlds, clean_tmpdir
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.file.utils import check_path
 from bncontroller.parse.utils import parse_args_to_config
@@ -110,8 +109,5 @@ if __name__ == "__main__":
     logger.info('Closing...')
 
     logger.flush()
-
-    clean_generated_worlds(template.webots_world_path)
-    clean_tmpdir()
 
     exit(1)

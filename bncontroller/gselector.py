@@ -3,7 +3,6 @@ import time
 from bncontroller.file.utils import get_dir
 from bncontroller.jsonlib.utils import write_json
 from bncontroller.parse.utils import parse_args_to_config
-from bncontroller.stubs.utils import clean_tmpdir
 from bncontroller.stubs.selector.training import search as search_bnselector
 
 ########################################################################### 
@@ -30,6 +29,6 @@ if __name__ == "__main__":
             date=template.globals['date']
         ), indent=True)
 
-    clean_tmpdir()
-
     exit(1)
+
+
