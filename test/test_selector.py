@@ -8,12 +8,12 @@ from bncontroller.stubs.selector.tests import test_attractors_transitions
 from bncontroller.stubs.selector.tests import test_bn_state_space_omogeneity
 from bncontroller.stubs.selector.tests import test_attraction_basins
 from bncontroller.stubs.bn import bncontroller_generator
-from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator
+from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator, binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBooleanNetwork
 from bncontroller.boolnet.selector import BoolNetSelector
 from bncontroller.boolnet.function import BooleanFunction
-from bncontroller.collectionslib.utils import flat
+from bncontroller.collectionslib.utils import flat, transpose
 from bncontroller.jsonlib.utils import read_json
 
 class TestBooleNetSelectorGenerator(unittest.TestCase):
@@ -21,7 +21,9 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
     def test_attractor_search(self):
         
         states = [
+            
             [0,1,0,1,0,0],
+            [1,1,0,1,0,1],
             [0,0,0,0,0,0],
             [1,1,1,1,0,0],
             [0,1,0,1,0,1],
@@ -33,7 +35,9 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
             [1,1,0,1,0,1],
             [1,1,0,1,0,1],
             [1,1,0,1,0,1],
-            [0,1,0,1,0,0]
+            [0,1,1,1,0,0],
+            [1,1,1,1,0,0],
+            [0,1,0,1,0,1],
         ]
 
         attractors = {
@@ -46,9 +50,36 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
             ],
         }
 
+        # patterns = dict(
+        #     (ak, r'(?:{pattern},)+'.format(
+        #         pattern=r','.join(map(binstate, attractors[ak])))
+        #     )
+        #     for ak in attractors
+        # )
+
+        # ststring = ','.join(map(binstate, states))
+
+        # print(patterns)
+
+        # print(ststring)
+
         res = search_attractors(states, attractors)
-        
-        self.assertTrue('a0' in res and 'a1' in res)
+
+        labels, ns, lmaxs, lmins = transpose(res)
+
+        self.assertTrue('a0' in labels and 'a1' in labels)
+
+        ia0 = list(labels).index('a0')
+        ia1 = list(labels).index('a1')
+
+        self.assertTrue(ns[ia0] == 2)
+        self.assertTrue(ns[ia1] == 2)
+
+        self.assertTrue(lmaxs[ia0] == 3)
+        self.assertTrue(lmaxs[ia1] == 3)
+
+        self.assertTrue(lmins[ia0] == 1)
+        self.assertTrue(lmins[ia1] == 1)
     
     def test_bn_noisy_run(self):
 

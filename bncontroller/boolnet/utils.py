@@ -54,7 +54,6 @@ def get_terminal_nodes(bn:BooleanNetwork):
         )
     ]
 
-
 def search_attractors(states: list, attractors: dict) -> str:
     '''
     Search and return which of the specified attractors is found inside the state trajectory.
@@ -62,24 +61,42 @@ def search_attractors(states: list, attractors: dict) -> str:
     Attractors are such that they are present more than once inside a single trajectory, 
     usually consecutively in absence noise.
 
-    return a list containing the attractors found in the state sequence.
+    returns:
+        * a list containing the attractors found in the state sequence,
+        * for each element of the list are specified:
+            - attractor name,
+            - number of (continous) matches found
+            - length of the longest match
+            - length of the shortest match
 
     '''
     attrpatterns = dict(
-        (ak, r','.join(map(binstate, attractors[ak])))
+        (ak, r'(?:{pattern},?)+'.format(
+            pattern=r','.join(map(binstate, attractors[ak])))
+        )
         for ak in attractors
     )
 
     ststring = ','.join(map(binstate, states))
-    
-    async def search_pattern(label, pattern, string):
+
+    async def search_pattern(label: str, pattern: str, string: str):
         m = re.findall(pattern, string)
-        return label if  m != None and len(m) > 1 else None
+        
+        sizes = list(map(len, m))
+        pattern_len = len(pattern.replace('(?:', '').replace(',?)+', ''))
+        maxlm = int(max(sizes, default=0) / pattern_len)
+        minlm = int(min(sizes, default=0) / pattern_len)
+
+        res = label, len(m), maxlm, minlm
+
+        return res if m != None and maxlm > 1 else None
 
     async def asynctask(string, patterns):
         return list(filter(
             isnotnone,
             await asyncio.gather(*[search_pattern(l, p, string) for l, p in patterns.items()])
         ))
-    
-    return asyncio.run(asynctask(ststring, attrpatterns))
+
+    res = asyncio.run(asynctask(ststring, attrpatterns))
+  
+    return res

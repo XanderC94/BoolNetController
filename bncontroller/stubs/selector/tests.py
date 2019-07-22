@@ -65,7 +65,7 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
     attractor_keys = list()
     states = []
     input_fixed_for = 0
-
+    it = 0
     while not attractor_keys:
 
         if input_fixed_for < fix_input_for:
@@ -75,10 +75,10 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
             input_fixed_for += 1
 
         states.append(bn.update())
-
+        
         # Search which attractractors have developed in the run
         attractor_keys = search_attractors(states, bn.atm.dattractors)
-
+        
     return attractor_keys
 
 def test_attraction_basins(bn: BoolNetSelector, fix_input_for: int):
@@ -100,7 +100,7 @@ def test_attraction_basins(bn: BoolNetSelector, fix_input_for: int):
 
         # Only one attractor shall appear for each input in absence of noise
         if len(attrs) == 1:
-            bn.attractors_input_map.append((first(attrs), i))
+            bn.attractors_input_map.append((attrs[0][0], i))
         else:
             return False
 

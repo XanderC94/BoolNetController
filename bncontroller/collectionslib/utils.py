@@ -24,6 +24,10 @@ def flat(x: Iterable, to=list, exclude=(dict, str)):
     return to(l)
 
 def transpose(x:Iterable):
+    '''
+    Transpose the given collection of collection.
+    Rows become Columns and so on.
+    '''
     return list(map(list, zip(*x)))
 
 ################################################################

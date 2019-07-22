@@ -1,7 +1,7 @@
 import pandas
 from bncontroller.sim.data import Point3D
 
-def phototaxis_score(sim_data: dict) -> float:
+def phototaxis_score(sim_data: dict) -> (float, Point3D):
 
     df = pandas.DataFrame(sim_data['data'])
 
@@ -14,3 +14,8 @@ def phototaxis_score(sim_data: dict) -> float:
     final_pos = df[df['n_step'] == max_step]['position'].T.values[0]
 
     return (1 / score if score > 0 else float('+inf')), Point3D.from_json(final_pos)
+
+def antiphototaxis_score(sim_data: dict) -> (float, Point3D):
+
+    score, position = phototaxis_score(sim_data)
+    return 1 / score, position 
