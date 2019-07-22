@@ -29,7 +29,7 @@ def generate_or_load_bn(template: SimulationConfig, save_virgin=False):
                 date=template.globals['date']
             )
 
-            write_json(bn.to_json(), p)
+            write_json(__bn.to_json(), p)
 
             logger.info(f'Virgin BN saved to {p}.')
 

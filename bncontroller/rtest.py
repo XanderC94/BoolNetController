@@ -12,20 +12,19 @@ from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fn
 
 #########################################################################################################
 
-MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
+MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)?bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
 
 def collect_bn_models(
         paths: Iterable or Path, 
-        ffilter=lambda x: x.is_file() and re.match(MODEL_NAME_PATTERN, x.name)
+        ffilter=lambda x: x.is_file() and re.search(MODEL_NAME_PATTERN, x.name)
     ):
 
     files = dict()
     bns = defaultdict(list)
 
-
     for path in cpaths(paths):
         if path.is_dir():
-            
+
             f, bn, *_ = collect_bn_models(
                 path.iterdir(),
                 ffilter=ffilter
@@ -35,6 +34,7 @@ def collect_bn_models(
             files.update(**f)
 
         elif ffilter(path):
+            print(path)
             name = path.with_suffix('').name
             bns[name] = OpenBooleanNetwork.from_json(read_json(path))
             files[name] = path
