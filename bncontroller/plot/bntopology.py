@@ -106,6 +106,6 @@ if __name__ == "__main__":
 
     i, o = config.bn_n_inputs, config.bn_n_outputs
 
-    bn = BooleanNetwork.from_json(read_json(config.bn_model_path))
+    bn = BooleanNetwork.from_json(read_json(config.bn_ctrl_model_path))
 
     plot_booleannetwork(bn, list(map(str, range(i))), list(map(str, range(i, i+o))))

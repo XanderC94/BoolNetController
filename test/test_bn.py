@@ -1,27 +1,30 @@
-import unittest, time
-from bncontroller.boolnet.structures import BooleanNetwork
+import unittest
+import time
+from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBooleanNetwork
+from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.utils import binstate
-from bncontroller.stubs.bn import bn_generator
-from bncontroller.search.parametric import default_scramble_strategy
+from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
+from bncontroller.stubs.bn import bncontroller_generator
+from bncontroller.search.utils import bn_scramble_strategy
 
 class TestBooleanNetwork(unittest.TestCase):
 
     def test_bn_copy(self):
-        bn = bn_generator(5, 2, 0.5, 1, 0)[0].new()
+        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
         self.assertTrue(bn.to_json(), bn_copy.to_json())
 
     def test_ebnf(self):
-        bn = bn_generator(5, 2, 0.5, 1, 0)[0].new()
+        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
         self.assertTrue(bn.to_ebnf(), bn_copy.to_ebnf())
 
     def test_bn_update(self):
-        bn = bn_generator(5, 2, 0.5, 1, 0)[0].new()
+        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
@@ -36,31 +39,72 @@ class TestBooleanNetwork(unittest.TestCase):
 
         self.assertTrue(all(matching_states))
 
+    def test_atm(self):
+
+        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+
+        atm = bn.atm
+
+        for row in atm.tableau:
+            s = sum(row)
+            self.assertTrue(s >= 1.0 and s <= 1.02)
+
     def test_atm_caching(self):
 
-        bn = bn_generator(5, 2, 0.5, 1, 0)[0].new()
+        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
 
         t = time.perf_counter()
 
         for _ in range(10):
-            bn.get_atm(from_cache=True)
+            bn.atm
         
         t_cache = time.perf_counter() - t
 
         t = time.perf_counter()
 
         for _ in range(10):
-            bn.get_atm(from_cache=True)
-            bn, *_ = default_scramble_strategy(bn, 1)
+            bn.atm
+            bn, *_ = bn_scramble_strategy(bn, 1)
         
         t_cache_w_changes = time.perf_counter() - t
 
         t = time.perf_counter()
 
         for _ in range(10):
-            bn.get_atm()
+            ATM(bn.to_ebnf())
         
         t_creation = time.perf_counter() - t
 
         self.assertTrue(t_cache < t_creation and t_cache <  t_cache_w_changes)
 
+    def test_obn_consistency(self):
+
+        bn = OpenBooleanNetwork(
+            [
+                BooleanNode('0', predecessors=['1', '3'], bf=BooleanFunction(2)),
+                BooleanNode('1', predecessors=['0', '4'], bf=BooleanFunction(2)),
+                BooleanNode('2', predecessors=['1', '2'], bf=BooleanFunction(2)),
+                BooleanNode('3', predecessors=['3', '4'], bf=BooleanFunction(2)),
+                BooleanNode('4', predecessors=['2', '0'], bf=BooleanFunction(2)),
+                BooleanNode('5', predecessors=['4', '2'], bf=BooleanFunction(2))
+            ],
+            input_nodes=['5'],
+            output_nodes=[]
+        )
+
+        self.assertFalse(bn.is_consistent)
+
+        bn = OpenBooleanNetwork(
+            [
+                BooleanNode('0', predecessors=['1', '3'], bf=BooleanFunction(2)),
+                BooleanNode('1', predecessors=['0', '4'], bf=BooleanFunction(2)),
+                BooleanNode('2', predecessors=['1', '2'], bf=BooleanFunction(2)),
+                BooleanNode('3', predecessors=['3', '5'], bf=BooleanFunction(2)),
+                BooleanNode('4', predecessors=['2', '0'], bf=BooleanFunction(2)),
+                BooleanNode('5', predecessors=['4', '2'], bf=BooleanFunction(2))
+            ],
+            input_nodes=['5'],
+            output_nodes=[]
+        )
+
+        self.assertTrue(bn.is_consistent)

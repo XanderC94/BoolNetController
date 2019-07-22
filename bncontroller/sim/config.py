@@ -2,16 +2,12 @@
 Configuration class and utils module.
 '''
 
-import math
-import numpy as np
 from pathlib import Path
-from argparse import ArgumentParser, Action
-from collections import defaultdict
+from collections import namedtuple, defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D
 from bncontroller.file.utils import iso8106, gen_fname, get_dir
 from bncontroller.sim.robot.utils import DeviceName
-from collections import namedtuple
 
 CONFIG_CLI_NAMES = ['-c', '-cp', '--config_path', '--config']
 
@@ -163,12 +159,12 @@ class DefaultConfigOptions(Jsonkin):
 
         # Boolean Networks Generation Control Parameters #
 
-        bn_model_path=DefaultOption(
+        bn_ctrl_model_path=DefaultOption(
             value=Path('.'),
             alt=list,
             descr='''Directory or file where to store the bn model'''
         ),
-        bn_selector_path=DefaultOption(
+        bn_slct_model_path=DefaultOption(
             value=Path('.'),
             alt=None,
             descr='''Directory or file where to store the bn selector model'''
@@ -198,12 +194,12 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''number or List of nodes of the BN to be reserved as outputs'''
         ),
-        bn_target_n_attractors=DefaultOption(
+        slct_target_n_attractors=DefaultOption(
             value=2,
             alt=None,
             descr='''number of wanted attractors'''
         ),
-        bn_target_p_attractors=DefaultOption(
+        slct_target_transition_rho=DefaultOption(
             value={
                 'a0': {'a1':0.1}, 
                 'a1': {'a0':0.1}
@@ -211,13 +207,31 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''probability to jump from an attractor to another different from itself.'''
         ),
-        bn_in_attr_map=DefaultOption(
-            value=[
-                [False],
-                [True]
-            ],
+        # slct_in_attr_map=DefaultOption(
+        #     value=[
+        #         [False],
+        #         [True]
+        #     ],
+        #     alt=None,
+        #     descr='''specifify the input values to apply to input nodes for that attractor'''
+        # ),
+        slct_noise_rho=DefaultOption(
+            value=0.1,
             alt=None,
-            descr='''specifify the input values to apply to input nodes for that attractor'''
+            descr='''Probability of noise to flip the state of a BN'''
+        ),
+        # slct_input_step_frac=DefaultOption(
+        #     value=1/5,
+        #     alt=None,
+        #     descr='''Fractions of update steps (it) on each which apply inputs on input node.'''
+        # ),
+        slct_fix_input_steps=DefaultOption(
+            value=float('inf'),
+            alt=None,
+            descr='''
+            For how many steps the input should be enforced in the network 
+            (after each sensing)
+            '''
         ),
 
         # Evaluation Parameters
@@ -362,7 +376,7 @@ class SimulationConfig(Jsonkin):
 
     # Boolean Networks Generation Control Parameters #
 
-    * bn_model_path -- Directory or file where to store the bn model
+    * bn_ctrl_model_path -- Directory or file where to store the bn model
     * bn_n -- Boolean Network cardinality
     * bn_k -- Boolean Network Node a-rity
     * bn_p -- Truth value bias
@@ -434,16 +448,19 @@ class SimulationConfig(Jsonkin):
         self.sim_suppress_logging = options['sim_suppress_logging']
 
         # Boolean Network #
-        self.bn_model_path = options['bn_model_path']
-        self.bn_selector_path = options['bn_selector_path']
+        self.bn_ctrl_model_path = options['bn_ctrl_model_path']
+        self.bn_slct_model_path = options['bn_slct_model_path']
         self.bn_n = options['bn_n']
         self.bn_k = options['bn_k']
         self.bn_p = options['bn_p']
         self.bn_n_inputs = options['bn_n_inputs']
         self.bn_n_outputs = options['bn_n_outputs']
-        self.bn_target_n_attractors = options['bn_target_n_attractors']
-        self.bn_target_p_attractors = options['bn_target_p_attractors']
-        self.bn_in_attr_map = options['bn_in_attr_map']
+        self.slct_target_n_attractors = options['slct_target_n_attractors']
+        self.slct_target_transition_rho = options['slct_target_transition_rho']
+        # self.slct_in_attr_map = options['slct_in_attr_map']
+        self.slct_noise_rho = options['slct_noise_rho']
+        # self.slct_input_step_frac = options['slct_input_step_frac']
+        self.slct_fix_input_steps = options['slct_fix_input_steps']
 
         # Evaluation Parameters
         self.eval_light_spawn_radius_m = options['eval_light_spawn_radius_m']
@@ -526,8 +543,8 @@ def generate_sim_config(
     
     sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
     
-    # get_dir(sim_config.bn_model_path, create_if_dir=True) 
-    sim_config.bn_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / model_fname 
+    # get_dir(sim_config.bn_ctrl_model_path, create_if_dir=True) 
+    sim_config.bn_ctrl_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / model_fname 
     
     # get_dir(sim_config.sim_config_path, create_if_dir=True)
     sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 

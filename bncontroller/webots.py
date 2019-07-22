@@ -12,10 +12,10 @@ if __name__ == "__main__":
 
     template = parse_args_to_config()
     
-    if isinstance(template.bn_model_path, list) or template.bn_model_path.is_dir():
+    if isinstance(template.bn_ctrl_model_path, list) or template.bn_ctrl_model_path.is_dir():
         raise Exception('Model path should be a file.')
    
-    bn = OpenBooleanNetwork.from_json(read_json(template.bn_model_path))
+    bn = OpenBooleanNetwork.from_json(read_json(template.bn_ctrl_model_path))
 
     config = generate_sim_config(template, keyword='handcheck')
 

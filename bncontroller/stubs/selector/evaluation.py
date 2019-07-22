@@ -1,47 +1,22 @@
-from pathlib import Path
-
-from bncontroller.stubs.selector.utils import is_bnselector_consistent
-
-from bncontroller.type.utils import isnotnone, first
+import bncontroller.stubs.selector.tests as selector_tests
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.boolnet.selector import BoolNetSelector
-from bncontroller.boolnet.utils import compact_state, search_attractors
-from bncontroller.search.parametric import VNSPublicContext
+from bncontroller.stubs.selector.utils import test_contraints
 
-def step1_evaluation(bn: BoolNetSelector, tna:int, tpa:dict):
+def step1_evaluation(template: SimulationConfig, bn: BoolNetSelector):
     
-    atm = bn.get_atm(from_cache=True)
-    return is_bnselector_consistent(bn, atm, tna, tpa)
+    tna = template.slct_target_n_attractors
+    atpm = template.slct_target_transition_rho
+    n_rho = template.slct_noise_rho
 
-def step2_evaluation(template: SimulationConfig, bn: BoolNetSelector, vns_ctx: VNSPublicContext):
-    
-    if bn is None:
-        return False
-    
-    for k, input_values in enumerate(template.bn_in_attr_map):
+    return test_contraints(bn, [
+            lambda o: selector_tests.test_attractors_number(o, tna),
+            lambda o: selector_tests.test_attractors_transitions(o, atpm),
+            lambda o: selector_tests.test_bn_state_space_omogeneity(o, n_rho)
+        ])
 
-        # Impose values on input nodes
-        for i in map(int, bn.input_nodes):
-            bn[i].state = input_values[i]
-        
-        states = [
-            compact_state(bn.update())
-            for _ in range(int(template.sim_run_time_s / template.sim_timestep_ms))
-        ]
-        
-        # Search which attractractors have developed in the run
-        attr = search_attractors(states, bn.get_atm(from_cache=True).dattractors)
+def step2_evaluation(template: SimulationConfig, bn: BoolNetSelector):
 
-        # In this case we want than only one attractor shall appear for each input
-        # in absence of noise
-        if len(attr) == 1:
-            bn.attractors_input_map.append((attr[0], input_values))
-        else:
-            return False
-
-    # No key is None and an attractor should appear for at least 1 set of inputs
-    # # that is, even if there are repeated keys, all key shall appears
-    return (
-        all(map(isnotnone, bn.attractors_input_map)) 
-        and len(set(map(first, bn.attractors_input_map))) == template.bn_target_n_attractors
-    )
+    return selector_tests.test_attraction_basins(
+        bn, fix_input_for=template.slct_fix_input_steps
+    ) if bn is not None else False

@@ -2,27 +2,7 @@ import random
 from bncontroller.boolnet.structures import BooleanNode
 from bncontroller.boolnet.factory import RBNFactory
 from bncontroller.boolnet.boolean import r_bool
-
-################################################################################
-
-################################################################################
-
-def is_obn_consistent(nodes:list, I:list, O:list):
-    '''
-    Return whether:
-        * each of Input Node i in I has at least 1 outgoing edges
-        * ...
-    '''
-    # Each I node must have at least 1 outgoing edge
-    i_edges = all(
-        any(
-            n.has_predecessor(i)
-            for n in nodes
-        ) 
-        for i in I
-    )
-
-    return i_edges
+from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 ##################################################################################
 
@@ -33,6 +13,7 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
     * input nodes (I) have only 1 (external) predecessor.
         That is, they are only predecessors to other nodes
         which are not input nodes.
+    * No self-loops
     * hidden nodes (N - I) and outputs (O) have k predecessors.
     * outputs nodes (O) can't have another output node as predecessor.
     
@@ -85,7 +66,7 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
 
 ######################################################################################################
 
-def bn_generator(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) -> (RBNFactory, list, list):
+def bncontroller_generator(N:int, K:int, P:float, I:int, O:int, pred_fn=predecessors) -> (RBNFactory, list, list):
     """
     Generates a Random Boolean Network Generator which bn have the following properties:
 
@@ -109,8 +90,26 @@ def bn_generator(N:int, K:int, P:float, I:int, O:int, pred_func = predecessors) 
     return RBNFactory(
         _N, # labels 
         _K, # arities
-        predecessors_fun=lambda node, nodes: pred_func(node, nodes, _I, _O),
+        i=_I,
+        o=_O,
+        predecessors_fun=lambda node, nodes: pred_fn(node, nodes, _I, _O),
         bf_init=lambda *args: args[0] if len(args) == 1 else r_bool(P), 
         node_init=lambda label: False
-    ), _I, _O
+    )
     
+    
+def generate_bncontroller(template, force_consistency=True):
+
+    N=template.bn_n
+    K=template.bn_k
+    P=template.bn_p
+    I=template.bn_n_inputs
+    O=template.bn_n_outputs
+
+    bnsg = bncontroller_generator(N, K, P, I, O)
+    bn = bnsg.new_obn()
+
+    while force_consistency and not bn.is_consistent:
+        bn = bnsg.new_obn()
+
+    return bn

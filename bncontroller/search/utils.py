@@ -1,8 +1,6 @@
 from bncontroller.boolnet.structures import BooleanNetwork
-from bncontroller.ntree.structures import NTree
 from bncontroller.ntree.utils import tree_edit_distance, tree_histogram_distance
-from multiset import FrozenMultiset
-import random, collections, math, itertools
+import random, collections, math
 
 Flip = collections.namedtuple('Flip', ['label', 'entry'])
 
@@ -34,6 +32,23 @@ def ncombinations(n, k):
 
 def identity(x): 
     return x
+
+#############################################################################
+
+ScrambleOutput = collections.namedtuple('ScrambleOutput', ['new_sol', 'edits'])
+
+def bn_scramble_strategy(bn: BooleanNetwork, n_flips: int, excluded: set={}):
+    '''
+    Default scrambling strategy for vns algorithm.
+    Scrambling = flips generation + boolean network edit
+
+    returns the modified bn, the applied flips
+    '''
+    
+    flips = generate_flips(bn, n_flips, excluded=set(map(hash, excluded)), flip_map=hash)
+    bn = edit_boolean_network(bn, flips)
+
+    return ScrambleOutput(new_sol=bn, edits=flips)
 
 ############################################################################################
 

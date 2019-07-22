@@ -17,7 +17,7 @@ class BNController(Controller):
 
     def __init__(self, config: SimulationConfig, binarization_strategies = {}):
         self.__config = config
-        self.__bn = OpenBooleanNetwork.from_json(read_json(config.bn_model_path))
+        self.__bn = OpenBooleanNetwork.from_json(read_json(config.bn_ctrl_model_path))
         self.__bin_strategies = binarization_strategies
         self.__next_sensing = 0
         
@@ -47,14 +47,15 @@ class BNController(Controller):
 
             # Apply Binarization Strategies
 
-            bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
-                self.light_data, 
-                self.__config.sim_sensors_thresholds[DeviceName.LIGHT]
-            )
+        bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
+            self.light_data, 
+            self.__config.sim_sensors_thresholds[DeviceName.LIGHT]
+        )
 
-            # Perturbate network based on binarized values
-            for l in self.__bn.input_nodes:
-                self.__bn[l].state = bin_light_data[l]
+        # "Perturbate" network based on binarized values
+        # This should be applied each time on input nodes
+        for l in self.__bn.input_nodes:
+            self.__bn[l].state = bin_light_data[l]
             
             # print(self.__bn.state)
     

@@ -1,0 +1,10 @@
+Webots Project File version R2019a
+maximizedDockId: -1
+centralWidgetVisible: 1
+renderingMode: PLAIN
+selectionDisabled: 0
+viewpointLocked: 0
+orthographicViewHeight: 1
+textFiles: -1
+globalOptionalRendering: LightPositions::LightSensorRays::DistanceSensorRays::CoordinateSystem
+renderingDevicePerspectives: ePuck2:camera;1;1;0;0

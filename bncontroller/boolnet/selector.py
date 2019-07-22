@@ -5,7 +5,7 @@ class BoolNetSelector(OpenBooleanNetwork):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # self.get_atm()
+        # self.atm
 
         self.__attractors_mapping = list()
 

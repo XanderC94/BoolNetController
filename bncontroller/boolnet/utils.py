@@ -15,20 +15,32 @@ def bnstates_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = l
 
 ################################################################################################
 
-def compact_state(state:dict):
+def compact_state(state: dict):
     return [int(v) for k, v in sorted(state.items())]
 
-def binstate(state:dict or list):
-    return ''.join(str(x) for x in (state.values() if isinstance(state, dict) else state))
-
+def binstate(state: dict or list):
+    return ''.join(str(x) for x in (compact_state(state) if isinstance(state, dict) else state))
+    
 ################################################################################################
 
-def random_neighbors_generator(node: BooleanNode, nodes:list):
+def random_neighbors_generator(node: BooleanNode, nodes:list, self_loops=True):
+    '''
+    Plain Random generator of neighbors for a single given node
+    '''
+    predecessors = list()
+    excluded = set([] if self_loops else [node.label])
 
-    return [random.choice([
-        n.label for n in nodes if n.label != node.label
-    ]) for _ in range(node.arity)]
+    for _ in range(node.arity):
+        predecessors.append(
+            random.choice([
+                n.label
+                for n in nodes 
+                if n.label not in excluded.union(predecessors)
+            ])
+        )
 
+    return predecessors
+    
 def get_terminal_nodes(bn:BooleanNetwork):
 
     excluded = set(bn.output_nodes) if isinstance(bn, OpenBooleanNetwork) else set()
@@ -49,6 +61,8 @@ def search_attractors(states: list, attractors: dict) -> str:
 
     Attractors are such that they are present more than once inside a single trajectory, 
     usually consecutively in absence noise.
+
+    return a list containing the attractors found in the state sequence.
 
     '''
     attrpatterns = dict(

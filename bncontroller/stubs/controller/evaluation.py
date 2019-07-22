@@ -13,7 +13,7 @@ import bncontroller.stubs.aggregators as aggregators
 from bncontroller.sim.config import SimulationConfig, generate_sim_config
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.type.comparators import Comparator
-from bncontroller.search.parametric import VNSPublicContext
+from bncontroller.search.pvns import VNSPublicContext
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger
 

@@ -100,9 +100,9 @@ def plot_data(data:dict, positives_threshold:float):
 
     # Model Tests -- TP / FP #
 
-    bfig, bax = plotter.subplots(num=f'test_posneg_bars')
+    bfig, bax = plotter.subplots(num=f'test_positives_bars')
 
-    bax.set_title(f'Model Tests -- Pos / Neg -- score <= {positives_threshold}')
+    bax.set_title(f'Model Tests -- Positives by Thresholds -- score <= {positives_threshold}')
 
     bax.set_xlabel('BN model')
     bax.set_ylabel('P|N (%)')
@@ -111,31 +111,38 @@ def plot_data(data:dict, positives_threshold:float):
 
     x = 0
 
+    thresholds = (
+        [positives_threshold] 
+        if isinstance(positives_threshold, float) 
+        else positives_threshold
+    )
+
+
+    cmap_bars = get_cmap(len(thresholds), 'rainbow')
+    colors = [cmap_bars(i) for i in range(len(thresholds))]
+
     for k in data:
         
-        p = sum(s <= positives_threshold for s in data[k]['score'])
-
+        ps = [sum(s < t for s in data[k]['score']) / len(data[k]) for t in thresholds]
+        
         bax.bar(
-            x = [x+1, x+2],
-            height = [
-                p / len(data[k]),
-                 1 - p / len(data[k]), # len(data[k]['scores']) - tp
-            ],
-            color=['#99ffcc', 'salmon'],
+            x=[x+i for i in range(len(thresholds))],
+            height=ps,
+            color=colors,
             align='center'
         )
 
-        x+=2
+        x+=len(thresholds) + 3
 
     plotter.xticks(
-        np.arange(1.5, len(data) * 2 + 1, 2),
+        np.arange(1.5, len(data) * (len(thresholds) + 3), len(thresholds) + 3),
         list(data.keys()), 
         rotation=15
     )
 
     plotter.legend(handles=[
-        mpatches.Patch(color='#99ffcc', label='TP'),
-        mpatches.Patch(color='salmon', label='TN'),
+        mpatches.Patch(color=cmap_bars(i), label=f'score < {str(k)}')
+        for i, k in enumerate(thresholds)
     ])
 
     bfig.subplots_adjust(

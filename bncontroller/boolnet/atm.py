@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from bncontroller.file.utils import iso8106
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
 from rpy2.robjects.packages import importr
@@ -8,7 +9,7 @@ rBoolNet = importr('BoolNet')
 rDiffeRenTES = importr('diffeRenTES')
 rJSONlite = importr('jsonlite')
 
-DEFAULT_ATM_WS_PATH = Path('./tmp/atm-workspace.txt')
+DEFAULT_ATM_WS_PATH = Path(f'./tmp/atm-workspace_{iso8106()}.txt')
 
 class AttractorsTransitionMatrix(object):
     '''
@@ -21,19 +22,26 @@ class AttractorsTransitionMatrix(object):
     def __init__(self, ebnf_str: str):
 
         self.id = hash(ebnf_str)
+        # print(ebnf_str)
+        self.N = len(list(filter(lambda x: x, ebnf_str.split('\n')[1:])))
+        
+        # print(self.N)
 
         Path(DEFAULT_ATM_WS_PATH).write_text(ebnf_str, encoding='UTF-8')
         
         net = rBoolNet.loadNetwork(str(DEFAULT_ATM_WS_PATH))
 
         # atm_ws_path.unlink()
-
-        jATM = json.loads(rJSONlite.toJSON(
-            rDiffeRenTES.getATM(
+        atm = rDiffeRenTES.getATM(
                 net, 
                 rBoolNet.getAttractors(net)
             )
-        )[0])
+        
+        # print(atm)
+
+        jATM = json.loads(rJSONlite.toJSON(atm)[0])
+
+        # print(jATM)
 
         self.tableau, self.attractors = self.__from_parts(
             jATM['ATM'], jATM['attractors']['binary']
@@ -53,10 +61,10 @@ class AttractorsTransitionMatrix(object):
             for ki, t in enumerate(self.attractors)
         )
 
-    def __from_parts(self, atm:dict, attractors:dict):
+    def __from_parts(self, atm: dict, attractors: dict):
         
         return (
-            transpose(atm),
-            [transpose(a[:-1]) for _, a in attractors.items()]   
+            atm,
+            [transpose(a[:self.N]) for _, a in attractors.items()]   
         )
         

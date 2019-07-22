@@ -10,7 +10,7 @@ from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
 config = parse_args_to_config()
 
-print(str(config.bn_model_path))
+print(str(config.bn_ctrl_model_path))
 
 logger = lambda *items: None
 

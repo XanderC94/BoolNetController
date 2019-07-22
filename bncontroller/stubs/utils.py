@@ -8,7 +8,7 @@ from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.type.comparators import Comparator
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.search.parametric import VNSPublicContext
+from bncontroller.search.pvns import VNSPublicContext
 from bncontroller.file.utils import get_dir
 
 class ArenaParams(object):
@@ -95,7 +95,7 @@ def generate_webots_props_file(template_path: Path, target_path:Path):
 def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
     # Save model (inside or outside of the config? mumble rumble)
-    write_json(bn.to_json(), config.bn_model_path) # BN Model
+    write_json(bn.to_json(), config.bn_ctrl_model_path) # BN Model
     write_json(config.to_json(), config.sim_config_path, indent=True) # Simulation Configuration
 
     # Run Webots    
@@ -116,7 +116,7 @@ def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContex
     bnjson['sim_info'].update({'idist':config.sim_light_position.dist(config.sim_agent_position)})
     bnjson['sim_info'].update({'n_it':ctx.it})
 
-    model_dir = get_dir(config.bn_model_path)
+    model_dir = get_dir(config.bn_ctrl_model_path)
 
     if compare(ctx.score, config.train_save_suboptimal_models): 
         # Save only if <sd_save_suboptimal_models> >= score

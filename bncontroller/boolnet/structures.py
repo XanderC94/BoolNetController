@@ -1,13 +1,13 @@
-import json
-from pathlib import Path
 from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
-from bncontroller.boolnet.atm import DEFAULT_ATM_WS_PATH, AttractorsTransitionMatrix as ATM
+from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
 
 class BooleanNode(Jsonkin):
-
-    def __init__(self, label:str, predecessors: list or dict, bf: BooleanFunction, init_state=r_bool()):
+    '''
+    A Node for Boolean Network encapsulatin a Boolean Function and a state
+    '''
+    def __init__(self, label: str, predecessors: list or dict, bf: BooleanFunction, init_state=r_bool()):
         self.__label = str(label)
         self.__predecessors = tuple(predecessors)
         self.__boolfun = bf
@@ -49,7 +49,7 @@ class BooleanNode(Jsonkin):
         This does not evaluate the Boolean Function (e.g.: Probabilistic Booleans) 
         so it returns always the same value between successive evaluations.  
         '''
-        return bool(self.__state)
+        return self.__state.value
 
     @state.setter
     def state(self, new_state):
@@ -57,7 +57,7 @@ class BooleanNode(Jsonkin):
         Set the state for the current Boolean Node 
         that will be used to evaluate final network state.
         '''
-        self.__state.bias = bool(new_state)
+        self.__state.bias = new_state
     
     def evaluate(self, params: dict or tuple) -> bool:
         '''
@@ -87,11 +87,12 @@ class BooleanNode(Jsonkin):
         Params are a dict the like of a tuple.
 
         Returns the current node state.
-        
+
         Equivalent to call the <BooleanNode.evaluate> method
         '''
-       
-        self.state = self.bf(params) 
+
+        self.state = self.bf(params)
+
         return self.state
 
     def to_json(self) -> dict:
@@ -147,6 +148,9 @@ class BooleanNetwork(Jsonkin):
         return dict((k, v.state) for k, v in self.to_pairlist())
 
     def to_pairlist(self):
+        '''
+        Return a set-like collection of pairs (label, node)
+        '''
         return self.__nodes.items()
     
     def update(self):
@@ -159,11 +163,11 @@ class BooleanNetwork(Jsonkin):
         '''
         return self()
     
-    def __setitem__(self, node_label:str, new_node: BooleanNode):
-        self.__nodes[str(node_label)] = new_node
+    def __setitem__(self, nlabel:str, new_node: BooleanNode):
+        self.__nodes[str(nlabel)] = new_node
 
-    def __getitem__(self, node_label) -> BooleanNode:
-        return self.__nodes[str(node_label)]
+    def __getitem__(self, nlabel) -> BooleanNode:
+        return self.__nodes[str(nlabel)]
 
     def __len__(self):
         return len(self.__nodes)
@@ -178,7 +182,7 @@ class BooleanNetwork(Jsonkin):
 
         S(bn) = (s(x0), ..., s(xi)) : i in N(bn)
 
-        Equivalent to <step>
+        Equivalent to <update>
         '''
         oldstate = dict(self.state) # Copy old state
 
@@ -218,8 +222,12 @@ class BooleanNetwork(Jsonkin):
             )
         )
 
-    def get_atm(self, from_cache=False):
-        if from_cache and self.__atm and self.__atm.id == hash(self.to_ebnf()):
+    @property
+    def atm(self) -> ATM:
+        '''
+        Return the Attractors Transition Matrix for this BN
+        '''
+        if self.__atm and self.__atm.id == hash(self.to_ebnf()):
             return self.__atm
         else:      
             self.__atm = ATM(self.to_ebnf())
@@ -229,9 +237,9 @@ class BooleanNetwork(Jsonkin):
 
 class OpenBooleanNetwork(BooleanNetwork):
 
-    def __init__(self, nodes: list, input_nodes = [], output_nodes = []):
+    def __init__(self, nodes: list, input_nodes=[], output_nodes=[]):
         super().__init__(nodes)
-    
+
         self.__input_nodes = sorted(list(set(input_nodes)))
         self.__output_nodes = sorted(list(set(output_nodes)))
 
@@ -243,6 +251,23 @@ class OpenBooleanNetwork(BooleanNetwork):
     def output_nodes(self):
         return self.__output_nodes
     
+    @property
+    def is_consistent(self):
+        '''
+        Return whether:
+            * each of Input Node i in I has at least 1 outgoing edges
+        '''
+        # Each Input node must have at least 1 outgoing edge
+        input_node_consistency = all(
+            any(
+                n.has_predecessor(i)
+                for n in self.nodes
+            ) 
+            for i in self.input_nodes
+        )
+
+        return input_node_consistency
+
     def to_json(self):
         __json = super().to_json()
 

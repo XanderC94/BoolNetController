@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     ### Load Test Model(s) from Template paths ####################################
 
-    files, bns = collect_bn_models(template.bn_model_path)
+    files, bns = collect_bn_models(template.bn_ctrl_model_path)
 
     ### Test ######################################################################
     

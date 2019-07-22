@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from bncontroller.stubs.controller.training import train_bncontroller
-from bncontroller.stubs.bn import bn_generator, is_obn_consistent
+from bncontroller.stubs.bn import generate_bncontroller
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.file.utils import check_path
 from bncontroller.parse.utils import parse_args_to_config
@@ -17,42 +17,31 @@ from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 def generate_or_load_bn(template: SimulationConfig, save_virgin=False):
     
-    path=template.bn_model_path
-    N=template.bn_n
-    K=template.bn_k
-    P=template.bn_p
-    I=template.bn_n_inputs
-    O=template.bn_n_outputs
-    date=template.globals['date']
+    path=template.bn_ctrl_model_path
 
-    bn = None
+    __bn = None
 
     if check_path(path, create_if_dir=True):
-        bng, I, O, *_ = bn_generator(N, K, P, I, O)
-        bn = bng.new_obn(I, O)
-
-        while not is_obn_consistent(bn.nodes, I, O):
-            logger.info('Regenerating...')
-            bn = bng.new_obn(I, O)
-
-        logger.info('BN generated.')
+        __bn = generate_bncontroller(template)
 
         if save_virgin:
-            p = path / f'virgin_bn_{date}.json'
+            p = path / 'virgin_bn_{date}.json'.format(
+                date=template.globals['date']
+            )
 
             write_json(bn.to_json(), p)
 
-            logger.info(f'Virgin BN saved to {p}')
+            logger.info(f'Virgin BN saved to {p}.')
 
     else:
-        bn = OpenBooleanNetwork.from_json(read_json(path))
+        __bn = OpenBooleanNetwork.from_json(read_json(path))
         logger.info(f'BN loaded from {path}.')
 
-    return bn
+    return __bn
 
 def check_config(config:SimulationConfig):
 
-    if isinstance(config.bn_model_path, list):
+    if isinstance(config.bn_ctrl_model_path, list):
         raise Exception('Model path should be a dir or file')
     elif config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.') 
@@ -69,7 +58,7 @@ if __name__ == "__main__":
 
     template.globals['mode'] = (
         'rtrain' 
-        if check_path(template.bn_model_path, create_if_dir=True) 
+        if check_path(template.bn_ctrl_model_path, create_if_dir=True) 
         else 'renhance' 
     )
     ### Init logger ################################################################
@@ -97,7 +86,7 @@ if __name__ == "__main__":
     
         logger.info(ctx)
 
-        savepath = template.bn_model_path / '{mode}_output_bn_{date}.json'.format(
+        savepath = template.bn_ctrl_model_path / '{mode}_output_bn_{date}.json'.format(
             mode=template.globals['mode'],
             date=template.globals['date']
         )

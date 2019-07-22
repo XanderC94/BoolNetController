@@ -10,8 +10,10 @@ class TestBoolean(unittest.TestCase):
         self.assertIsInstance(b1.bias, float)
         self.assertIsInstance(b2.bias, float)
         self.assertTrue(b1())
-        self.assertIsInstance(b1(), bool)
-        self.assertIsInstance(b2(), bool)
+        self.assertIsInstance(b1(), int)
+        self.assertIsInstance(b1(bool), bool)
+        self.assertIsInstance(b2(), int)
+        self.assertIsInstance(b2(bool), bool)
     
     def test_edit(self):
         b1 = Boolean(True)
@@ -28,8 +30,10 @@ class TestBoolean(unittest.TestCase):
         self.assertNotEqual(b1.bias, tmp1.bias)
         self.assertNotEqual(b2.bias, tmp2.bias)
         self.assertFalse(b2())
-        self.assertIsInstance(b1(), bool)
-        self.assertIsInstance(b2(), bool)
+        self.assertIsInstance(b1(), int)
+        self.assertIsInstance(b1(bool), bool)
+        self.assertIsInstance(b2(), int)
+        self.assertIsInstance(b2(bool), bool)
     
     def test_evaluation(self):
         b1 = Boolean(True)
