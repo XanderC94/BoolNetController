@@ -109,3 +109,4 @@ class RBNFactory(object):
         nodes = self.__r_connect_nodes(self.__build_nodes())
 
         return BoolNetSelector(nodes, input_nodes=self.input_nodes, output_nodes=self.output_nodes)
+        

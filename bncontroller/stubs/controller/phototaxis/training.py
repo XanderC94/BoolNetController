@@ -8,7 +8,7 @@ from bncontroller.search.pvns import VNSParameters
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.collectionslib.utils import flat
-from bncontroller.stubs.controller.evaluation import train_evaluation
+from bncontroller.stubs.controller.phototaxis.evaluation import pt_evaluation_for_train
 
 def train_bncontroller(template: SimulationConfig, bn: OpenBooleanNetwork):
 
@@ -20,12 +20,12 @@ def train_bncontroller(template: SimulationConfig, bn: OpenBooleanNetwork):
     to_never_flip = set(map(hash, bn.input_nodes + terminal_nodes))
 
     train_scores_cmp = lambda a, b: seq_compare(a, b, strat=lesser, fallback=mixed_compare)
-    train_obj_fn = lambda bn, ct: train_evaluation(template, bn, ct, compare=train_scores_cmp)
+    train_eval_fn = lambda bn, ct: pt_evaluation_for_train(template, bn, ct)
     train_scramble_strategy = lambda bn, nf, e: bn_scramble_strategy(bn, nf, e.union(to_never_flip))
     train_tidy_strategy = lambda bn, nf: edit_boolean_network(bn, nf)
 
     pvns = VNS(
-        sol_evaluator=train_obj_fn,
+        sol_evaluator=train_eval_fn,
         sols_comparator=train_scores_cmp,
         sol_scrambler=train_scramble_strategy,
         sol_tidier=train_tidy_strategy

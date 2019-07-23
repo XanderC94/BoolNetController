@@ -229,21 +229,21 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
         self.assertFalse(flatatm == flatatm2)
 
     def test_selector_constraint_1(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_selector_20190722T140808297.json'))
+        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(test_attractors_number(bn, 2))
         self.assertFalse(test_attractors_number(bn, 4))
 
     def test_selector_constraint_2(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_selector_20190722T140808297.json'))
+        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(test_attractors_transitions(bn, {
             'a0':{'a1': 0.3},
             'a1':{'a0': 0.3},
         }))
 
     def test_selector_constraint_3(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_selector_20190722T140808297.json'))
+        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(test_bn_state_space_omogeneity(bn, 0.1))
     
     def test_selector_constraint_4(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_selector_20190722T140808297.json'))
+        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(test_attraction_basins(bn, 5))

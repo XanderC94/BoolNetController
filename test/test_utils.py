@@ -17,7 +17,8 @@ class TestUtils(unittest.TestCase):
             p, p.parent / 'test.wbt',
             ArenaParams(
                 floor_size=(30, 30),
-                controller_args='path/to/controller/config.json'
+                sim_config='path/to/controller/config.json',
+                controller='banana'
             )
         )
 
@@ -29,6 +30,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(text2 != text1 and len(text2) != 0 and len(text2) != 0)
         self.assertTrue('path/to/controller/config.json' in text2)
         self.assertTrue(str((30, 30))[1:-1].replace(',', '') in text2)
+        self.assertTrue('banana' in text2)
 
     def test_webots_props_file_generation(self):
 

@@ -10,7 +10,7 @@ class AutoConfigParser(Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         
-        setattr(namespace, self.dest, SimulationConfig.from_json(values))
+        setattr(namespace, self.dest, SimulationConfig.from_file(values))
 
 def parse_args(parser=ArgumentParser('Configuration Parse Unit.')):
 
@@ -23,7 +23,8 @@ def parse_args(parser=ArgumentParser('Configuration Parse Unit.')):
         metavar='/path/to/config.json'
     )
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
+    args, *_ = parser.parse_known_args()
 
     return args
 

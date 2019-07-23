@@ -191,3 +191,36 @@ class SimulationStepData(Jsonkin):
             json['distance_values'],
             json['bumps_values']
         )
+
+#######################################################################
+
+class BNParams(object):
+    '''
+    Container for BN generation parameters
+    '''
+    def __init__(self, N, K, P, I, O):
+        
+        self.N = N
+        self.K = K
+        self.P = P
+        self.I = I
+        self.O = O
+    
+    def __iter__(self):
+        for i in vars(self).values():
+            yield i
+
+class ArenaParams(object):
+    '''
+    Container for Webots Arena options
+    '''
+    def __init__(self, 
+            floor_size=(3, 3), 
+            sim_config=Path('.'),
+            controller='void'):
+        
+        self.floor_size = floor_size
+        self.sim_config = sim_config
+        self.controller = controller
+    
+        

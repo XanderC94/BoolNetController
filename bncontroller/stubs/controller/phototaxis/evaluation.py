@@ -4,22 +4,18 @@ BN Evaluation utility module
 import math
 import statistics
 import itertools
-
 from collections.abc import Iterable
-
 import bncontroller.stubs.utils as stub_utils
-import bncontroller.stubs.aggregators as aggregators
-
 from bncontroller.sim.config import SimulationConfig, generate_sim_config
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.type.comparators import Comparator
-from bncontroller.search.pvns import VNSPublicContext
+from bncontroller.search.pvns import VNSEvalContext
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger
 
 ###############################################################################################
 
-def evaluate_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: tuple):
+def evaluate_pt_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: tuple):
     '''
     Evaluate the given BN model as a robot controller on the given set of points/parameters.
 
@@ -38,22 +34,22 @@ def evaluate_bncontroller(config: SimulationConfig, bn: OpenBooleanNetwork, on: 
 
     stub_utils.run_simulation(config, bn)
 
-    fs, fpos = aggregators.phototaxis_score(
+    score, fpos = config.eval_aggr_function(
         read_json(config.sim_data_path)
     )
 
-    ds = round(lpos.dist(fpos), 5)
+    dist = round(lpos.dist(fpos), 5)
 
     logger.info(
         'iDistance: (m)', lpos.dist(apos), '|',
         'yRot: (deg)', (yrot / math.pi * 180), '|',
-        'fDistance: (m)', ds, '|',
-        'score: (m2/W)', fs, '|',
+        'fDistance: (m)', dist, '|',
+        'score: (m2/W)', score, '|',
     )
 
-    return fs, ds, lpos, apos, yrot
+    return score, dist, lpos, apos, yrot
 
-def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_params: Iterable):
+def pt_evaluation_for_test(template: SimulationConfig, bn: OpenBooleanNetwork, test_params: Iterable):
 
     ### Generate ad hoc configuration for training ################################
 
@@ -66,21 +62,16 @@ def test_evaluation(template: SimulationConfig, bn: OpenBooleanNetwork, test_par
         stub_utils.generate_webots_worldfile(
             template.webots_world_path, 
             config.webots_world_path,
-            stub_utils.ArenaParams(
-                floor_size=(3, 3),
-                controller_args=config.sim_config_path
-            )
+            config.arena_params
         )
 
-    data = [evaluate_bncontroller(config, bn, tp) for tp in test_params] 
+    data = [evaluate_pt_bncontroller(config, bn, tp) for tp in test_params] 
 
     return tuple(list(e) for e in zip(*data))
 
 ###################################################################################
 
-def train_evaluation(
-        template: SimulationConfig, bn: OpenBooleanNetwork, 
-        ctx: VNSPublicContext, compare:Comparator):
+def pt_evaluation_for_train(template: SimulationConfig, bn: OpenBooleanNetwork, ctx: VNSEvalContext):
 
     test_params = itertools.product(
         template.globals['light_spawn_points'], 
@@ -88,7 +79,7 @@ def train_evaluation(
         template.globals['agent_yrots']
     )
 
-    fscores, *_ = test_evaluation(template, bn, test_params)
+    fscores, *_ = pt_evaluation_for_test(template, bn, test_params)
 
     new_score = statistics.mean(fscores), statistics.stdev(fscores)
 
@@ -102,13 +93,12 @@ def train_evaluation(
         'new:', new_score
     )
 
-    if compare(new_score, ctx.score):
+    if ctx.comparator(new_score, ctx.score):
         
         stub_utils.save_subopt_model(
             template,
             bn.to_json(), 
-            ctx,
-            compare
+            ctx
         )
 
     return new_score

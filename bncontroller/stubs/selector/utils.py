@@ -7,7 +7,7 @@ from bncontroller.boolnet.boolean import r_bool
 from bncontroller.boolnet.factory import RBNFactory
 
 def bnselector_generator(
-        N, K, P, I, O,
+        N: int, K: int, P: int, I: int, O: int,
         pred_fn=lambda n, o: random_neighbors_generator(n, o, self_loops=False)):
     
     _N = list(map(str, range(N)))
@@ -24,13 +24,7 @@ def bnselector_generator(
         bf_init=lambda *args: r_bool(P)
     )
 
-def generate_bnselector(template, force_consistency=True):
-
-    N=template.bn_n
-    K=template.bn_k
-    P=template.bn_p
-    I=template.bn_n_inputs
-    O=template.bn_n_outputs
+def generate_bnselector(N: int, K: int, P: int, I: int, O: int, force_consistency=True):
 
     bnsg = bnselector_generator(N, K, P, I, O)
     bn = bnsg.new_selector()

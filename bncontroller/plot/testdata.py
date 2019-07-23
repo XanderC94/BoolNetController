@@ -117,7 +117,6 @@ def plot_data(data:dict, positives_threshold:float):
         else positives_threshold
     )
 
-
     cmap_bars = get_cmap(len(thresholds), 'rainbow')
     colors = [cmap_bars(i) for i in range(len(thresholds))]
 

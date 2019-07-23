@@ -1,10 +1,10 @@
-"""daca controller."""
+"""phototaxis controller."""
 
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.core import BNController
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.sim.robot.utils import DeviceName
-from bncontroller.sim.robot.binarization import light_sensor_binarization
+from bncontroller.sim.robot.binarization import phototaxis, antiphototaxis
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
@@ -20,9 +20,13 @@ if not config.sim_suppress_logging:
 
 #-------------------------------------------
 
-controller = BNController(config, binarization_strategies={
-    DeviceName.LIGHT : light_sensor_binarization,
+phototaxist = BNController(config, binarization_strategies={
+    DeviceName.LIGHT : phototaxis,
 })
+
+# antiphototaxist = BNController(config, binarization_strategies={
+#     DeviceName.LIGHT : antiphototaxis,
+# })
 
 epuck = EPuck(config)
 
@@ -33,7 +37,7 @@ dumper = SimulationDataDumper(config.sim_run_time_s, epuck.timestep)
 
 
 epuck.run(
-    controller, 
+    phototaxist, 
     lambda string: logger(string), 
     lambda data: dumper.add_log_entry(data)
 )

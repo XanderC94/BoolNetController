@@ -5,6 +5,8 @@ from typing import Callable, TypeVar
 from collections import namedtuple
 from bncontroller.search.utils import ScrambleOutput
 
+##############################################################################
+
 S = TypeVar('S')
 C = TypeVar('C')
 
@@ -15,17 +17,26 @@ VNSPublicContext = namedtuple(
     ["it", "score", "n_flips", "n_stalls", "stagnation"]
 )
 
+VNSEvalContext = namedtuple(
+    'VNSEvalContext',  
+    ["it", "score", "n_flips", "n_stalls", "stagnation", "comparator"]
+)
+
+VNSOutput = namedtuple('VNSOutput', ['solution', 'context'])
+
 class VNSContext(object):
     '''
     Function Context of VNS algorithm
     '''
     def __init__(self, 
-            it = 0,
-            n_stalls = 0,
-            n_flips = 0,
-            stagnation = 0,
-            score = None):
+            comparator=None,
+            it=0,
+            n_stalls=0,
+            n_flips=0,
+            stagnation=0,
+            score=None):
 
+        self.comparator = comparator
         self.it = it
         self.n_stalls = n_stalls
         self.n_flips = n_flips
@@ -33,15 +44,27 @@ class VNSContext(object):
         self.score = score
         self.stop = False
         self.flips = set()
+        self.flips = set()
     
     @property
-    def public(self):
+    def public(self) -> VNSPublicContext:
         return VNSPublicContext(
             it=self.it,
             score=self.score,
             n_flips=self.n_flips,
             n_stalls=self.n_stalls,
             stagnation=self.stagnation
+        )
+
+    @property
+    def evaluation(self) -> VNSEvalContext:
+        return VNSEvalContext(
+            it=self.it,
+            score=self.score,
+            n_flips=self.n_flips,
+            n_stalls=self.n_stalls,
+            stagnation=self.stagnation, 
+            comparator=self.comparator
         )
 
 class VNSParameters(object):
@@ -63,7 +86,7 @@ class VNSParameters(object):
         self.max_stalls = max_stalls
         self.max_stagnation = max_stagnation
 
-VNSOutput = namedtuple('VNSOutput', ['solution', 'context'])
+########################################################################################
 
 class VariableNeighborhoodSearch(
         Callable[[S, VNSParameters], VNSOutput]
@@ -100,7 +123,7 @@ class VariableNeighborhoodSearch(
     '''
 
     def __init__(self, 
-            sol_evaluator: Callable[[S, VNSPublicContext], C],
+            sol_evaluator: Callable[[S, VNSEvalContext], C],
             sols_comparator: Callable[[C, C], bool],
             sol_scrambler: Callable[[S, int, set], ScrambleOutput],
             sol_tidier: Callable[[S, set], S]):
@@ -115,9 +138,12 @@ class VariableNeighborhoodSearch(
 
     def __call__(self, sol: object, params: VNSParameters):
 
-        ctx = VNSContext(n_flips=params.min_flips)
+        ctx = VNSContext(
+            n_flips=params.min_flips,
+            comparator=self.__compare
+        )
 
-        ctx.score = self.__evaluate(sol, ctx.public)
+        ctx.score = self.__evaluate(sol, ctx.evaluation)
 
         while (
                 ctx.it < params.max_iters
@@ -127,7 +153,7 @@ class VariableNeighborhoodSearch(
 
             sol, ctx.flips = self.__scramble(sol, ctx.n_flips, ctx.flips)
 
-            new_score = self.__evaluate(sol, ctx.public)
+            new_score = self.__evaluate(sol, ctx.evaluation)
 
             if self.__compare(new_score, ctx.score):
 

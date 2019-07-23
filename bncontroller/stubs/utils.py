@@ -5,29 +5,13 @@ from pathlib import Path
 from bncontroller.sim.config import CONFIG_CLI_NAMES
 from bncontroller.file.utils import check_path
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.type.comparators import Comparator
 from bncontroller.sim.config import SimulationConfig
+from bncontroller.sim.data import ArenaParams
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.search.pvns import VNSPublicContext
+from bncontroller.search.pvns import VNSEvalContext
 from bncontroller.file.utils import get_dir
 
-class ArenaParams(object):
-
-    def __init__(self, **kwargs):
-        
-        self.floor_size = (
-            kwargs['floor_size'] 
-            if 'floor_size' in kwargs 
-            else (3, 3)
-        ) 
-
-        self.controller_args = (
-            kwargs['controller_args'] 
-            if 'controller_args' in kwargs 
-            else str(Path('.'))
-        )
-
-def generate_webots_worldfile(template_path: Path, target_path:Path, world_params:ArenaParams):
+def generate_webots_worldfile(template_path: Path, target_path: Path, world_params: ArenaParams):
 
     if template_path.is_dir() or target_path.is_dir():
         raise Exception('Simuation world path is not a file.') 
@@ -38,9 +22,11 @@ def generate_webots_worldfile(template_path: Path, target_path:Path, world_param
 
     controller_args_pattern = TEMPLATE.format(names='|'.join(CONFIG_CLI_NAMES))
     floorsize_pattern = r'\s*floorSize\s+(\d+\s\d+)\n'
+    controller_pattern = r'\s*controller\s+\"(\w*)\"\n'
     
-    controller_args_sub_value = str(world_params.controller_args).replace('\\', '/')
+    controller_args_sub_value = str(world_params.sim_config).replace('\\', '/')
     floorsize_sub_value = str(world_params.floor_size)[1:-1].replace(',', '')
+    controller_sub_value = world_params.controller
 
     text = []
 
@@ -51,8 +37,16 @@ def generate_webots_worldfile(template_path: Path, target_path:Path, world_param
 
         text = temp.readlines()
 
+        epuck_found = False
+
         for i, line in enumerate(text):
 
+            if "robot" in line.lower():
+                epuck_found = False
+
+            if "e-puck" in line.lower():
+                epuck_found = True
+            
             text[i] = re.sub(
                 controller_args_pattern, 
                 lambda x: sub(x, controller_args_sub_value), 
@@ -66,6 +60,13 @@ def generate_webots_worldfile(template_path: Path, target_path:Path, world_param
                     line
                 )
 
+            if hash(text[i]) == hash(line) and epuck_found:
+                text[i] = re.sub(
+                    controller_pattern, 
+                    lambda x: sub(x, controller_sub_value), 
+                    line
+                )
+
     with open(target_path, 'w') as tar:
         tar.write(''.join(text))
 
@@ -75,7 +76,7 @@ def generate_webots_props_path(template_path:Path):
         name=template_path.with_suffix('').name
     )
 
-def generate_webots_props_file(template_path: Path, target_path:Path):
+def generate_webots_props_file(template_path: Path, target_path: Path):
 
     template_props_path = generate_webots_props_path(template_path)
     target_props_path = generate_webots_props_path(target_path)
@@ -108,7 +109,7 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 #####################################################################################
 
 
-def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContext, compare:Comparator):
+def save_subopt_model(config: SimulationConfig, bnjson: dict, ctx: VNSEvalContext):
         
     bnjson.update({'sim_info': dict()})
 
@@ -118,7 +119,7 @@ def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContex
 
     model_dir = get_dir(config.bn_ctrl_model_path)
 
-    if compare(ctx.score, config.train_save_suboptimal_models): 
+    if ctx.comparator(ctx.score, config.train_save_suboptimal_models): 
         # Save only if <sd_save_suboptimal_models> >= score
         write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
             date=config.globals['date'],
@@ -131,7 +132,7 @@ def save_subopt_model(config: SimulationConfig, bnjson:dict, ctx:VNSPublicContex
         it=''
     ))
 
-def clean_generated_worlds(template_world:Path):
+def clean_generated_worlds(template_world: Path):
     parts = template_world.with_suffix('').name.split('.')
     for p in template_world.parent.iterdir():
         if not any(part in p.name for part in parts) and ('wbt' in p.suffix or 'wbproj' in p.suffix):
@@ -140,3 +141,5 @@ def clean_generated_worlds(template_world:Path):
 
 def clean_tmpdir():
     shutil.rmtree('./tmp/')
+
+###################################################################

@@ -1,8 +1,10 @@
 import random
+from typing import Callable
 from bncontroller.boolnet.structures import BooleanNode
 from bncontroller.boolnet.factory import RBNFactory
 from bncontroller.boolnet.boolean import r_bool
-from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
+from bncontroller.sim.config import SimulationConfig
 
 ##################################################################################
 
@@ -98,13 +100,7 @@ def bncontroller_generator(N:int, K:int, P:float, I:int, O:int, pred_fn=predeces
     )
     
     
-def generate_bncontroller(template, force_consistency=True):
-
-    N=template.bn_n
-    K=template.bn_k
-    P=template.bn_p
-    I=template.bn_n_inputs
-    O=template.bn_n_outputs
+def generate_bncontroller(N: int, K: int, P: int, I: int, O: int, force_consistency=True):
 
     bnsg = bncontroller_generator(N, K, P, I, O)
     bn = bnsg.new_obn()

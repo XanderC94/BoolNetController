@@ -6,9 +6,8 @@ from bncontroller.jsonlib.utils import read_json
 from bncontroller.sim.config import SimulationConfig
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.stubs.controller.testing import test_bncontrollers
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
-from bncontroller.file.utils import check_path, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
+from bncontroller.file.utils import check_path, get_dir, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 
 #########################################################################################################
 
@@ -34,7 +33,7 @@ def collect_bn_models(
             files.update(**f)
 
         elif ffilter(path):
-            print(path)
+            
             name = path.with_suffix('').name
             bns[name] = OpenBooleanNetwork.from_json(read_json(path))
             files[name] = path
@@ -53,14 +52,6 @@ def check_config(config:SimulationConfig):
             'Test dataset path in template configuration file should be a directory.'
         )
 
-    if not all(p in config.test_params_aggr_func for p in ('lp', 'ar', 'ap')):
-        raise Exception(
-            '''
-            Aggregation function params must be named 
-            lp: light_points, ap: agent_points and ar: agent rotation
-            '''
-        )
-
 if __name__ == "__main__":
 
     ### Load Configuration ########################################################
@@ -72,7 +63,7 @@ if __name__ == "__main__":
     template.globals['mode'] = 'rtest'
 
     logger.instance = LoggerFactory.filelogger(
-        template.app_output_path / '{key}_{date}.log'.format(
+        get_dir(template.app_output_path, create_if_dir=True) / '{key}_{date}.log'.format(
             key=template.globals['mode'],
             date=template.globals['date'],
         )
@@ -88,15 +79,17 @@ if __name__ == "__main__":
 
         logger.info(f'Test instance n°{i}')
 
-        instance_data = test_bncontrollers(template, bns)
+        instance_data = template.app_core_function(template, bns)
 
         for k, test_data in instance_data.items():
-            test_data.to_json(
-                template.test_data_path / gen_fname(
-                    'rtest_data', 
-                    get_simple_fname(files[k].name, FNAME_PATTERN, uniqueness=2),
-                    template='{name}'+f'_in{i}.json',
-                )
+
+            name = gen_fname( 
+                get_simple_fname(files[k].name, FNAME_PATTERN, uniqueness=2),
+                template='rtest_data_{name}' + f'_in{i}.json',
             )
+
+            test_data.to_json(template.test_data_path / name)
+
+            logger.info(f'Test data saved into {str(template.test_data_path / name)}')
 
     exit(1)

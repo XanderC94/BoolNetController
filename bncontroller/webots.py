@@ -24,10 +24,7 @@ if __name__ == "__main__":
     stub_utils.generate_webots_worldfile(
         template.webots_world_path, 
         config.webots_world_path,
-        stub_utils.ArenaParams(
-            floor_size=(30, 30),
-            controller_args=template.sim_config_path
-        )
+        config.arena_params
     )
 
     stub_utils.generate_webots_props_file(

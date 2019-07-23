@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from collections import defaultdict
 from bncontroller.file.utils import iso8106
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
@@ -49,9 +50,12 @@ class AttractorsTransitionMatrix(object):
 
     @property
     def dtableau(self) -> dict:
-        return dict(
-            (f'a{ki}', dict((f'a{kj}', p) for kj, p in enumerate(self.tableau[ki]))) 
-            for ki, t in enumerate(self.tableau)
+        return defaultdict(
+            lambda: defaultdict(lambda:0.0), 
+            (
+                (f'a{ki}', dict((f'a{kj}', p) for kj, p in enumerate(self.tableau[ki])))
+                for ki, t in enumerate(self.tableau)
+            )
         )
 
     @property

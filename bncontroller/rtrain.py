@@ -4,10 +4,9 @@ Generate or load a BN and run Stochastic Descent Search Algorithm
 import time
 from pathlib import Path
 
-from bncontroller.stubs.controller.training import train_bncontroller
 from bncontroller.stubs.bn import generate_bncontroller
 from bncontroller.sim.config import SimulationConfig
-from bncontroller.file.utils import check_path
+from bncontroller.file.utils import check_path, get_dir
 from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
@@ -22,7 +21,7 @@ def generate_or_load_bn(template: SimulationConfig, save_virgin=False):
     __bn = None
 
     if check_path(path, create_if_dir=True):
-        __bn = generate_bncontroller(template)
+        __bn = generate_bncontroller(*template.bn_params)
 
         if save_virgin:
             p = path / 'virgin_bn_{date}.json'.format(
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     ### Init logger ################################################################
     
     logger.instance = LoggerFactory.filelogger(
-        template.app_output_path / '{key}_{date}.log'.format(
+        get_dir(template.app_output_path, create_if_dir=True) / '{key}_{date}.log'.format(
             key=template.globals['mode'],
             date=template.globals['date'],
         )
@@ -80,7 +79,7 @@ if __name__ == "__main__":
         
         t = time.perf_counter()
 
-        bn, ctx = train_bncontroller(template, bn)
+        bn, ctx = template.app_core_function(template, bn)
 
         logger.info(f"Search time: {time.perf_counter() - t}s")
     

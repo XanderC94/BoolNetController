@@ -2,6 +2,9 @@
 JSON utilities module
 '''
 import json
+import importlib
+from typing import Callable
+from types import FunctionType
 from pathlib import Path
 from collections.abc import Iterable
 
@@ -23,6 +26,13 @@ class Jsonkin(object):
         """
         return Jsonkin()
     
+    # def to_file(self, fp: Path or str):
+    #     write_json(self.to_json(), fp)
+    
+    # @staticmethod
+    # def from_file(fp: Path or str):
+    #     return Jsonkin()
+
     def __str__(self):
         return str(self.to_json())
 
@@ -86,3 +96,32 @@ def write_json(obj, path: Path or str, indent = False, default=jsonrepr):
             json.dump(_obj, fp, indent=4, default=default)
         else:
             json.dump(_obj, fp, default=default)
+
+
+class FunctionWrapper(Jsonkin, Callable[[object], object]):
+
+    def __init__(self, definition: str or FunctionType):
+        
+        if callable(definition):
+            self.__fnpointer = definition
+            self.__def = '{module}::{func}'.format(
+                module=definition.__module__,
+                func=definition.__name__
+            )
+        elif isinstance(definition, str):
+            modulestr, methodstr = str(definition).split('::', 1)
+            module = importlib.import_module(modulestr)
+            self.__fnpointer = getattr(module, methodstr)
+            self.__def = definition
+        else:
+            raise TypeError('Function definition is neither a name.space::func_name string or a function object!')
+
+    def __call__(self, *args, **kwargs):
+        return self.__fnpointer(*args, **kwargs)
+    
+    def to_json(self):
+        return self.__def
+    
+    @staticmethod
+    def from_json(json):
+        return FunctionWrapper(json)
