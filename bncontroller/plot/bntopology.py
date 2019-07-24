@@ -4,7 +4,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plotter
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
-from bncontroller.parse.utils import parse_args_to_config
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.jsonlib.utils import read_json
 
 def __nodes_std_positioning(I, H, O, ydim=(25, 0, -25)):
@@ -102,10 +102,8 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
 
 if __name__ == "__main__":
     
-    config = parse_args_to_config()
+    i, o = GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs
 
-    i, o = config.bn_n_inputs, config.bn_n_outputs
-
-    bn = BooleanNetwork.from_json(read_json(config.bn_ctrl_model_path))
+    bn = BooleanNetwork.from_json(read_json(GLOBALS.bn_ctrl_model_path))
 
     plot_booleannetwork(bn, list(map(str, range(i))), list(map(str, range(i, i+o))))

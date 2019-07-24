@@ -8,6 +8,7 @@ from bncontroller.jsonlib.utils import read_json, jsonrepr, objrepr, write_json
 from bncontroller.sim.data import Point3D, ArenaParams, BNParams
 from bncontroller.file.utils import iso8106, gen_fname, get_dir
 from bncontroller.sim.robot.utils import DeviceName
+from singleton_decorator import singleton
 
 CONFIG_CLI_NAMES = ['-c', '-cp', '--config_path', '--config']
 
@@ -207,7 +208,12 @@ class DefaultConfigOptions(Jsonkin):
         bn_p=DefaultOption(
             value=0.5,
             alt=None,
-            descr='''truth value bias'''
+            descr='''truth table value bias'''
+        ),
+        bn_q=DefaultOption(
+            value=0.5,
+            alt=None,
+            descr='''bn node intial state bias'''
         ),
         bn_n_inputs=DefaultOption(
             value=8,
@@ -251,7 +257,7 @@ class DefaultConfigOptions(Jsonkin):
         #     descr='''Fractions of update steps (it) on each which apply inputs on input node.'''
         # ),
         slct_fix_input_steps=DefaultOption(
-            value=float('inf'),
+            value=float('+inf'),
             alt=None,
             descr='''For how many steps the input should be enforced in the network (after each sensing)'''
         ),
@@ -323,24 +329,6 @@ class DefaultConfigOptions(Jsonkin):
             value=False,
             alt=None,
             descr='''Only generate training bn without running SD'''
-        ),
-
-        # App Globals #
-
-        globals=DefaultOption(
-            value=defaultdict(
-                type(None),
-                date=iso8106(ms=3),
-                subopt_model_name='bn_subopt_{date}{it}.json',
-                it_suffix='_it{it}',
-                in_suffix='_in{it}',
-                agent_spawn_points=[],
-                light_spawn_points=[],
-                agent_yrots=[],
-                mode=''
-            ),
-            alt=None,
-            descr=''''''
         )
     )
 
@@ -362,7 +350,7 @@ class DefaultConfigOptions(Jsonkin):
 
 ################################################################################################
 
-class SimulationConfig(Jsonkin):
+class Config(Jsonkin):
     '''      
     app_output_path -- Directory or file where to store the simulation general log
     webots_path -- path to webots executable
@@ -416,7 +404,7 @@ class SimulationConfig(Jsonkin):
     test_aggr_function -- how test parameters should be aggregated in the test loop
     train_save_suboptimal_models -- save bn model with score under the specified threshold
     train_generate_only -- Only generate training bn without running SD
-    globals --
+    app --
     '''
 
     def __init__(self, **kwargs):
@@ -464,6 +452,7 @@ class SimulationConfig(Jsonkin):
         self.bn_n = options['bn_n']
         self.bn_k = options['bn_k']
         self.bn_p = options['bn_p']
+        self.bn_q = options['bn_q']
         self.bn_n_inputs = options['bn_n_inputs']
         self.bn_n_outputs = options['bn_n_outputs']
         self.slct_target_n_attractors = options['slct_target_n_attractors']
@@ -492,9 +481,6 @@ class SimulationConfig(Jsonkin):
         self.train_save_suboptimal_models = options['train_save_suboptimal_models']
         self.train_generate_only = options['train_generate_only']
 
-        # App Globals #
-        self.globals = options['globals']
-
         pass
 
     def __normalize(self, defaults: dict, **kwargs):
@@ -502,34 +488,35 @@ class SimulationConfig(Jsonkin):
         norm = dict() 
 
         for k, v, in kwargs.items():
+            
+            if k in defaults:
+                d, alt = (
+                    (defaults[k].value, defaults[k].alt)
+                    if isinstance(defaults[k], DefaultOption) 
+                    else (defaults[k], None)
+                )
 
-            d, alt = (
-                (defaults[k].value, defaults[k].alt)
-                if isinstance(defaults[k], DefaultOption) 
-                else (defaults[k], None)
-            )
-
-            norm.update(
-                {k:self.__normalize(d, **v)}
-                if isinstance(v, dict) and isinstance(d, dict)
-                else {k: objrepr(v, type(d), alt_type=alt)}
-            )
+                norm.update(
+                    {k:self.__normalize(d, **v)}
+                    if isinstance(v, dict) and isinstance(d, dict)
+                    else {k: objrepr(v, type(d), alt_type=alt)}
+                )
 
         return norm
 
     def to_json(self) -> dict:
-        return dict((k, jsonrepr(v)) for k, v in vars(self).items() if k != 'globals')
+        return dict((k, jsonrepr(v)) for k, v in vars(self).items())
     
     @staticmethod
     def from_json(json):
-        return SimulationConfig(**json)
+        return Config(**json)
 
     def to_file(self, fp: Path or str):
         write_json(self.to_json(), fp, indent=True)
 
     @staticmethod
     def from_file(fp: Path or str):
-        return SimulationConfig.from_json(read_json(fp))
+        return Config.from_json(read_json(fp))
 
     @property
     def arena_params(self):
@@ -545,54 +532,8 @@ class SimulationConfig(Jsonkin):
             N=self.bn_n,
             K=self.bn_k,
             P=self.bn_p,
+            Q=self.bn_q,
             I=self.bn_n_inputs,
             O=self.bn_n_outputs
         )
-###########################################################################################
-
-def generate_sim_config(
-        config:SimulationConfig, 
-        keyword='',
-        world_fname='{name}_sim_world_{uniqueness}.{ext}',
-        config_fname='{name}_sim_config_{uniqueness}.{ext}',
-        data_fname='{name}_sim_data_{uniqueness}.{ext}',
-        log_fname='{name}_sim_log_{uniqueness}.{ext}',
-        model_fname='{name}_sim_bn_{uniqueness}.{ext}'
-    ):
-    
-    uniqueness = lambda: config.globals['date']
-
-    world_fname = gen_fname(keyword, template=world_fname, uniqueness=uniqueness, ftype='wbt')
-    model_fname = gen_fname(keyword, template=model_fname, uniqueness=uniqueness, ftype='json')
-    config_fname = gen_fname(keyword, template=config_fname, uniqueness=uniqueness, ftype='json')
-    data_fname = gen_fname(keyword, template=data_fname, uniqueness=uniqueness, ftype='json')
-    log_fname = gen_fname(keyword, template=log_fname, uniqueness=uniqueness, ftype='log')
-
-    # Create Sim Config based on the Experiment Config
-    sim_config = SimulationConfig.from_json(config.to_json())
-
-    sim_config.globals['template'] = config
-    
-    sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
-    
-    # get_dir(sim_config.bn_ctrl_model_path, create_if_dir=True) 
-    sim_config.bn_ctrl_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / model_fname 
-    
-    # get_dir(sim_config.sim_config_path, create_if_dir=True)
-    sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 
-    
-    sim_config.sim_data_path = get_dir(sim_config.sim_data_path, create_if_dir=True) / data_fname
-
-    sim_config.sim_log_path = get_dir(sim_config.sim_log_path, create_if_dir=True) / log_fname
-
-    return sim_config
-
-###########################################################################################
-
-if __name__ == "__main__":
-
-    # write_json(SimulationConfig(), './config_template.json')
-    for k, v in DefaultConfigOptions().options().items():
-        print(k, '--', v.descr)
-
     

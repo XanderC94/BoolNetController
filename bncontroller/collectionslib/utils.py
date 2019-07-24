@@ -1,6 +1,6 @@
 import os
 from collections.abc import Iterable
-from pathlib import Path, WindowsPath, PosixPath, _windows_flavour, _posix_flavour
+from pathlib import Path
 
 def collection_diff(first: Iterable, second: Iterable):
     return [item for item in first if item not in set(second)]
@@ -29,5 +29,3 @@ def transpose(x:Iterable):
     Rows become Columns and so on.
     '''
     return list(map(list, zip(*x)))
-
-################################################################

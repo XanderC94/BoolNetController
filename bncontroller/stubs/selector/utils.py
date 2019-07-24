@@ -6,33 +6,16 @@ from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.boolnet.boolean import r_bool
 from bncontroller.boolnet.factory import RBNFactory
 
-def bnselector_generator(
-        N: int, K: int, P: int, I: int, O: int,
-        pred_fn=lambda n, o: random_neighbors_generator(n, o, self_loops=False)):
+def template_selector_generator(
+        N: int, K: int, P: float, Q: float, I: int, O: int,
+        F=lambda n, o: random_neighbors_generator(n, o, self_loops=False)):
     
     _N = list(map(str, range(N)))
     _I = list(map(str, range(I))) 
     _O = list(map(str, range(I, I + O))) 
     _K = list(K for _ in _N)
 
-    return RBNFactory(
-        _N, # labels 
-        _K, # arities
-        i=_I,
-        o=_O,
-        predecessors_fun=pred_fn,
-        bf_init=lambda *args: r_bool(P)
-    )
-
-def generate_bnselector(N: int, K: int, P: int, I: int, O: int, force_consistency=True):
-
-    bnsg = bnselector_generator(N, K, P, I, O)
-    bn = bnsg.new_selector()
-    
-    while force_consistency and not bn.is_consistent:
-        bn = bnsg.new_selector()
-    
-    return bn
+    return RBNFactory(_N, _K, P, Q, _I, _O, F)
 
 ###################################################################################
 
@@ -70,13 +53,6 @@ def test_contraints(obj: object, constraints_tests: list) -> bool:
     Empty test list always hold success (True)
 
     '''
-    res = bool(constraints_tests)
-
-    while constraints_tests and res:
-        res = res and constraints_tests[0](obj)
-        constraints_tests = constraints_tests[1:]
-
-    return res
 
     # Recursive
     # if not constraints_tests:
@@ -87,3 +63,11 @@ def test_contraints(obj: object, constraints_tests: list) -> bool:
     #     if constraints_tests[0](obj) 
     #     else False
     # )
+
+    res = bool(constraints_tests)
+
+    while constraints_tests and res:
+        res = res and constraints_tests[0](obj)
+        constraints_tests = constraints_tests[1:]
+
+    return res

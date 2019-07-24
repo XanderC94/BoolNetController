@@ -2,12 +2,12 @@ import re
 import numpy as np
 import matplotlib.pyplot as plotter
 import bncontroller.plot.colors as colors
-from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.file.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
+from bncontroller.sim.utils import GLOBALS
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
-def plot_output(dataset:str, data:list):
+def plot_output(dataset: str, data: list):
 
     fig, ax = plotter.subplots(num=f'train_score_trend_{fname}')
 
@@ -46,9 +46,7 @@ def parse_output(path, pattern=output_pattern) -> list:
 
 if __name__ == "__main__":
     
-    config = parse_args_to_config()
-
-    files = cpaths(config.app_output_path, recursive=3)
+    files = cpaths(GLOBALS.app_output_path, recursive=3)
 
     plots = list()
 

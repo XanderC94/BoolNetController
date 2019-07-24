@@ -1,36 +1,34 @@
 import itertools
-from collections.abc import Iterable
 from pandas import DataFrame
-from bncontroller.stubs.controller.phototaxis.evaluation import pt_evaluation_for_test
-from bncontroller.jsonlib.utils import read_json
+from collections.abc import Iterable
 from bncontroller.collectionslib.utils import flat
-from bncontroller.sim.data import generate_spawn_points, Point3D
-from bncontroller.sim.config import SimulationConfig
-from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.jsonlib.utils import read_json
+from bncontroller.sim.data import Point3D
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.sim.logging.logger import staticlogger as logger
+from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.stubs.controller.phototaxis.evaluation import pt_evaluation_for_test
 
-def generate_test_params(template):
+def generate_test_params(spawn_points: dict):
     return map( 
         lambda t: flat(t, to=tuple, exclude=Point3D),
         itertools.product(
-                template.globals['light_spawn_points'],
+                spawn_points['light_spawn_points'],
                 zip(
-                    template.globals['agent_spawn_points'],
-                    template.globals['agent_yrots']
+                    spawn_points['agent_spawn_points'],
+                    spawn_points['agent_yrots']
                 )
             )
         )
 
-def test_bncontrollers(template: SimulationConfig, bns: dict):
+def test_bncontrollers(bns: dict):
     '''
     Test each BN in the collection on the same set of points.
 
     Return the collected evaluation data for each test.
     '''
 
-    template.globals.update(
-        **generate_spawn_points(template)
-    )
+    spawn_points = GLOBALS.generate_spawn_points()
     
     data = dict()
 
@@ -38,13 +36,13 @@ def test_bncontrollers(template: SimulationConfig, bns: dict):
         
         logger.info(f"Boolean Network {k}")
 
-        test_params = generate_test_params(template)
+        test_params = generate_test_params(spawn_points)
 
-        data[k] = test_bncontroller(template, bns[k], test_params)
+        data[k] = test_bncontroller(bns[k], test_params)
     
     return data
 
-def test_bncontroller(template: SimulationConfig, bn: OpenBooleanNetwork, test_params: Iterable):
+def test_bncontroller(bn: OpenBooleanNetwork, test_params: Iterable):
     '''
     Test a single bn on the given test points\parameters.
 
@@ -52,7 +50,7 @@ def test_bncontroller(template: SimulationConfig, bn: OpenBooleanNetwork, test_p
     '''
     test_data = DataFrame()
 
-    sim_data = pt_evaluation_for_test(template, bn, test_params)
+    sim_data = pt_evaluation_for_test(bn, test_params)
 
     fscores, dscores, lpos, apos, yrot, *_ = sim_data
 

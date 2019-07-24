@@ -1,39 +1,46 @@
-"""phototaxis controller."""
+"""hbns controller."""
 
+import bncontroller.sim.robot.binarization as bin_strategies
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.core import BNController
-from bncontroller.parse.utils import parse_args_to_config
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.sim.robot.utils import DeviceName
-from bncontroller.sim.robot.binarization import phototaxis, antiphototaxis
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
-config = parse_args_to_config()
-
-print(str(config.bn_ctrl_model_path))
+print(str(GLOBALS.bn_ctrl_model_path))
 
 logger = lambda *items: None
 
-if not config.sim_suppress_logging:
-    logger = FileLogger('BoolNetControl', path = config.sim_log_path)
-    logger.suppress(config.sim_suppress_logging)
+if not GLOBALS.sim_suppress_logging:
+    logger = FileLogger('BoolNetControl', path = GLOBALS.sim_log_path)
+    logger.suppress(GLOBALS.sim_suppress_logging)
 
 #-------------------------------------------
 
-phototaxist = BNController(config, binarization_strategies={
-    DeviceName.LIGHT : phototaxis,
-})
+phototaxist = BNController(
+    model=GLOBALS.bn_ctrl_model_path,
+    sensing_interval=GLOBALS.sim_sensing_interval_ms, 
+    bin_thresholds=GLOBALS.sim_sensors_thresholds, 
+    bin_strategies={
+        DeviceName.LIGHT: bin_strategies.phototaxis,
+    }
+)
 
-# antiphototaxist = BNController(config, binarization_strategies={
-#     DeviceName.LIGHT : antiphototaxis,
+# antiphototaxist = BNController(GLOBALS, binarization_strategies={
+#     DeviceName.LIGHT : bin_strategies.antiphototaxis,
 # })
 
-epuck = EPuck(config)
+epuck = EPuck(
+    GLOBALS.sim_run_time_s, 
+    GLOBALS.sim_timestep_ms, 
+    GLOBALS.sim_event_timer_s
+)
 
-epuck.position = config.sim_agent_position
-epuck.orientation = config.sim_agent_yrot_rad
+epuck.position = GLOBALS.sim_agent_position
+epuck.orientation = GLOBALS.sim_agent_yrot_rad
 
-dumper = SimulationDataDumper(config.sim_run_time_s, epuck.timestep)
+dumper = SimulationDataDumper(GLOBALS.sim_run_time_s, epuck.timestep)
 
 
 epuck.run(
@@ -42,15 +49,20 @@ epuck.run(
     lambda data: dumper.add_log_entry(data)
 )
 
-dumper.dump_data(config.sim_data_path)
+dumper.dump_data(GLOBALS.sim_data_path)
 
 # Cleanup code.
 
+epuck.cleanup()
+
 dumper.clear()
 
-if not config.sim_suppress_logging:
+if not GLOBALS.sim_suppress_logging:
     logger.flush()
 
-epuck.cleanup()
+if GLOBALS.webots_quit_on_termination:
+    epuck.supervisor.simulationQuit(1)
+else:
+    epuck.supervisor.simulationReset()
 
 # --------------------------------------------

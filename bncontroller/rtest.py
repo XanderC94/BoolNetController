@@ -2,9 +2,10 @@ import re
 from pathlib import Path
 from collections import defaultdict
 from collections.abc import Iterable
+
+from bncontroller.sim.config import Config
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.sim.config import SimulationConfig
-from bncontroller.parse.utils import parse_args_to_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 from bncontroller.file.utils import check_path, get_dir, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
@@ -42,44 +43,42 @@ def collect_bn_models(
 
 ###################################################################################
 
-def check_config(config:SimulationConfig):
+def check_config(config: Config):
 
     if config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.')
 
-    elif not check_path(template.test_data_path, create_if_dir=True):
+    elif not check_path(config.test_data_path, create_if_dir=True):
         raise Exception(
-            'Test dataset path in template configuration file should be a directory.'
+            'Test dataset path in configuration file should be a directory.'
         )
 
 if __name__ == "__main__":
 
     ### Load Configuration ########################################################
 
-    template = parse_args_to_config()
+    check_config(GLOBALS)
 
-    check_config(template)
-
-    template.globals['mode'] = 'rtest'
+    GLOBALS.app['mode'] = 'rtest'
 
     logger.instance = LoggerFactory.filelogger(
-        get_dir(template.app_output_path, create_if_dir=True) / '{key}_{date}.log'.format(
-            key=template.globals['mode'],
-            date=template.globals['date'],
+        get_dir(GLOBALS.app_output_path, create_if_dir=True) / '{key}_{date}.log'.format(
+            key=GLOBALS.app['mode'],
+            date=GLOBALS.app['date'],
         )
     )
 
     ### Load Test Model(s) from Template paths ####################################
 
-    files, bns = collect_bn_models(template.bn_ctrl_model_path)
+    files, bns = collect_bn_models(GLOBALS.bn_ctrl_model_path)
 
     ### Test ######################################################################
     
-    for i in range(template.test_n_instances):
+    for i in range(GLOBALS.test_n_instances):
 
         logger.info(f'Test instance n°{i}')
 
-        instance_data = template.app_core_function(template, bns)
+        instance_data = GLOBALS.app_core_function(bns)
 
         for k, test_data in instance_data.items():
 
@@ -88,8 +87,8 @@ if __name__ == "__main__":
                 template='rtest_data_{name}' + f'_in{i}.json',
             )
 
-            test_data.to_json(template.test_data_path / name)
+            test_data.to_json(GLOBALS.test_data_path / name)
 
-            logger.info(f'Test data saved into {str(template.test_data_path / name)}')
+            logger.info(f'Test data saved into {str(GLOBALS.test_data_path / name)}')
 
     exit(1)

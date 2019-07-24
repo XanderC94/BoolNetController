@@ -1,4 +1,4 @@
-from bncontroller.sim.config import SimulationConfig
+from pathlib import Path
 from bncontroller.sim.robot.morphology import EPuckMorphology
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.data import SimulationStepData, Point3D
@@ -15,10 +15,15 @@ class Controller(object):
 
 class BNController(Controller):
 
-    def __init__(self, config: SimulationConfig, binarization_strategies = {}):
-        self.__config = config
-        self.__bn = OpenBooleanNetwork.from_json(read_json(config.bn_ctrl_model_path))
-        self.__bin_strategies = binarization_strategies
+    def __init__(self, 
+            model: OpenBooleanNetwork or Path, 
+            bin_thresholds: dict, bin_strategies: dict,
+            sensing_interval: int):
+
+        self.__bn = model if isinstance(model, OpenBooleanNetwork) else OpenBooleanNetwork.from_json(read_json(model))
+        self.__bin_strategies = bin_strategies
+        self.__bin_thresholds = bin_thresholds
+        self.__sensing_interval = sensing_interval
         self.__next_sensing = 0
         
         self.gps_data = []
@@ -32,7 +37,7 @@ class BNController(Controller):
 
         if self.__next_sensing == step:
 
-            self.__next_sensing += int(self.__config.sim_sensing_interval_ms / timestep)
+            self.__next_sensing += int(self.__sensing_interval / timestep)
 
             # Retreive Sensors Data
             self.gps_data = [Point3D.from_tuple(g.read()) for g in morphology.gps.values()]
@@ -45,11 +50,10 @@ class BNController(Controller):
             # print(self.light_data)
             # print(touch_data)
 
-            # Apply Binarization Strategies
-
+        # Apply Binarization Strategies
         bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
             self.light_data, 
-            self.__config.sim_sensors_thresholds[DeviceName.LIGHT]
+            self.__bin_thresholds[DeviceName.LIGHT]
         )
 
         # "Perturbate" network based on binarized values

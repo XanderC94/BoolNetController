@@ -3,12 +3,12 @@ import subprocess
 import shutil
 from pathlib import Path
 from bncontroller.sim.config import CONFIG_CLI_NAMES
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.file.utils import check_path
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.sim.config import SimulationConfig
+from bncontroller.sim.config import Config
 from bncontroller.sim.data import ArenaParams
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.search.pvns import VNSEvalContext
 from bncontroller.file.utils import get_dir
 
 def generate_webots_worldfile(template_path: Path, target_path: Path, world_params: ArenaParams):
@@ -70,7 +70,7 @@ def generate_webots_worldfile(template_path: Path, target_path: Path, world_para
     with open(target_path, 'w') as tar:
         tar.write(''.join(text))
 
-def generate_webots_props_path(template_path:Path):
+def generate_webots_props_path(template_path: Path):
 
     return template_path.parent / '.{name}.wbproj'.format(
         name=template_path.with_suffix('').name
@@ -93,7 +93,7 @@ def generate_webots_props_file(template_path: Path, target_path: Path):
     
 #####################################################################################
 
-def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
+def run_simulation(config: Config, bn: OpenBooleanNetwork) -> dict:
 
     # Save model (inside or outside of the config? mumble rumble)
     write_json(bn.to_json(), config.bn_ctrl_model_path) # BN Model
@@ -108,29 +108,25 @@ def run_simulation(config: SimulationConfig, bn: OpenBooleanNetwork) -> dict:
 
 #####################################################################################
 
-
-def save_subopt_model(config: SimulationConfig, bnjson: dict, ctx: VNSEvalContext):
+def save_subopt_model(path: Path, score: object, it: int, bn: dict, save_subopt=False):
         
-    bnjson.update({'sim_info': dict()})
+    bn.update({'stats': dict(score=score, it=it)})
 
-    bnjson['sim_info'].update({'eval_score':ctx.score})
-    bnjson['sim_info'].update({'idist':config.sim_light_position.dist(config.sim_agent_position)})
-    bnjson['sim_info'].update({'n_it':ctx.it})
+    model_dir = get_dir(path)
 
-    model_dir = get_dir(config.bn_ctrl_model_path)
-
-    if ctx.comparator(ctx.score, config.train_save_suboptimal_models): 
+    if save_subopt: 
         # Save only if <sd_save_suboptimal_models> >= score
-        write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
-            date=config.globals['date'],
-            it=config.globals['it_suffix'].format(it=ctx.it)
+        write_json(bn, model_dir / GLOBALS.app['subopt_model_name'].format(
+            date=GLOBALS.app['date'],
+            it=GLOBALS.app['it_suffix'].format(it=it)
         ))
         
     # Always save the last suboptimal model (overwrite)
-    write_json(bnjson, model_dir / config.globals['subopt_model_name'].format(
-        date=config.globals['date'], 
-        it=''
+    write_json(bn, model_dir / GLOBALS.app['last_model_name'].format(
+        date=GLOBALS.app['date']
     ))
+
+########################################################################################
 
 def clean_generated_worlds(template_world: Path):
     parts = template_world.with_suffix('').name.split('.')

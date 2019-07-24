@@ -233,6 +233,13 @@ class BooleanNetwork(Jsonkin):
             self.__atm = ATM(self.to_ebnf())
             return self.__atm
 
+    @property
+    def is_consistent(self):
+        '''
+        A simple rbn is always consistent.
+        '''
+        return True
+
 #############################################################################
 
 class OpenBooleanNetwork(BooleanNetwork):

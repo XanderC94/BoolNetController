@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='BoolNetController',
-      version='0.0.1a',
+      version='0.0.2a',
       description='A Boolean Netowork-based controller for robotic agents',
       url='https://github.com/XanderC94/BoolNetController',
       author='XanderC94',
@@ -9,13 +9,14 @@ setup(name='BoolNetController',
       license='GPL3',
       packages=['bncontroller'],
       install_requires=[
-          'pandas',
           'numpy',
+          'pandas',
           'apted', 
           'networkx',
         #   'multiset',
           'singleton-decorator',
           'rpy2',
+        #   'bunch'
         #   'Truths'
       ],
       zip_safe=False)

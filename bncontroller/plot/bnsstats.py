@@ -14,53 +14,67 @@ from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import transpose
 from bncontroller.file.utils import cpaths, get_dir
-from bncontroller.sim.config import SimulationConfig
-from bncontroller.parse.utils import parse_args_to_config
+from bncontroller.sim.config import Config
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
 
 fn_pattern = r'n(?P<N>\d+)_k(?P<K>\d+)_nrho(?P<nRho>\d+.?\d+)_trho(?P<tRho>\d+.?\d+)_if(?P<if>\d+)'
 
-def plot_constraints(title:str, xs: list, ys:list, size_ths=0.5):
+def plot_constraints(title: str, xs: list, ys:list, size_ths=0.5):
 
     fig, ax = plotter.subplots(num=title)
 
-    ax.set_ylim([0, 1.1])
-    ax.set_xlim([0, len(data) * 10 + 10])
     __x = 10
     xt = __x
+    
+    ax.set_ylim([0, 1.1])
+    ax.set_xlim([0, len(data) * __x + __x])
+    
     ticks = []
 
     for x, y in zip(xs, ys):
         
-        if y > 0.5:
-            ticks.append(
-                str(x).replace(' ', '')[1:-1]
-            )
-        else:
-            ticks.append('')
-
+        ticks.append(
+            (xt, str(x).replace(' ', '')[1:-1])
+        )
+        
         ax.bar(
             x=[xt],
             height=y,
             align='center',
-            width=3.0 if y > size_ths else 0.8
+            width=3.0
         )
 
         xt += __x
 
-    plotter.xticks(
-        np.arange(__x, __x + len(ticks) * __x, __x),
-        ticks, 
-        rotation=15
+    ax.plot(
+        [0, len(data) * __x + __x],
+        [size_ths, size_ths],
+        color='k',
+        linewidth=0.5
     )
+
+    ax.tick_params(axis='x', labelsize=6)
+    ax.set_xticks(transpose(ticks)[0])
+    ax.set_xticklabels(transpose(ticks)[1], rotation=90)
+
+    fig.subplots_adjust(
+        left=0.03,
+        right=0.99,
+        bottom=0.1,
+        top=0.99,
+        wspace= 0.0,
+        hspace=0.0
+    )
+
+    ticks.clear()
 
     return fig, ax
 
 if __name__ == "__main__":
     
-    template = parse_args_to_config()
-    path = get_dir(template.bn_slct_model_path / 'stats/data', create_if_dir=True)
+    path = get_dir(GLOBALS.bn_slct_model_path / 'stats/data', create_if_dir=True)
 
     data = dict()
     for p in path.iterdir():
@@ -98,12 +112,14 @@ if __name__ == "__main__":
         ]
     )
 
-    f1, a1 = plot_constraints('Constr. 1 Satisfaction', params, frames1)
-    f2, a2 = plot_constraints('Constr. 2 Satisfaction', params, frames2)
-    f3, a3 = plot_constraints('Constr. 3 Satisfaction', params, frames3)
-    f4, a4 = plot_constraints('Constr. 3 Satisfaction', params, frames4)
-    f123, a123 = plot_constraints('Constr. 1,2,3 Satisfaction', params, frames123)
-    f1234, a1234 = plot_constraints('Constr. 1,2,3,4 Satisfaction', params, frames1234)
+    labels_template = ' {N},{K},{nRho},{tRho},{infix}'
+
+    f1, a1 = plot_constraints('Constr. 1 Satisfaction' + labels_template, params, frames1, size_ths=0.5)
+    f2, a2 = plot_constraints('Constr. 2 Satisfaction' + labels_template, params, frames2, size_ths=0.5)
+    f3, a3 = plot_constraints('Constr. 3 Satisfaction' + labels_template, params, frames3, size_ths=0.5)
+    f4, a4 = plot_constraints('Constr. 4 Satisfaction' + labels_template, params, frames4, size_ths=0.3)
+    f123, a123 = plot_constraints('Constr. 1,2,3 Satisfaction' + labels_template, params, frames123, size_ths=0.1)
+    f1234, a1234 = plot_constraints('Constr. 1,2,3,4 Satisfaction' + labels_template, params, frames1234, size_ths=0.1)
 
     ################################################################################
     

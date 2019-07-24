@@ -106,54 +106,6 @@ def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.NONE, quadrant=Quad
 
 ##################################################################
 
-def generate_spawn_points(config):
-
-    spawn_points = dict()
-
-    # Generate Evaluation Point
-    spawn_points['agent_spawn_points'] = (
-        [config.sim_agent_position]
-        if not config.eval_n_agent_spawn_points else [
-            r_point3d(
-                O=config.sim_agent_position, 
-                R=config.eval_agent_spawn_radius_m, 
-                axis=Axis.Y, 
-                quadrant=Quadrant.PPN
-            )
-            for _ in range(config.eval_n_agent_spawn_points)    
-        ]
-    )
-
-    # Generate Light Position
-    spawn_points['light_spawn_points'] = (
-        [config.sim_light_position]
-        if not config.eval_n_light_spawn_points else [
-            r_point3d(
-                O=config.sim_light_position, 
-                R=config.eval_light_spawn_radius_m, 
-                axis=Axis.Y, 
-                quadrant=Quadrant.PPN
-            )
-            for _ in range(config.eval_n_light_spawn_points)    
-        ]
-    )
-
-    # Generate Evaluation yRot
-    spawn_points['agent_yrots'] = (
-        [config.sim_agent_yrot_rad]
-        if not config.eval_agent_n_yrot_samples else np.arange(
-            config.eval_agent_yrot_start_rad,
-            2*math.pi + config.eval_agent_yrot_start_rad,
-            2*math.pi / config.eval_agent_n_yrot_samples
-        ) if config.eval_agent_n_yrot_samples > 0 else np.random.uniform(
-            0.0, 2*math.pi, max(1, config.eval_n_agent_spawn_points)
-        )
-    )
-
-    return spawn_points
-    
-#########################################################################
-
 class SimulationStepData(Jsonkin):
 
     def __init__(self,
@@ -198,11 +150,12 @@ class BNParams(object):
     '''
     Container for BN generation parameters
     '''
-    def __init__(self, N, K, P, I, O):
+    def __init__(self, N: int, K: int, P: float, Q: float, I: int, O: int):
         
         self.N = N
         self.K = K
         self.P = P
+        self.Q = Q
         self.I = I
         self.O = O
     

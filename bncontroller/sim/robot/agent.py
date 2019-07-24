@@ -3,13 +3,12 @@ from controller import Supervisor, Robot
 from bncontroller.sim.robot.core import Controller
 from bncontroller.sim.robot.morphology import EPuckMorphology
 from bncontroller.sim.data import Point3D
-from bncontroller.sim.config import SimulationConfig
 
 # -------------------------------------------------------------------------------------------
 
 class RoboticAgent(object):
 
-    def __init__(self, options: SimulationConfig):
+    def __init__(self, runtime: int, timestep: int, event_time: int):
         # create the Robot instance.
         # robot = Robot()
         # Supervisor extends Robot but has access to all the world info. 
@@ -17,7 +16,9 @@ class RoboticAgent(object):
         self.__robot = Supervisor() 
         # get the time step (ms) of the current world.
         self.__sim_timestep = int(self.__robot.getBasicTimeStep())
-        self.__config = options
+        self.__runtime = runtime
+        self.__event_time = event_time
+        # self.__timestep = timestep
         self.__morphology = None
 
     ##############################################
@@ -56,15 +57,15 @@ class RoboticAgent(object):
     def timestep(self) -> int:
         return self.__sim_timestep
 
-    def run(self, controller : Controller, logging_hook = lambda string: None, data_hook = lambda data: None):
+    def run(self, controller: Controller, logging_hook=lambda string: None, data_hook=lambda data: None):
         # initialize simulation
         n_steps = 0
-        max_steps = int((self.__config.sim_run_time_s * 1000) / self.timestep)
+        max_steps = int((self.__runtime * 1000) / self.timestep)
 
-        trigger_step = int((self.__config.sim_event_timer_s * 1000) / self.timestep) # step @ which the event should be triggered
+        trigger_step = int((self.__event_time * 1000) / self.timestep) # step @ which the event should be triggered
 
         logging_hook(
-            f"TIME:{self.__config.sim_run_time_s} min | STEP-TIME:{self.timestep} ms => MAX-STEPS: {max_steps}"
+            f"TIME:{self.__runtime} min | STEP-TIME:{self.timestep} ms => MAX-STEPS: {max_steps}"
         )
 
         # -------------------------------------------------
@@ -90,18 +91,13 @@ class RoboticAgent(object):
     def cleanup(self):
         self.supervisor.simulationSetMode(self.supervisor.SIMULATION_MODE_PAUSE)
 
-        if self.__config.webots_quit_on_termination:
-            self.supervisor.simulationQuit(1)
-        else:
-            self.supervisor.simulationReset()
-
 ###############################################################################################
 
 class EPuck(RoboticAgent):
 
-    def __init__(self, options: SimulationConfig):
+    def __init__(self, runtime: int, timestep: int, event_time: int):
         
-        super().__init__(options)
+        super().__init__(runtime, timestep, event_time)
 
         self.morphology = EPuckMorphology(self.timestep, self.supervisor)
 

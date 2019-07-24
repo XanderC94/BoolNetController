@@ -4,31 +4,30 @@ from pathlib import Path
 import bncontroller.stubs.utils as stub_utils
 from bncontroller.file.utils import cpaths
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.sim.config import SimulationConfig, generate_sim_config
-from bncontroller.parse.utils import parse_args_to_config
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 
 if __name__ == "__main__":
-
-    template = parse_args_to_config()
     
-    if isinstance(template.bn_ctrl_model_path, list) or template.bn_ctrl_model_path.is_dir():
+    if isinstance(GLOBALS.bn_ctrl_model_path, list) or GLOBALS.bn_ctrl_model_path.is_dir():
         raise Exception('Model path should be a file.')
    
-    bn = OpenBooleanNetwork.from_json(read_json(template.bn_ctrl_model_path))
+    bn = OpenBooleanNetwork.from_json(read_json(GLOBALS.bn_ctrl_model_path))
 
-    config = generate_sim_config(template, keyword='handcheck')
+    GLOBALS.app['mode'] = 'handcheck'
+
+    config = GLOBALS.generate_sim_config()
 
     ### Generate simulation world file for training ################################
 
     stub_utils.generate_webots_worldfile(
-        template.webots_world_path, 
+        GLOBALS.webots_world_path, 
         config.webots_world_path,
         config.arena_params
     )
 
     stub_utils.generate_webots_props_file(
-        template.webots_world_path,
+        GLOBALS.webots_world_path,
         config.webots_world_path
     )
 

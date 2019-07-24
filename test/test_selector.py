@@ -2,12 +2,8 @@ import unittest
 import random
 from pathlib import Path
 
-from bncontroller.stubs.selector.utils import bnselector_generator, noisy_update
-from bncontroller.stubs.selector.tests import test_attractors_number
-from bncontroller.stubs.selector.tests import test_attractors_transitions
-from bncontroller.stubs.selector.tests import test_bn_state_space_omogeneity
-from bncontroller.stubs.selector.tests import test_attraction_basins
-from bncontroller.stubs.bn import bncontroller_generator
+import bncontroller.stubs.selector.tests as constraints
+from bncontroller.stubs.selector.utils import template_selector_generator, noisy_update
 from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator, binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBooleanNetwork
@@ -50,19 +46,6 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
             ],
         }
 
-        # patterns = dict(
-        #     (ak, r'(?:{pattern},)+'.format(
-        #         pattern=r','.join(map(binstate, attractors[ak])))
-        #     )
-        #     for ak in attractors
-        # )
-
-        # ststring = ','.join(map(binstate, states))
-
-        # print(patterns)
-
-        # print(ststring)
-
         res = search_attractors(states, attractors)
 
         labels, ns, lmaxs, lmins = transpose(res)
@@ -83,7 +66,8 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
     
     def test_bn_noisy_run(self):
 
-        g = bnselector_generator(5, 2, 0.5, 1, 0)
+        N, K, P, Q, I, O = 5, 2, 0.5, 0.0, 1, 0
+        g = template_selector_generator(N, K, P, Q, I, O)
         bn = g.new_selector()
         atm = bn.atm
 
@@ -139,11 +123,11 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
         
         atms = []
 
-        N, K, P, I, O = 5, 2, 0.5, 1, 0
+        N, K, P, Q, I, O = 5, 2, 0.5, 0.0, 1, 0
 
-        g1 = bnselector_generator(
-            N, K, P, I, O, 
-            pred_fn=lambda a,b: random_neighbors_generator(a, b, self_loops=True)
+        g1 = template_selector_generator(
+            N, K, P, Q, I, O, 
+            F=lambda a,b: random_neighbors_generator(a, b, self_loops=True)
         )
         
         for _ in range(100):
@@ -165,7 +149,7 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
 
         # print('#######################################################')
 
-        g2 = bnselector_generator(N, K, P, I, O)
+        g2 = template_selector_generator(N, K, P, Q, I, O)
         
         for _ in range(100):
             bn = g2.new_selector()
@@ -186,17 +170,15 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
     
     def test_bnselector_atm_similarity(self):
         
-        # random.seed(3)
+        N, K, P, Q, I, O = 5, 2, 0.5, 0.0, 1, 0
 
-        N, K, P, I, O = 5, 2, 0.5, 1, 0
-
-        bnsg = bnselector_generator(N, K, P, I, O)
+        bnsg = template_selector_generator(N, K, P, Q, I, O)
 
         atms = []
 
         for _ in range(1000):
             s = bnsg.new_selector()
-            if test_attractors_number(s, 2):
+            if constraints.test_attractors_number(s, 2):
                 atms.append(s.atm.tableau)
                 # print(s.atm.tableau)
         
@@ -218,7 +200,7 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
 
         for _ in range(1000):
             s = bnsg.new_selector()
-            if test_attractors_number(s, 2):
+            if constraints.test_attractors_number(s, 2):
                 atms2.append(s.atm.tableau)
                 # print(s.atm.tableau)
         
@@ -230,20 +212,20 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
 
     def test_selector_constraint_1(self):
         bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(test_attractors_number(bn, 2))
-        self.assertFalse(test_attractors_number(bn, 4))
+        self.assertTrue(constraints.test_attractors_number(bn, 2))
+        self.assertFalse(constraints.test_attractors_number(bn, 4))
 
     def test_selector_constraint_2(self):
         bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(test_attractors_transitions(bn, {
+        self.assertTrue(constraints.test_attractors_transitions(bn, {
             'a0':{'a1': 0.3},
             'a1':{'a0': 0.3},
         }))
 
     def test_selector_constraint_3(self):
         bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(test_bn_state_space_omogeneity(bn, 0.1))
+        self.assertTrue(constraints.test_bn_state_space_omogeneity(bn, 0.1))
     
     def test_selector_constraint_4(self):
         bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(test_attraction_basins(bn, 5))
+        self.assertTrue(constraints.test_attraction_basins(bn, 5))

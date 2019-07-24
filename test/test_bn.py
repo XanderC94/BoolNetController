@@ -4,27 +4,27 @@ from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBoo
 from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.utils import binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
-from bncontroller.stubs.bn import bncontroller_generator
+from bncontroller.stubs.controller.utils import template_controller_generator
 from bncontroller.search.utils import bn_scramble_strategy
 
 class TestBooleanNetwork(unittest.TestCase):
 
     def test_bn_copy(self):
-        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
         self.assertTrue(bn.to_json(), bn_copy.to_json())
 
     def test_ebnf(self):
-        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
         self.assertTrue(bn.to_ebnf(), bn_copy.to_ebnf())
 
     def test_bn_update(self):
-        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
 
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
@@ -41,7 +41,7 @@ class TestBooleanNetwork(unittest.TestCase):
 
     def test_atm(self):
 
-        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
 
         atm = bn.atm
 
@@ -51,7 +51,7 @@ class TestBooleanNetwork(unittest.TestCase):
 
     def test_atm_caching(self):
 
-        bn = bncontroller_generator(5, 2, 0.5, 1, 0).new()
+        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
 
         t = time.perf_counter()
 

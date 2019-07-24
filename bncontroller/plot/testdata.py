@@ -14,7 +14,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.file.utils import cpaths
-from bncontroller.sim.config import SimulationConfig
+from bncontroller.sim.utils import GLOBALS
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
@@ -23,7 +23,7 @@ from bncontroller.collectionslib.utils import flat
 
 #################################################################################
 
-def plot_data(data:dict, positives_threshold:float):
+def plot_data(data: dict, positives_threshold: float):
 
     cmap = get_cmap(len(data), name='rainbow')
 
@@ -322,7 +322,7 @@ if __name__ == "__main__":
         action='store_false'
     )
 
-    args = parse_args(parser=parser)
+    args, *_ = parse_args(parser=parser)
 
     # print(args.config.test_data_path)
 

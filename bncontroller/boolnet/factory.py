@@ -1,4 +1,5 @@
 import random
+from typing import Callable
 from bncontroller.boolnet.structures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
 from bncontroller.boolnet.selector import BoolNetSelector
 from bncontroller.boolnet.function import BooleanFunction
@@ -10,29 +11,30 @@ class RBNFactory(object):
     A Random Boolean Network factory
 
     * N = Number of node in the BN or a list of node ids 
-    * K = (global) Number of Neighbors of each node or a list/map of the NUMBER of neighbors for each single node
-    * predecessors_fun = Returns the k neighbors for the node i among the ns available
-    * bf_init = Decides whether the BN is going to be a simple BN or a RBN. 
-        Takes a vararg as input since it receives the the truth table entries 
-        of the boolean function (tuple of length k)
-    * node_init = Decides the initial state value of each node
+    * K = Number of Neighbors of each node or a list/map of the Number of neighbors for each single node
+    * P = probability or function to set True/False the entry of the Truth Table,
+    * Q = probability or function to set True/False the initial state of a node,
+    * I = number or list of input nodes,
+    * O = number or list of output nodes,
+    * f = predecessor function that returns the k neighbors for the node i among the ns available
     """
     def __init__(self,
             n: int or list, 
-            k: int or list or dict, 
+            k: int or list or dict,
+            p: float or Callable[[object], bool] = 0.5,
+            q: float or Callable[[object], bool] = 0.5,
             i: int or list = [], 
             o: int or list = [], 
-            predecessors_fun = lambda node, nodes: random_neighbors_generator(node, nodes), 
-            bf_init = lambda *args: r_bool(), 
-            node_init = lambda label: r_bool()):
+            f = lambda node, nodes: random_neighbors_generator(node, nodes)
+            ): 
         
         self.node_labels = list()
         self.node_arities = dict()
         self.input_nodes = list()
         self.output_nodes = list()
-        self.predecessors_fun = predecessors_fun
-        self.bf_init = bf_init
-        self.node_init = node_init
+        self.predecessors_fun = f
+        self.bf_init = p if callable(p) else lambda *args: r_bool(p)
+        self.node_init = q if callable(q) else lambda *args: r_bool(q)
 
         if isinstance(n, int): 
             self.node_labels = list(map(str, range(n)))
@@ -109,4 +111,19 @@ class RBNFactory(object):
         nodes = self.__r_connect_nodes(self.__build_nodes())
 
         return BoolNetSelector(nodes, input_nodes=self.input_nodes, output_nodes=self.output_nodes)
-        
+
+#######################################################################################
+
+def generate_rbn(generator: Callable[[], BooleanNetwork], force_consistency=False):
+    '''
+    Generate an RBN from the given generator.
+
+    This is simply a "joint" method useful to generate consistents RBN, 
+    based on their definition of consistency.
+    '''
+    bn = generator()
+    
+    while force_consistency and not bn.is_consistent:
+        bn = generator()
+    
+    return bn
