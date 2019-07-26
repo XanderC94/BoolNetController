@@ -7,7 +7,7 @@ from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
 from bncontroller.boolnet.selector import BoolNetSelector
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
-from bncontroller.type.utils import first
+from bncontroller.collectionslib.utils import first
 from bncontroller.stubs.selector.utils import noisy_update
 
 def test_attractors_number(bn: BooleanNetwork, target_n_attractors: int):
@@ -22,6 +22,9 @@ def test_attractors_transitions(bn: BooleanNetwork, at_threshold_map: dict):
     Check if the transition probability from (some) attractors to another
     matches the ones specified in the given threshold map.
     '''
+
+    # print(at_threshold_map)
+
     return all(
         bn.atm.dtableau[ki][kj] >= at_threshold_map[ki][kj] 
         for ki in at_threshold_map
@@ -100,7 +103,7 @@ def test_attraction_basins(bn: BoolNetSelector, fix_input_for: int):
 
         # Only one attractor shall appear for each input in absence of noise
         if len(attrs) == 1:
-            bn.attractors_input_map.append((attrs[0][0], i))
+            bn.attractors_input_map[binstate(i)] = attrs[0][0]
         else:
             return False
 

@@ -2,7 +2,7 @@ import time
 import itertools
 from pandas import DataFrame
 import bncontroller.stubs.selector.tests as constraints
-from bncontroller.file.utils import get_dir
+from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
 from bncontroller.sim.utils import GLOBALS
 
@@ -25,8 +25,7 @@ if __name__ == "__main__":
     inFixs = [5, 10]
 
     instances = 1000
-    date = GLOBALS.app['date']
-
+    
     prod = itertools.product(nAs, Ns, Ks, Ps, Is, Os, nRhos, tRhos, inFixs)
 
     mpath = get_dir(GLOBALS.bn_slct_model_path / 'stats/models', create_if_dir=True)
@@ -57,7 +56,7 @@ if __name__ == "__main__":
             c3 = constraints.test_bn_state_space_omogeneity(bn, nRho)
             c4 = constraints.test_attraction_basins(bn, inFix)
 
-            files.append(mpath / f'{i}_bns_n{N}_k{K}_nrho{int(nRho*100)}_trho{int(tRho*100)}_if{inFix}.json')
+            files.append(mpath / f'{i}_bns_n{N}_k{K}_nrho{int(nRho*100)}_trho{int(tRho*100)}_if{inFix}_{FROZEN_DATE}.json')
 
             write_json(bn.to_json(), files[-1])
             c1s.append(c1)
@@ -71,4 +70,4 @@ if __name__ == "__main__":
             'c2': c2s,
             'c3': c3s,
             'c4': c4s
-        }).to_json(dpath /f'dataframe_n{N}_k{K}_nrho{int(nRho*100)}_trho{int(tRho*100)}_if{inFix}.json')
+        }).to_json(dpath /f'dataframe_n{N}_k{K}_nrho{int(nRho*100)}_trho{int(tRho*100)}_if{inFix}_{FROZEN_DATE}.json')

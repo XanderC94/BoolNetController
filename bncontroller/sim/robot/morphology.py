@@ -26,8 +26,10 @@ class EPuckMorphology(object):
     N_WHEELS = [LEFT, RIGHT]
     N_BUMPERS = 8
     N_GPS = 1
+    N_RECEVIER = 1
+    N_EMITTERS = 1
 
-    def __init__(self, timestep:int, bot: Robot):
+    def __init__(self, timestep: int, bot: Robot):
         
         self.__light_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87, 1.58784]
         self.__distance_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
@@ -35,7 +37,6 @@ class EPuckMorphology(object):
         self.__bump_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
 
         self.__devices_labels = EPuckDevicesLabels(
-            self.N_GPS,
             self.N_DISTANCE_SENSORS, 
             self.N_LIGHT_SENSORS, 
             self.N_BUMPERS, 
@@ -54,21 +55,21 @@ class EPuckMorphology(object):
             self.__devices_labels.wheel_actuators_labels, 
             timestep, 
             lambda name: bot.getMotor(name),
-            actuators_positions= self.__wheel_actuators_positions
+            actuators_positions=self.__wheel_actuators_positions
         )
 
         self.__distance_sensors = sensor_array(
             self.__devices_labels.distance_sensors_labels, 
             timestep, 
             lambda name: bot.getDistanceSensor(name),
-            sensors_positions = self.__distance_sensors_positions
+            sensors_positions=self.__distance_sensors_positions
         )
 
         self.__light_sensors = sensor_array(
             self.__devices_labels.light_sensors_labels, 
             timestep, 
             lambda name: bot.getLightSensor(name),
-            sensors_positions = self.__light_sensors_positions
+            sensors_positions=self.__light_sensors_positions
         )
 
         # self.__bumpers = sensor_array(
@@ -82,7 +83,21 @@ class EPuckMorphology(object):
             self.__devices_labels.gps_sensors_labels, 
             timestep, 
             lambda name: bot.getGPS(name),
-            sensors_positions = [0.0]
+            sensors_positions=[0.0]
+        )
+
+        self.__emitters = actuators_array(
+            self.__devices_labels.emitter_labels, 
+            timestep, 
+            lambda name: bot.getEmitter(name),
+            actuators_positions=[0.0]
+        )
+
+        self.__receivers = sensor_array(
+            self.__devices_labels.receiver_labels, 
+            timestep, 
+            lambda name: bot.getReceiver(name),
+            sensors_positions=[0.0]
         )
 
     @property
@@ -106,5 +121,13 @@ class EPuckMorphology(object):
     #     return self.__bumpers
 
     @property
-    def gps(self):  
+    def GPSs(self):  
         return self.__gps
+
+    @property
+    def receivers(self):  
+        return self.__receivers
+
+    @property
+    def emitters(self):  
+        return self.__emitters

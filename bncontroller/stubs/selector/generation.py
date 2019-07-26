@@ -1,11 +1,11 @@
 
 from bncontroller.stubs.selector.evaluation import step1_evaluation, step2_evaluation
-from bncontroller.boolnet.factory import generate_rbn
+from bncontroller.boolnet.factory import generate_rbn, BoolNetSelector
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.search.genntest import GenerateNTest
 from bncontroller.sim.utils import GLOBALS
 
-def generate_consistent_bnselector():
+def generate_consistent_bnselector() -> BoolNetSelector:
 
     bn_params = GLOBALS.bn_params
     

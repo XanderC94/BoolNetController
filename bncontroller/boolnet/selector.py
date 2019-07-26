@@ -1,3 +1,4 @@
+from collections import defaultdict
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNode
 
 class BoolNetSelector(OpenBooleanNetwork):
@@ -5,18 +6,15 @@ class BoolNetSelector(OpenBooleanNetwork):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # self.atm
-
-        self.__attractors_mapping = list()
+        self.__attractors_input_map = defaultdict(type(None))
 
     @property
     def attractors_input_map(self):
-        return self.__attractors_mapping
+        return self.__attractors_input_map
 
     @attractors_input_map.setter
-    def attractors_input_map(self, mapping):
-        self.__attractors_mapping = mapping
-
+    def attractors_input_map(self, mapping: dict):
+        self.__attractors_input_map = defaultdict(type(None), **mapping)
     
     def to_json(self):
         __json = super().to_json()
@@ -32,6 +30,7 @@ class BoolNetSelector(OpenBooleanNetwork):
         
         nodes = [BooleanNode.from_json(node) for node in json['nodes']]
         bnsel = BoolNetSelector(nodes, json['inputs'], json['outputs'])
-        bnsel.attractors_input_map = list(tuple(i) for i in json['attractors_input_map'])
+        bnsel.attractors_input_map = json['attractors_input_map']
+
 
         return  bnsel

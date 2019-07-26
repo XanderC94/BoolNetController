@@ -1,4 +1,6 @@
-class Sensor:
+from collections import defaultdict
+
+class Sensor(object):
 
     def __init__(self, label, name, device, position):
         self.__name = name
@@ -27,15 +29,17 @@ class Sensor:
         else:
             raise Exception('Unreadable Sensor.')
 
-def sensor_array(labels:dict, timestep:int, sensor_getter, sensors_positions = [0.0], enable_sensors = True): 
-    ss = {}
+def sensor_array(labels: dict, timestep: int, sensor_getter, sensors_positions = [0.0]):
+    
+    ss = defaultdict(type(None))
     i = 0
     
     for k, name in labels.items():
         # print(name)
         sensor = sensor_getter(name)
         
-        if (enable_sensors) : sensor.enable(timestep)
+        if hasattr(sensor, 'enable'): 
+            sensor.enable(timestep)
         
         ss.update({k:Sensor(k, name, sensor, sensors_positions[i])})
 

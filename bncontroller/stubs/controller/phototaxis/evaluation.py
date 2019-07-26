@@ -9,7 +9,7 @@ import bncontroller.stubs.utils as stub_utils
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.type.comparators import Comparator
+from bncontroller.typeslib.comparators import Comparator
 from bncontroller.search.pvns import VNSEvalContext
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger
@@ -62,6 +62,8 @@ def pt_evaluation_for_test(bn: OpenBooleanNetwork, test_params: Iterable):
 
     if not simconfig.webots_world_path.exists():
 
+        logger.info('Generated webots world file from template...')
+        
         stub_utils.generate_webots_worldfile(
             GLOBALS.webots_world_path, 
             simconfig.webots_world_path,

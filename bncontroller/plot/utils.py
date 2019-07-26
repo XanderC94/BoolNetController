@@ -2,7 +2,7 @@ import re as regx
 from pandas import DataFrame
 from pathlib import Path
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.type.utils import isnotnone, hasnotnone, str2num
+from bncontroller.typeslib.utils import isnotnone, hasnotnone, str2num
 from bncontroller.file.utils import get_parts_id, get_simple_fname
 
 #################################################################################

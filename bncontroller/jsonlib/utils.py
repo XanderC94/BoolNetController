@@ -61,6 +61,8 @@ def jsonrepr(obj):
         return vars(obj)
     elif isinstance(obj, Path):
         return str(obj)
+    elif isinstance(obj, float) and obj in (float('inf'), float('+inf'), float('-inf')):
+        return str(obj)
     else:
         return obj
 
@@ -97,7 +99,6 @@ def write_json(obj, path: Path or str, indent = False, default=jsonrepr):
         else:
             json.dump(_obj, fp, default=default)
 
-
 class FunctionWrapper(Jsonkin, Callable[[object], object]):
 
     def __init__(self, definition: str or FunctionType):
@@ -109,14 +110,18 @@ class FunctionWrapper(Jsonkin, Callable[[object], object]):
                 func=definition.__name__
             )
         elif isinstance(definition, str):
-            modulestr, methodstr = str(definition).split('::', 1)
-            module = importlib.import_module(modulestr)
-            self.__fnpointer = getattr(module, methodstr)
+            self.__fnpointer = None
             self.__def = definition
         else:
             raise TypeError('Function definition is neither a name.space::func_name string or a function object!')
 
     def __call__(self, *args, **kwargs):
+        # Lazy
+        if self.__fnpointer is None:
+            modulestr, methodstr = self.__def.split('::', 1)
+            module = importlib.import_module(modulestr)
+            self.__fnpointer = getattr(module, methodstr)
+
         return self.__fnpointer(*args, **kwargs)
     
     def to_json(self):

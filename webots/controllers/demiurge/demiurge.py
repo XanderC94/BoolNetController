@@ -28,20 +28,24 @@ trigger_step = int((GLOBALS.sim_event_timer_s * 1000) / timestep) # step @ which
 
 # -------------------------------------------------
 
+e = demiurge.getEmitter('righthand')
+
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
 while demiurge.step(timestep) != -1 and n_steps != max_steps:
     
     # -------------------- PERFORM SIMULATION STEP ------------------------
-    
+
     if n_steps == trigger_step:
         # trigger event modifying the simulation world
-        try:
-            ls = demiurge.getFromDef(GLOBALS.webots_nodes_defs['PointLight'])
-            ls.getField('intensity').setSFFloat(0.0)
-            # print('Event Triggered')
-        except Exception as ex:
-            print(ex)
+        if e is not None:
+            e.send(bytes('banana', 'ASCII'))
+        # try:
+        #     ls = demiurge.getFromDef(GLOBALS.webots_nodes_defs['PointLight'])
+        #     ls.getField('intensity').setSFFloat(0.0)
+        #     # print('Event Triggered')
+        # except Exception as ex:
+        #     print(ex)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~ LOGGING STUFF ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             

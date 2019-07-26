@@ -22,14 +22,27 @@ DEF Fire PointLight {
 }
 DEF Plato E-puck {
   translation -0.75 0 0.75
+  rotation 0 -1 0 0.7853981801795871
   name "Plato"
   controller "hbns"
-  rotation 0 -1 0 0.7853981801795871
   controllerArgs "--config=\".\""
+  receiver_channel 42
 }
 DEF Demiurge Robot {
   translation 1 0 1
+  children [
+    DEF DemiurgeReceiver Receiver {
+      name "lefthand"
+    }
+    DEF DemiurgeEmitter Emitter {
+      name "righthand"
+      channel 42
+    }
+  ]
   name "Demiurge"
+  locked TRUE
+  translationStep 0
+  rotationStep 0
   controller "demiurge"
   controllerArgs "--config=\".\""
   supervisor TRUE

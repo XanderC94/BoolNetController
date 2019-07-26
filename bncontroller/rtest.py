@@ -1,18 +1,19 @@
 import re
+import time
 from pathlib import Path
 from collections import defaultdict
 from collections.abc import Iterable
 
+import bncontroller.file.utils as futils
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
-from bncontroller.file.utils import check_path, get_dir, gen_fname, cpaths, get_simple_fname, FNAME_PATTERN
 
 #########################################################################################################
 
-MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)?bn_(?:subopt_)?'+FNAME_PATTERN+'.json'
+MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)?bn_(?:subopt_)?'+futils.FNAME_PATTERN+'.json'
 
 def collect_bn_models(
         paths: Iterable or Path, 
@@ -22,7 +23,7 @@ def collect_bn_models(
     files = dict()
     bns = defaultdict(list)
 
-    for path in cpaths(paths):
+    for path in futils.cpaths(paths):
         if path.is_dir():
 
             f, bn, *_ = collect_bn_models(
@@ -48,7 +49,7 @@ def check_config(config: Config):
     if config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.')
 
-    elif not check_path(config.test_data_path, create_if_dir=True):
+    elif not futils.check_path(config.test_data_path, create_if_dir=True):
         raise Exception(
             'Test dataset path in configuration file should be a directory.'
         )
@@ -62,10 +63,12 @@ if __name__ == "__main__":
     GLOBALS.app['mode'] = 'rtest'
 
     logger.instance = LoggerFactory.filelogger(
-        get_dir(GLOBALS.app_output_path, create_if_dir=True) / '{key}_{date}.log'.format(
-            key=GLOBALS.app['mode'],
-            date=GLOBALS.app['date'],
-        )
+        futils.get_dir(
+                GLOBALS.app_output_path, create_if_dir=True
+            ) / '{key}_{date}.log'.format(
+                key=GLOBALS.app['mode'],
+                date=futils.FROZEN_DATE,
+            )
     )
 
     ### Load Test Model(s) from Template paths ####################################
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     files, bns = collect_bn_models(GLOBALS.bn_ctrl_model_path)
 
     ### Test ######################################################################
-    
+    t = time.perf_counter()
     for i in range(GLOBALS.test_n_instances):
 
         logger.info(f'Test instance n°{i}')
@@ -82,8 +85,8 @@ if __name__ == "__main__":
 
         for k, test_data in instance_data.items():
 
-            name = gen_fname( 
-                get_simple_fname(files[k].name, FNAME_PATTERN, uniqueness=2),
+            name = futils.gen_fname( 
+                futils.get_simple_fname(files[k].name, futils.FNAME_PATTERN, uniqueness=2),
                 template='rtest_data_{name}' + f'_in{i}.json',
             )
 
@@ -91,4 +94,8 @@ if __name__ == "__main__":
 
             logger.info(f'Test data saved into {str(GLOBALS.test_data_path / name)}')
 
+    logger.info(f"Test time: {time.perf_counter() - t}s")
+
+    logger.flush()
+    
     exit(1)

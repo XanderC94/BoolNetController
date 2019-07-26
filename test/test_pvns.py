@@ -2,7 +2,7 @@ import unittest
 from bncontroller.boolnet.structures import BooleanNetwork
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
 from bncontroller.stubs.controller.utils import template_controller_generator
-from bncontroller.type.comparators import seq_compare
+from bncontroller.typeslib.comparators import seq_compare
 
 class TestParametricVNS(unittest.TestCase):
 

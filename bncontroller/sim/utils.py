@@ -3,8 +3,8 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from singleton_decorator import singleton
-from bncontroller.jsonlib.utils import jsonrepr, write_json
-from bncontroller.file.utils import iso8106, gen_fname, get_dir
+from bncontroller.jsonlib.utils import jsonrepr, write_json, read_json, FunctionWrapper
+from bncontroller.file.utils import FROZEN_DATE, gen_fname, get_dir
 from bncontroller.sim.config import Config
 from bncontroller.sim.data import Axis, Quadrant, Point3D, r_point3d
 
@@ -17,13 +17,15 @@ class Globals(Config):
         
         super().__init__(**kwargs)
 
-        self.__args = None
-        self.__unknowns = None
+        self.__json_ex_keys = (
+            '__app', '__json_ex_keys',
+            '_Globals__app', '_Globals__json_ex_keys'
+        )
 
         self.__app=defaultdict(
             type(None),
             mode='debug',
-            date=iso8106(ms=3),
+            date=FROZEN_DATE,
             subopt_model_name='bn_subopt_{date}{it}.json',
             last_model_name='bn_last_{date}.json',
             it_suffix='_it{it}',
@@ -33,8 +35,8 @@ class Globals(Config):
     def to_json(self):
         return dict(
             (k, jsonrepr(v)) 
-            for k,v in vars(self).items() 
-            if k not in ('__args', '__unknowns', '__app')
+            for k, v in vars(self).items() 
+            if k not in self.__json_ex_keys
         )
 
     @staticmethod
@@ -46,28 +48,17 @@ class Globals(Config):
         return super()
     
     @config.setter
-    def config(self, config: Config):
-        self.__init__(**config.to_json())
-
+    def config(self, config: Config or dict or Path):
+        if isinstance(config, Config):
+            self.__dict__.update(**vars(config))
+        elif isinstance(config, dict):
+            self.__dict__.update(**vars(Config.from_json(config)))
+        elif isinstance(config, (Path, str)):
+            self.__dict__.update(**vars(Config.from_file(config)))
+        
     @property
     def app(self) -> defaultdict:
         return self.__app
-    
-    @property
-    def args(self):
-        return self.__args
-
-    @args.setter
-    def args(self, args):
-        self.__args = args
-    
-    @property
-    def unknowns(self) -> list:
-        return self.__unknowns
-
-    @unknowns.setter
-    def unknowns(self, unknowns: list):
-        self.__unknowns = unknowns
 
     def generate_sim_config(self,
             # keyword='',
@@ -83,7 +74,7 @@ class Globals(Config):
         configuration options involving a path.
         '''
 
-        uniqueness = lambda: self.app['date']
+        uniqueness = lambda: FROZEN_DATE
 
         world_fname = gen_fname(self.app['mode'], template=world_fname, uniqueness=uniqueness, ftype='wbt')
         model_fname = gen_fname(self.app['mode'], template=model_fname, uniqueness=uniqueness, ftype='json')
@@ -172,6 +163,91 @@ GLOBALS : Globals = Globals()
 if __name__ == "__main__":
 
     # write_json(Config(), './config_template.json')
-    GLOBALS.config = Config()
+    # GLOBALS
 
-    print(GLOBALS.to_json())
+    # GLOBALS.webots_nodes_defs = {
+    #     "PointLight": "Fire",
+    #     "WorldInfo": "Hyperuranium",
+    #     "E-puck": "Plato",
+    #     "RectangleArena": "Cave",
+    #     "Robot": "Demiurge",
+    #     "Emitter": "DemiurgeEmitter",
+    #     "Receiver": "DemiurgeReceiver"
+    # }
+    import time, json, pprint, importlib
+    from bncontroller.parse.utils import parse_args
+    # from bncontroller.sim.utils import GLOBALS
+    from argparse import ArgumentParser
+    from singleton_decorator import singleton
+    import statistics
+
+    p = Path('D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\configs\\check.json')
+  
+    ts = []
+    
+    for i in range(1000):
+        t = time.perf_counter()
+        FunctionWrapper('bncontroller.stubs.bn::generate_simple_rbn')
+        dt = time.perf_counter()-t
+        ts.append(dt)
+
+    print(
+        'Z', 
+        'mean:', statistics.mean(ts), 
+        'stdev:', statistics.stdev(ts), 
+        'max:', max(ts), 
+        'min:', min(ts)
+    )
+
+    ts = []
+    
+    for i in range(1000):
+        t = time.perf_counter()
+        __ARGS = parse_args(parser=ArgumentParser('Banana Parser'), config_converter=Path)
+        GLOBALS.config = __ARGS.config
+        dt = time.perf_counter()-t
+        ts.append(dt)
+
+    print(
+        'A', 
+        'mean:', statistics.mean(ts), 
+        'stdev:', statistics.stdev(ts), 
+        'max:', max(ts), 
+        'min:', min(ts)
+    )
+
+    ts = []
+    
+    for i in range(1000):
+        t = time.perf_counter()
+        __ARGS = parse_args(ArgumentParser('Banana Parser'), config_converter=read_json)
+        GLOBALS.config = __ARGS.config
+        dt = time.perf_counter()-t
+        ts.append(dt)
+
+    print(
+        'B', 
+        'mean:', statistics.mean(ts), 
+        'stdev:', statistics.stdev(ts), 
+        'max:', max(ts), 
+        'min:', min(ts)
+    )
+
+    ts = []
+
+    for i in range(1000):
+        t = time.perf_counter()
+        __ARGS = parse_args(ArgumentParser('Banana Parser'), config_converter=read_json)
+        Config.from_json(__ARGS.config)
+        dt = time.perf_counter()-t
+        ts.append(dt)
+
+    print(
+        'C', 
+        'mean:', statistics.mean(ts), 
+        'stdev:', statistics.stdev(ts), 
+        'max:', max(ts), 
+        'min:', min(ts)
+    )
+
+    # pprint.pprint(GLOBALS.to_json(), indent=4)

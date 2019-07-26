@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from bncontroller.sim.config import CONFIG_CLI_NAMES
 from bncontroller.sim.utils import GLOBALS
-from bncontroller.file.utils import check_path
+from bncontroller.file.utils import check_path, FROZEN_DATE
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.sim.config import Config
 from bncontroller.sim.data import ArenaParams
@@ -117,13 +117,13 @@ def save_subopt_model(path: Path, score: object, it: int, bn: dict, save_subopt=
     if save_subopt: 
         # Save only if <sd_save_suboptimal_models> >= score
         write_json(bn, model_dir / GLOBALS.app['subopt_model_name'].format(
-            date=GLOBALS.app['date'],
+            date=FROZEN_DATE,
             it=GLOBALS.app['it_suffix'].format(it=it)
         ))
         
     # Always save the last suboptimal model (overwrite)
     write_json(bn, model_dir / GLOBALS.app['last_model_name'].format(
-        date=GLOBALS.app['date']
+        date=FROZEN_DATE
     ))
 
 ########################################################################################

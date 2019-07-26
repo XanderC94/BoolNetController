@@ -3,14 +3,15 @@
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.boolnet.utils import get_terminal_nodes
-from bncontroller.type.comparators import lesser, seq_compare, mixed_compare
-from bncontroller.search.pvns import VariableNeighborhoodSearch as VNS, VNSParameters
+from bncontroller.typeslib.comparators import lesser, seq_compare, mixed_compare
+from bncontroller.search.pvns import VariableNeighborhoodSearch as VNS
+from bncontroller.search.pvns import VNSParameters, VNSOutput
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.collectionslib.utils import flat
 from bncontroller.stubs.controller.phototaxis.evaluation import pt_evaluation_for_train
 
-def train_bncontroller(bn: OpenBooleanNetwork):
+def train_bncontroller(bn: OpenBooleanNetwork) -> (OpenBooleanNetwork, VNSOutput):
 
     spawn_points = GLOBALS.generate_spawn_points()
 

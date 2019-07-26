@@ -2,9 +2,11 @@
 Configuration class and utils module.
 '''
 from pathlib import Path
+from typing import List, Dict, Tuple
 from collections import namedtuple, defaultdict
 from bncontroller.jsonlib.utils import Jsonkin, FunctionWrapper
 from bncontroller.jsonlib.utils import read_json, jsonrepr, objrepr, write_json
+from bncontroller.collectionslib.utils import first
 from bncontroller.sim.data import Point3D, ArenaParams, BNParams
 from bncontroller.file.utils import iso8106, gen_fname, get_dir
 from bncontroller.sim.robot.utils import DeviceName
@@ -14,10 +16,46 @@ CONFIG_CLI_NAMES = ['-c', '-cp', '--config_path', '--config']
 
 ################################################################################################
 
-DefaultOption = namedtuple('DefaultOption', ['value', 'alt', 'descr'])
+DefaultOption = namedtuple(
+    'DefaultOption', 
+    [
+        'value', 'type', 'alt', 'descr', 
+        'serializer', 'deserializer'
+    ],
+    defaults=[None, None]
+)
 
 def empty(*args):
     raise Exception('Empty method called. Provide a real method.')
+
+def normalize(defaults: dict, **kwargs):
+
+    norm = dict()
+
+    def normalize_internal_dict(defaults: dict, t, alt, **kwargs):
+        norm = dict(**defaults)
+        for k, v, in kwargs.items():
+            norm.update({k: 
+                normalize_internal_dict(d, t, alt, **v)
+                if isinstance(v, alt) and isinstance(d, alt)
+                else t(v)
+            })
+    
+        return norm
+
+    for k, v, in kwargs.items():
+        try:
+            d, t, alt = defaults[k].value, defaults[k].type, defaults[k].alt
+
+            norm.update({k: 
+                normalize_internal_dict(d, t, alt, **v)
+                if isinstance(v, dict) and isinstance(d, dict)
+                else objrepr(v, t, alt_type=alt)
+            })
+
+        except KeyError as ke:
+            pass
+    return norm
 
 ################################################################################################
 
@@ -27,16 +65,19 @@ class DefaultConfigOptions(Jsonkin):
         
         app_output_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=list,
             descr='''Directory or file where to store the simulation general log'''
         ),
         app_core_function=DefaultOption(
             value=FunctionWrapper('bncontroller.sim.config::empty'),
+            type=FunctionWrapper,
             alt=None,
-            descr='''value to which reduce the objective function'''
+            descr='''Core function called by main holding the experiment procedure'''
         ), #  
         eval_aggr_function=DefaultOption(
             value=FunctionWrapper('bncontroller.sim.config::empty'),
+            type=FunctionWrapper,
             alt=None,
             descr='''value to which reduce the objective function'''
         ), #  
@@ -45,37 +86,44 @@ class DefaultConfigOptions(Jsonkin):
 
         webots_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=None,
             descr='''path to webots executable'''
         ),
         webots_world_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=None,
             descr='''path to webots world file'''
         ),
         webots_launch_opts=DefaultOption(
             value=["--mode=fast", "--batch", "--minimize"],
-            alt=None,
+            type=str,
+            alt=list,
             descr='''simulator command line arguements'''
         ),
         webots_quit_on_termination=DefaultOption(
             value=True,
+            type=bool,
             alt=None,
             descr='''quit simulator after simulation ends'''
         ),
         webots_nodes_defs=DefaultOption(
             value=defaultdict(str),
-            alt=None,
+            type=str,
+            alt=lambda **kwargs: defaultdict(str, **kwargs),
             descr='''simulation world node definitions (node custom names)'''
         ),
         webots_agent_controller=DefaultOption(
             value='none',
+            type=str,
             alt=None,
             descr='''simulation world node definitions (node custom names)'''
         ),        
         webots_arena_size=DefaultOption(
-            value=(3, 3),
-            alt=None,
+            value=(3.0, 3.0),
+            type=float,
+            alt=tuple,
             descr='''simulation world arena size'''
         ),
 
@@ -83,32 +131,38 @@ class DefaultConfigOptions(Jsonkin):
 
         sd_max_iters=DefaultOption(
             value=10000,
+            type=int,
             alt=None,
             descr='''stochastic descent max iterations'''
         ),
         sd_min_flips=DefaultOption(
             value=1,
+            type=int,
             alt=None,
             descr='''stochastic descent min flipped TT entries by iteration'''
         ),
         sd_max_stalls=DefaultOption(
             value=1,
+            type=int,
             alt=None,
             descr='''-1 -> Adaptive Walk, 0+ -> VNS'''
         ),  
         sd_max_stagnation=DefaultOption(
             value=1250,
+            type=int,
             alt=None,
             descr='''close the algorithm if no further improvement are found after i iteration'''
         ),
         sd_target_score=DefaultOption(
             value=0.0,
+            type=float,
             alt=tuple,
             descr='''value to which reduce the objective function'''
         ), #  
         # sd_target_score_delta=DefaultOption(
         #     value=0.001,
-        #     alt=tuple,
+        # type=Path,    
+        # alt=tuple,
         #     descr='''value to which reduce the objective function'''
         # ), #  
 
@@ -116,69 +170,81 @@ class DefaultConfigOptions(Jsonkin):
 
         sim_run_time_s=DefaultOption(
             value=60,
+            type=int,
             alt=None,
             descr='''execution time of the simulation in seconds'''
         ),
         sim_timestep_ms=DefaultOption(
             value=32,
+            type=int,
             alt=None,
             descr='''simulation Loop synch time in ms'''
         ),
         sim_sensing_interval_ms=DefaultOption(
             value=320,
+            type=int,
             alt=None,
             descr='''execution time of the simulation in milli-seconds'''
         ),
         sim_sensors_thresholds=DefaultOption(
             value={
-                DeviceName.DISTANCE : 0.0,
-                DeviceName.LIGHT : 0.0,
-                DeviceName.LED : 0.0,
-                DeviceName.TOUCH : 0.0,
-                DeviceName.WHEEL_MOTOR : 0.0,
-                DeviceName.WHEEL_POS : 0.0,
-                DeviceName.GPS : 0.0,
+                DeviceName.DISTANCE: 0.0,
+                DeviceName.LIGHT: 0.0,
+                DeviceName.LED: 0.0,
+                DeviceName.TOUCH: 0.0,
+                DeviceName.WHEEL_MOTOR: 0.0,
+                DeviceName.WHEEL_POS: 0.0,
+                DeviceName.GPS: 0.0,
             },
-            alt=None,
+            type=float,
+            alt=dict,
             descr='''sensors threshold to apply as binarization filters'''
         ),
         sim_event_timer_s=DefaultOption(
             value=-1,
+            type=int,
             alt=None,
             descr='''perturbation event triggered after t seconds. if -1 => not triggered.'''
         ),
         sim_light_position=DefaultOption(
             value=Point3D(0.0, 0.0, 0.0),
+            type=Point3D,
             alt=list,
             descr='''origin spawn point for light source'''
         ),
         sim_agent_position=DefaultOption(
             value=Point3D(0.0, 0.0, 0.0),
+            type=Point3D,
             alt=list,
             descr='''origin Spawn point for agents'''
         ), 
         sim_agent_yrot_rad=DefaultOption(
             value=0.0,
+            type=float,
             alt=list,
             descr='''agent spawn orientation'''
         ),
         sim_suppress_logging=DefaultOption(
             value=True,
+            type=bool,
             alt=None,
             descr='''shut the simulation logger unit'''
         ),
         sim_config_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=None,
             descr='''Directory or file where to store the simulation config'''
         ),
         sim_data_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=list,
             descr='''Directory or file where to store the simulation data'''
         ),
         sim_log_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=None,
             descr='''Directory or file where to store the simulation general log'''
         ),
@@ -187,77 +253,94 @@ class DefaultConfigOptions(Jsonkin):
 
         bn_ctrl_model_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=list,
             descr='''Directory or file where to store the bn model'''
         ),
         bn_slct_model_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=None,
             descr='''Directory or file where to store the bn selector model'''
         ),
         bn_n=DefaultOption(
             value=20,
+            type=int,
             alt=None,
             descr='''boolean Network cardinality'''
         ),
         bn_k=DefaultOption(
             value=2,
+            type=int,
             alt=None,
             descr='''boolean Network Node arity'''
         ),
         bn_p=DefaultOption(
             value=0.5,
+            type=float,
             alt=None,
             descr='''truth table value bias'''
         ),
         bn_q=DefaultOption(
             value=0.5,
+            type=float,
             alt=None,
             descr='''bn node intial state bias'''
         ),
         bn_n_inputs=DefaultOption(
             value=8,
+            type=int,
             alt=None,
             descr='''number or List of nodes of the BN to be reserved as inputs'''
         ),
         bn_n_outputs=DefaultOption(
             value=2,
+            type=int,
             alt=None,
             descr='''number or List of nodes of the BN to be reserved as outputs'''
         ),
+        slct_behaviours_map=DefaultOption(
+            value=dict(),
+            type=Path,
+            alt=dict,
+            descr='''mapping attractor -> behaviour bn model path'''
+        ),
         slct_target_n_attractors=DefaultOption(
             value=2,
+            type=int,
             alt=None,
             descr='''number of wanted attractors'''
         ),
         slct_target_transition_rho=DefaultOption(
-            value={
-                'a0': {'a1':0.1}, 
-                'a1': {'a0':0.1}
-            },
-            alt=None,
-            descr='''probability to jump from an attractor to another different from itself.'''
+            value=dict(),
+            type=float,
+            alt=dict,
+            descr='''probability to jump from an attractor to another different from itself.''',
         ),
         # slct_in_attr_map=DefaultOption(
         #     value=[
         #         [False],
         #         [True]
         #     ],
-        #     alt=None,
+        # type=Path,    
+        # alt=None,
         #     descr='''specifify the input values to apply to input nodes for that attractor'''
         # ),
         slct_noise_rho=DefaultOption(
             value=0.1,
+            type=float,
             alt=None,
             descr='''Probability of noise to flip the state of a BN'''
         ),
         # slct_input_step_frac=DefaultOption(
         #     value=1/5,
-        #     alt=None,
+        # type=Path,    
+        # alt=None,
         #     descr='''Fractions of update steps (it) on each which apply inputs on input node.'''
         # ),
         slct_fix_input_steps=DefaultOption(
-            value=float('+inf'),
+            value=1,
+            type=int,
             alt=None,
             descr='''For how many steps the input should be enforced in the network (after each sensing)'''
         ),
@@ -266,31 +349,37 @@ class DefaultConfigOptions(Jsonkin):
 
         eval_agent_spawn_radius_m=DefaultOption(
             value=0.5,
+            type=float,
             alt=None,
             descr='''spawn radius of the agent'''
         ), #
         eval_light_spawn_radius_m=DefaultOption(
             value=0.5,
+            type=float,
             alt=None,
             descr='''spawn radius of the light point'''
         ),
         eval_n_agent_spawn_points=DefaultOption(
             value=1,
+            type=int,
             alt=None,
             descr='''How many agent position to evaluate, If 0 uses always the same point (specified in sim_agent_position) to spawn the agent'''
         ),
         eval_n_light_spawn_points=DefaultOption(
             value=1,
+            type=int,
             alt=None,
             descr='''How many light position to evaluate, If 0 uses always the same point (specified in sim_light_position) to spawn the light'''
         ),
         eval_agent_yrot_start_rad=DefaultOption(
             value=0.0,
+            type=float,
             alt=None,
             descr='''From where to start sampling the yrot angles'''
         ),
         eval_agent_n_yrot_samples=DefaultOption(
             value=6,
+            type=int,
             alt=None,
             descr='''Number of rotation to evaluate If 0 uses always the same value (specified in sim_agent_yrot_rad) to set the agent rotation'''
         ),
@@ -299,22 +388,26 @@ class DefaultConfigOptions(Jsonkin):
 
         plot_positives_threshold=DefaultOption(
             value=2e-06,
+            type=float,
             alt=list,
             descr='''Specify a score threshold under which model are considered "good"'''
         ),
         test_data_path=DefaultOption(
             value=Path('.'),
+            type=Path,
             alt=list,
             descr='''Path where to store / read test data'''
         ),
         test_n_instances=DefaultOption(
             value=1,
+            type=int,
             alt=None,
             descr='''# number of instances of the test cycle for each bn'''
         ), 
         # test_aggr_function=DefaultOption(
         #     value=FunctionWrapper('bncontroller.sim.config::empty'),
-        #     alt=None,
+        # type=Path,    
+        # alt=None,
         #     descr='''how test parameters should be aggregated in the test loop'''
         # ),
         
@@ -322,11 +415,13 @@ class DefaultConfigOptions(Jsonkin):
 
         train_save_suboptimal_models=DefaultOption(
             value=2e-06,
+            type=float,
             alt=tuple,
             descr='''save bn model with score under the specified threshold'''
         ),
         train_generate_only=DefaultOption(
             value=False,
+            type=bool,
             alt=None,
             descr='''Only generate training bn without running SD'''
         )
@@ -411,7 +506,7 @@ class Config(Jsonkin):
 
         options = DefaultConfigOptions.default()
 
-        options.update(self.__normalize(DefaultConfigOptions.options(), **kwargs))
+        options.update(normalize(DefaultConfigOptions.options(), **kwargs))
 
         self.app_output_path = options['app_output_path']
         self.app_core_function = options['app_core_function']
@@ -455,6 +550,7 @@ class Config(Jsonkin):
         self.bn_q = options['bn_q']
         self.bn_n_inputs = options['bn_n_inputs']
         self.bn_n_outputs = options['bn_n_outputs']
+        self.slct_behaviours_map = options['slct_behaviours_map']
         self.slct_target_n_attractors = options['slct_target_n_attractors']
         self.slct_target_transition_rho = options['slct_target_transition_rho']
         # self.slct_in_attr_map = options['slct_in_attr_map']
@@ -483,27 +579,6 @@ class Config(Jsonkin):
 
         pass
 
-    def __normalize(self, defaults: dict, **kwargs):
-
-        norm = dict() 
-
-        for k, v, in kwargs.items():
-            
-            if k in defaults:
-                d, alt = (
-                    (defaults[k].value, defaults[k].alt)
-                    if isinstance(defaults[k], DefaultOption) 
-                    else (defaults[k], None)
-                )
-
-                norm.update(
-                    {k:self.__normalize(d, **v)}
-                    if isinstance(v, dict) and isinstance(d, dict)
-                    else {k: objrepr(v, type(d), alt_type=alt)}
-                )
-
-        return norm
-
     def to_json(self) -> dict:
         return dict((k, jsonrepr(v)) for k, v in vars(self).items())
     
@@ -516,7 +591,7 @@ class Config(Jsonkin):
 
     @staticmethod
     def from_file(fp: Path or str):
-        return Config.from_json(read_json(fp))
+        return Config(**read_json(fp))
 
     @property
     def arena_params(self):
@@ -536,4 +611,3 @@ class Config(Jsonkin):
             I=self.bn_n_inputs,
             O=self.bn_n_outputs
         )
-    

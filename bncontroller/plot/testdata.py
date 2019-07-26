@@ -14,7 +14,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.file.utils import cpaths
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, Config
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
@@ -322,9 +322,7 @@ if __name__ == "__main__":
         action='store_false'
     )
 
-    args, *_ = parse_args(parser=parser)
-
-    # print(args.config.test_data_path)
+    args = parse_args(parser=parser, config_converter=Config.from_file)
 
     data = OrderedDict(**collect_data(
         cpaths(args.config.test_data_path),

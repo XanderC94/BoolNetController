@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from collections import defaultdict
-from bncontroller.file.utils import iso8106
+from bncontroller.file.utils import FROZEN_DATE, check_path
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
 from rpy2.robjects.packages import importr
@@ -10,7 +10,7 @@ rBoolNet = importr('BoolNet')
 rDiffeRenTES = importr('diffeRenTES')
 rJSONlite = importr('jsonlite')
 
-DEFAULT_ATM_WS_PATH = Path(f'./tmp/atm-workspace_{iso8106()}.txt')
+DEFAULT_ATM_WS_PATH = Path(f'./tmp/atm-workspace_{FROZEN_DATE}.txt')
 
 class AttractorsTransitionMatrix(object):
     '''
@@ -27,8 +27,10 @@ class AttractorsTransitionMatrix(object):
         self.N = len(list(filter(lambda x: x, ebnf_str.split('\n')[1:])))
         
         # print(self.N)
+        if not DEFAULT_ATM_WS_PATH.exists():
+            check_path(DEFAULT_ATM_WS_PATH, create_if_file=True)
 
-        Path(DEFAULT_ATM_WS_PATH).write_text(ebnf_str, encoding='UTF-8')
+        DEFAULT_ATM_WS_PATH.write_text(ebnf_str, encoding='UTF-8')
         
         net = rBoolNet.loadNetwork(str(DEFAULT_ATM_WS_PATH))
 
@@ -60,9 +62,12 @@ class AttractorsTransitionMatrix(object):
 
     @property
     def dattractors(self) -> dict:
-        return dict(
-            (f'a{ki}', t) 
-            for ki, t in enumerate(self.attractors)
+        return defaultdict(
+            type(None),
+            [
+                (f'a{ki}', t) 
+                for ki, t in enumerate(self.attractors)
+            ]
         )
 
     def __from_parts(self, atm: dict, attractors: dict):

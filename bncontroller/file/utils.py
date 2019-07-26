@@ -1,7 +1,7 @@
 import datetime
 import re as regx
 from pathlib import Path
-from bncontroller.type.utils import isnotnone, hasnotnone, str2num
+from bncontroller.typeslib.utils import isnotnone, hasnotnone, str2num
 
 FNAME_PATTERN = r'(D?\d{8,}T\d{6,})(?:.*it([+-]?\d+))?(?:.*in([+-]?\d+))?'
 
@@ -17,6 +17,8 @@ def iso8106(format_type=0, ms=0):
         return f'{datetime.datetime.now():%Y%m%dT%H%M%S%f}'[:ms-max_ms]
     else:
         return f'{datetime.datetime.now():%Y%m%dT%H%M%S-%f}'[:ms-max_ms]
+
+FROZEN_DATE = iso8106(ms=3)
 
 def gen_fname(*args, uniqueness = iso8106, ftype='txt', template="{name}_{uniqueness}.{ext}"):
     '''

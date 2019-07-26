@@ -1,7 +1,7 @@
 import time
 
 from bncontroller.sim.utils import GLOBALS
-from bncontroller.file.utils import get_dir
+from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
 from bncontroller.stubs.selector.generation import generate_consistent_bnselector
 
@@ -23,10 +23,11 @@ if __name__ == "__main__":
         print('Failure.')
     else:
         path = get_dir(GLOBALS.bn_slct_model_path, create_if_dir=True) / 'bn_selector_{date}.json'.format(
-            date=GLOBALS.app['date']
+            date=FROZEN_DATE
         )
         write_json(bn, path, indent=True)
         print(f'BN Selector saved in {path}.')
+        
     exit(1)
 
 

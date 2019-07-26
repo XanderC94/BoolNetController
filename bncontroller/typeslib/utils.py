@@ -20,6 +20,3 @@ def str2num(x:str):
             return float(x)
     
     return x
-
-def first(x:list or set):
-    return x[0] if x else None

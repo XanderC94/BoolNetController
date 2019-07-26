@@ -1,7 +1,7 @@
 import random
 import re
 import asyncio
-from bncontroller.type.utils import isnotnone
+from bncontroller.typeslib.utils import isnotnone
 from bncontroller.boolnet.structures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
 
 def bnstates_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = lambda ds: ds.count(0)):
@@ -18,7 +18,12 @@ def bnstates_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = l
 def compact_state(state: dict):
     return [int(v) for k, v in sorted(state.items())]
 
-def binstate(state: dict or list):
+def binstate(state: dict or list) -> str:
+    '''
+    Return a compact strin representation for the given BN state.
+
+    Input can either be an dict or a list.
+    '''
     return ''.join(str(x) for x in (compact_state(state) if isinstance(state, dict) else state))
     
 ################################################################################################
