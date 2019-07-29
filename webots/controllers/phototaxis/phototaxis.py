@@ -7,6 +7,8 @@ from bncontroller.sim.utils import GLOBALS
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
+from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.jsonlib.utils import read_json
 
 print(str(GLOBALS.bn_ctrl_model_path))
 
@@ -17,9 +19,12 @@ if not GLOBALS.sim_suppress_logging:
     logger.suppress(GLOBALS.sim_suppress_logging)
 
 #-------------------------------------------
+bn = OpenBooleanNetwork.from_json(
+        read_json(GLOBALS.bn_ctrl_model_path),        
+    ) 
 
 phototaxist = BNController(
-    model=GLOBALS.bn_ctrl_model_path,
+    model=bn,
     sensing_interval=GLOBALS.sim_sensing_interval_ms, 
     bin_thresholds=GLOBALS.sim_sensors_thresholds, 
     bin_strategies={

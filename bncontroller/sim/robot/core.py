@@ -1,14 +1,15 @@
 import random
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Callable
 from collections import defaultdict
-from bncontroller.jsonlib.utils import read_json, json
 from bncontroller.sim.data import SimulationStepData, Point3D
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.robot.morphology import EPuckMorphology
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.boolean import TRUTH_VALUES
+from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.utils import binstate, compact_state
+from bncontroller.collectionslib.utils import transpose
 
 class Controller(object):
 
@@ -21,51 +22,44 @@ class Controller(object):
 class BNController(Controller):
 
     def __init__(self, 
-            model: OpenBooleanNetwork or Path, 
-            bin_thresholds: dict, bin_strategies: dict,
-            sensing_interval: int):
+            model: OpenBooleanNetwork, 
+            bin_strategies: dict,
+            bin_thresholds: dict, 
+            sensing_interval: int,
+            led_color: int=0xff0000):
 
-        self.__bn = model if isinstance(model, OpenBooleanNetwork) else OpenBooleanNetwork.from_json(read_json(model))
+        self.__bn = model
         self.__bin_strategies = bin_strategies
         self.__bin_thresholds = bin_thresholds
         self.__sensing_interval = sensing_interval
         self.__next_sensing = 0
-        
+
         self.gps_data = []
         self.distance_data = []
         self.light_data = []
         self.touch_data = []
+
+        self.led_color = led_color
     
-    def __call__(self, morphology: EPuckMorphology, step: int, timestep: int) -> SimulationStepData:
+    def __call__(self, morphology: EPuckMorphology, step: int, timestep: int, force_sensing=False) -> SimulationStepData:
 
         # BN update is faster than sensor sampling frequency
+        
+        for k, led in morphology.led_actuators.items():
+            # print(k, led.device)
+            led.device.set(self.led_color)
 
-        if self.__next_sensing == step:
-
+        if self.__next_sensing == 0 or self.__next_sensing == step or force_sensing:
+            
             self.__next_sensing += int(self.__sensing_interval / timestep)
 
             # Retreive Sensors Data
             self.gps_data = [Point3D.from_tuple(g.read()) for g in morphology.GPSs.values()]
 
-            # receiver_data = []
-            
-            # for r in morphology.receiver.values():
-            #     while r.device.getQueueLength() > 0:
-            #         receiver_data.append(r.device.getData())
-            #         r.device.nextPacket()
-            # if receiver_data:
-            #     print(receiver_data)
-            
-            # self.distance_data = [d.device.getValue() for d in morphology.distance_sensors.values()]
             self.light_data = dict((k, l.read()) for k, l in morphology.light_sensors.items())
-            # touch_data = [t.device.getValues() for t in morphology.touch.values()]
-
-            # print(self.gps_data)
-            # print(distance_data)
-            # print(self.light_data)
-            # print(touch_data)
 
         # Apply Binarization Strategies
+        
         bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
             self.light_data, 
             self.__bin_thresholds[DeviceName.LIGHT]
@@ -75,18 +69,13 @@ class BNController(Controller):
         # This should be applied each time on input nodes
         for l in self.__bn.input_nodes:
             self.__bn[l].state = bin_light_data[l]
-            
-            # print(self.__bn.state)
-    
+        
+
         # Update network state
         bn_state = self.__bn.update()
 
-        # print(bn_state)
-
         # Apply Network Output to actuators
-        lv, rv, *_ = [value for l, value in bn_state.items() if l in self.__bn.output_nodes] 
-
-        # print(lv, rv)
+        lv, rv, *_ = [self.__bn[k].state for k in sorted(self.__bn.output_nodes)] 
 
         morphology.wheel_actuators['left'].device.setVelocity(lv)
         morphology.wheel_actuators['right'].device.setVelocity(rv)
@@ -100,73 +89,126 @@ class BNController(Controller):
                 self.touch_data
             )
 
-class DualHBNController(Controller):
+class HBNAController(Controller):
 
     def __init__(self,
-            selector: BoolNetSelector,
+            selector: SelectiveBooleanNetwork,
             behaviours: Dict[str, BNController],
+            bin_strategies : Dict[str, Callable[[dict, float], dict]],
+            bin_thresholds : Dict[str, float],
+            noise_rho: float,
             input_fixation_steps: int,
             sensing_interval: int):
 
         self.__selector = selector
         self.__behaviours = behaviours
 
+        self.__bin_strategies = bin_strategies
+        self.__bin_thresholds = bin_thresholds
+
         self.__attractors = self.__selector.atm.dattractors
         self.__curr_attr = None
         self.__atm = self.__selector.atm.dtableau
 
         self.__bmap = defaultdict(
-            self.__default_behaviour_strategy, 
-            [
-                (binstate(s), self.__behaviours[k])
-                for k, attr in self.__attractors
-                for s in attr
-            ]
-        ) 
+                self.__default_behaviour_strategy,
+                [
+                    (binstate(s), k)
+                    for k, attr in self.__attractors.items()
+                    for s in attr
+                ]
+            )
+        
+        self.__signaled = False
+        self.__signal = random.choice([True, False]) # True # 
+
+        for k in self.__selector.keys:
+            self.__selector[k].state = random.choice([True, False]) # self.__signal # 
 
         self.__sensing_interval = sensing_interval
+        self.__noise_rho = noise_rho
         self.__input_fixation_steps = input_fixation_steps
         self.__next_sensing = 0
         self.__input_fixed_for = 0
 
-        self.__msg_buffer = []
+        self.__light_data = []
 
     def __default_behaviour_strategy(self):
 
         if self.__curr_attr is None:
-            self.__curr_attr = random.choice(self.__attractors.keys())
-            return self.__behaviours[self.__curr_attr]
+            return random.choice([*self.__attractors.keys()])
         else:
-            a = self.__atm[self.__curr_attr].keys()
-            w = self.__atm[self.__curr_attr].values()
-            self.__curr_attr = random.choices(a, w)
-            return self.__behaviours[self.__curr_attr]
+            a, w = transpose(self.__atm[self.__curr_attr].items())
+            return random.choices(a, w)[0]
 
     def __call__(self, morphology: EPuckMorphology, step: int, timestep: int):
 
         # BN update is faster than sensor sampling frequency
+        sensed = False
+        
         if self.__next_sensing == step:
+            
+            sensed = True
 
             self.__next_sensing += int(self.__sensing_interval / timestep)
 
+            # Collect light data            
+            self.light_data = dict((k, l.read()) for k, l in morphology.light_sensors.items())
+
+            # Collect Radio messages
             r = morphology.receivers[-1]
 
             if r.device.getQueueLength() > 0:
                 self.__input_fixed_for = 0
+                self.__signaled = True
+                self.__signal = not self.__signal
+                
                 while r.device.getQueueLength() > 0:
-                    self.__msg_buffer.append(r.device.getData())
                     r.device.nextPacket()
+                
+                print("Env. signal received.")
 
-        if self.__input_fixed_for < self.__input_fixation_steps:
-            for l in self.__selector.input_nodes:
-                self.__selector[l].state = len(self.__msg_buffer) == 0
-                self.__input_fixed_for += 1
-         
-        self.__msg_buffer.clear()
+        if self.__signaled:
+
+            if self.__input_fixed_for < self.__input_fixation_steps:
+                # print('F')
+                for l in self.__selector.input_nodes:
+                    self.__selector[l].state = self.__signal
+                    # print(l, self.__selector[l].state)
+                    self.__input_fixed_for += 1
+            pass
+        else:
+            # Apply random noise
+            # print('Noise')
+
+            # Apply Binarization Strategies
+            bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
+                self.light_data, 
+                self.__bin_thresholds[DeviceName.LIGHT]
+            )
+            
+            noise_rho = max(self.__noise_rho, sum(bin_light_data.values()) / len(bin_light_data))
+
+            k = random.choice(list(range(1, sum(bin_light_data.values()))))
+            
+            nodes = random.choices(self.__selector.keys, k=k)
+            
+            for n in self.__selector.keys:
+                apply_noise = random.choices(TRUTH_VALUES, [noise_rho, 1.0 - noise_rho])[0]
+                
+                if apply_noise:
+                    self.__selector[n].state = not self.__selector[n].state
+            pass
 
         # Update network state
         bn_state = self.__selector.update()
+        self.__curr_attr = self.__bmap[binstate(bn_state)]
+        
+        # print(self.__selector.attractors_input_map)
+        # print(self.__curr_attr)
 
-        attractor = self.__bmap[binstate(bn_state)]
+        cdata = self.__behaviours[self.__curr_attr](morphology, step, timestep, sensed)
 
-        return self.__behaviours[attractor](morphology, step, timestep)
+        setattr(cdata, 'attr', self.__curr_attr)
+
+        return cdata

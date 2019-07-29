@@ -9,6 +9,7 @@ try:
     print('Global Configuration loaded from file...')
 except Exception as ex:
     print('Unable to load Global Config...')
+    print(ex)
     pass
     
 from pprint import pprint
