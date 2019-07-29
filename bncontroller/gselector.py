@@ -3,6 +3,7 @@ import time
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
+from bncontroller.boolnet.atm import DEFAULT_ATM_WS_PATH
 from bncontroller.stubs.selector.generation import generate_consistent_bnselector
 
 ########################################################################### 
@@ -27,7 +28,9 @@ if __name__ == "__main__":
         )
         write_json(bn, path, indent=True)
         print(f'BN Selector saved in {path}.')
-        
+    
+    DEFAULT_ATM_WS_PATH.unlink()
+
     exit(1)
 
 

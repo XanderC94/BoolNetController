@@ -19,7 +19,7 @@ def template_selector_generator(
 
 ###################################################################################
 
-def noisy_update(bn: OpenBooleanNetwork, steps:int, noise_p:float):
+def noisy_update(bn: OpenBooleanNetwork, steps: int, noise_rho: float):
 
     states = []
     # __input_step = 0
@@ -31,7 +31,7 @@ def noisy_update(bn: OpenBooleanNetwork, steps:int, noise_p:float):
         #     for k in bn.input_nodes:
         #         bn[k].state = random.choice([True, False])
 
-        if random.choices([True, False], [noise_p, 1.0 - noise_p])[0]:
+        if random.choices([True, False], [noise_rho, 1.0 - noise_rho])[0]:
 
             node = random.choice(bn.keys)
 

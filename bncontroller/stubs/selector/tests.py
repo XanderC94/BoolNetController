@@ -5,7 +5,7 @@ import itertools
 import random
 from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
-from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
 from bncontroller.collectionslib.utils import first
 from bncontroller.stubs.selector.utils import noisy_update
@@ -84,7 +84,7 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
         
     return attractor_keys
 
-def test_attraction_basins(bn: BoolNetSelector, fix_input_for: int):
+def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
     '''
     Test whether the given Boolean Network fixate itself
     on a specific attractor once a input value is settled
@@ -109,6 +109,6 @@ def test_attraction_basins(bn: BoolNetSelector, fix_input_for: int):
 
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once
-    return len(set(map(first, bn.attractors_input_map))) == len(bn.atm.attractors)
+    return len(set(bn.attractors_input_map.values())) == len(bn.atm.attractors)
 
 ##############################################################################

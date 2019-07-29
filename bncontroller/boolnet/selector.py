@@ -1,8 +1,10 @@
 from collections import defaultdict
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNode
 
-class BoolNetSelector(OpenBooleanNetwork):
-
+class SelectiveBooleanNetwork(OpenBooleanNetwork):
+    '''
+    A BN that is trained to associate 1 or more sets of input values to a specific attractor
+    '''
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -29,7 +31,7 @@ class BoolNetSelector(OpenBooleanNetwork):
     def from_json(json:dict):
         
         nodes = [BooleanNode.from_json(node) for node in json['nodes']]
-        bnsel = BoolNetSelector(nodes, json['inputs'], json['outputs'])
+        bnsel = SelectiveBooleanNetwork(nodes, json['inputs'], json['outputs'])
         bnsel.attractors_input_map = json['attractors_input_map']
 
 

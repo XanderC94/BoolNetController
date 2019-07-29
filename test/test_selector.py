@@ -7,12 +7,12 @@ from bncontroller.stubs.selector.utils import template_selector_generator, noisy
 from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator, binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBooleanNetwork
-from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.collectionslib.utils import flat, transpose
 from bncontroller.jsonlib.utils import read_json
 
-class TestBooleNetSelectorGenerator(unittest.TestCase):
+class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
 
     def test_attractor_search(self):
         
@@ -74,7 +74,7 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
         states = noisy_update(
             bn, 
             steps=max(map(len, atm.attractors))*len(bn)*10, 
-            noise_p=0.2
+            noise_rho=0.2
             # input_step=max(map(len, atm.attractors)) * 2,
         )
 
@@ -95,7 +95,7 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
         def D(*args):
             return not(args[0]) and args[1]
 
-        return BoolNetSelector(
+        return SelectiveBooleanNetwork(
             [
                 BooleanNode('0', predecessors=['2', '3'], bf=BooleanFunction(2, result_generator=A)), # A
                 BooleanNode('1', predecessors=['0', '1'], bf=BooleanFunction(2, result_generator=B)), # B
@@ -211,21 +211,21 @@ class TestBooleNetSelectorGenerator(unittest.TestCase):
         self.assertFalse(flatatm == flatatm2)
 
     def test_selector_constraint_1(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
+        bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(constraints.test_attractors_number(bn, 2))
         self.assertFalse(constraints.test_attractors_number(bn, 4))
 
     def test_selector_constraint_2(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
+        bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(constraints.test_attractors_transitions(bn, {
             'a0':{'a1': 0.3},
             'a1':{'a0': 0.3},
         }))
 
     def test_selector_constraint_3(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
+        bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(constraints.test_bn_state_space_omogeneity(bn, 0.1))
     
     def test_selector_constraint_4(self):
-        bn = BoolNetSelector.from_json(read_json('./test/bn_for_test.json'))
+        bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(constraints.test_attraction_basins(bn, 5))

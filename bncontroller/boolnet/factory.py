@@ -1,7 +1,7 @@
 import random
 from typing import Callable
 from bncontroller.boolnet.structures import BooleanNode, BooleanNetwork, OpenBooleanNetwork
-from bncontroller.boolnet.selector import BoolNetSelector
+from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.function import BooleanFunction
 from bncontroller.boolnet.boolean import Boolean, r_bool
 from bncontroller.boolnet.utils import random_neighbors_generator
@@ -106,11 +106,11 @@ class RBNFactory(object):
 
         return OpenBooleanNetwork(nodes, input_nodes=self.input_nodes, output_nodes=self.output_nodes)
 
-    def new_selector(self) -> BoolNetSelector:
+    def new_selector(self) -> SelectiveBooleanNetwork:
 
         nodes = self.__r_connect_nodes(self.__build_nodes())
 
-        return BoolNetSelector(nodes, input_nodes=self.input_nodes, output_nodes=self.output_nodes)
+        return SelectiveBooleanNetwork(nodes, input_nodes=self.input_nodes, output_nodes=self.output_nodes)
 
 #######################################################################################
 
