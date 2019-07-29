@@ -65,10 +65,12 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
     After this lapse of steps they set free to use the state value 
     given by the update procedure.
     '''
+    
     attractor_keys = list()
     states = []
     input_fixed_for = 0
     it = 0
+
     while not attractor_keys:
 
         if input_fixed_for < fix_input_for:
@@ -96,6 +98,7 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
 
     for i in inputs:
 
+        # Starts from a random state
         for node in bn.nodes:
             node.state = random.choice(TRUTH_VALUES)
 
@@ -107,6 +110,7 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
         else:
             return False
 
+    # print(bn.attractors_input_map)
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once
     return len(set(bn.attractors_input_map.values())) == len(bn.atm.attractors)

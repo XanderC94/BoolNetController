@@ -8,15 +8,29 @@ import bncontroller.file.utils as futils
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.boolnet.structures import OpenBooleanNetwork
+from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
+from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 
 #########################################################################################################
 
 MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)?bn_(?:subopt_)?'+futils.FNAME_PATTERN+'.json'
 
+def find_bn_type(jsonrepr: dict):
+
+    def go(jsonrepr: set):
+        if 'attractors_input_map' in jsonrepr:
+            return SelectiveBooleanNetwork
+        elif 'input' in jsonrepr and 'output' in jsonrepr:
+            return OpenBooleanNetwork
+        else:
+            return BooleanNetwork
+
+    return go(jsonrepr.keys()).from_json(jsonrepr)
+
 def collect_bn_models(
-        paths: Iterable or Path, 
+        paths: Iterable or Path,
+        bn_deserializer=find_bn_type,
         ffilter=lambda x: x.is_file() and re.search(MODEL_NAME_PATTERN, x.name)
     ):
 
@@ -28,6 +42,7 @@ def collect_bn_models(
 
             f, bn, *_ = collect_bn_models(
                 path.iterdir(),
+                bn_deserializer=bn_deserializer,
                 ffilter=ffilter
             )
 
@@ -37,7 +52,7 @@ def collect_bn_models(
         elif ffilter(path):
             
             name = path.with_suffix('').name
-            bns[name] = OpenBooleanNetwork.from_json(read_json(path))
+            bns[name] = bn_deserializer(read_json(path))
             files[name] = path
   
     return files, bns
