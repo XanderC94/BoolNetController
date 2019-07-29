@@ -2,8 +2,7 @@
 Configuration class and utils module.
 '''
 from pathlib import Path
-from typing import List, Dict, Tuple
-from collections import namedtuple, defaultdict
+from collections import namedtuple
 from bncontroller.jsonlib.utils import Jsonkin, FunctionWrapper
 from bncontroller.jsonlib.utils import read_json, jsonrepr, objrepr, write_json
 from bncontroller.collectionslib.utils import first
@@ -37,21 +36,24 @@ def normalize(defaults: dict, **kwargs):
         for k, v, in kwargs.items():
             norm.update({k: 
                 normalize_internal_dict(d, t, alt, **v)
-                if isinstance(v, alt) and isinstance(d, alt)
-                else t(v)
+                if isinstance(v, dict) and isinstance(d, dict)
+                else objrepr(v, t, alt_type=alt)
             })
     
         return norm
 
     for k, v, in kwargs.items():
+        # print(k)
         try:
             d, t, alt = defaults[k].value, defaults[k].type, defaults[k].alt
 
-            norm.update({k: 
-                normalize_internal_dict(d, t, alt, **v)
-                if isinstance(v, dict) and isinstance(d, dict)
-                else objrepr(v, t, alt_type=alt)
-            })
+            # norm.update({k: 
+            #     normalize_internal_dict(d, t, alt, **v)
+            #     if isinstance(v, dict) and isinstance(d, dict)
+            #     else objrepr(v, t, alt_type=alt)
+            # })
+
+            norm.update({k: objrepr(v, t, alt_type=alt)})
 
         except KeyError as ke:
             pass
@@ -66,7 +68,7 @@ class DefaultConfigOptions(Jsonkin):
         app_output_path=DefaultOption(
             value=Path('.'),
             type=Path,
-            alt=list,
+            alt=None,
             descr='''Directory or file where to store the simulation general log'''
         ),
         app_core_function=DefaultOption(
@@ -99,7 +101,7 @@ class DefaultConfigOptions(Jsonkin):
         webots_launch_opts=DefaultOption(
             value=["--mode=fast", "--batch", "--minimize"],
             type=str,
-            alt=list,
+            alt=None,
             descr='''simulator command line arguements'''
         ),
         webots_quit_on_termination=DefaultOption(
@@ -109,9 +111,9 @@ class DefaultConfigOptions(Jsonkin):
             descr='''quit simulator after simulation ends'''
         ),
         webots_nodes_defs=DefaultOption(
-            value=defaultdict(str),
+            value=dict(),
             type=str,
-            alt=lambda **kwargs: defaultdict(str, **kwargs),
+            alt=dict,
             descr='''simulation world node definitions (node custom names)'''
         ),
         webots_agent_controller=DefaultOption(
@@ -159,13 +161,7 @@ class DefaultConfigOptions(Jsonkin):
             alt=tuple,
             descr='''value to which reduce the objective function'''
         ), #  
-        # sd_target_score_delta=DefaultOption(
-        #     value=0.001,
-        # type=Path,    
-        # alt=tuple,
-        #     descr='''value to which reduce the objective function'''
-        # ), #  
-
+        
         # Simulation Control Options #
 
         sim_run_time_s=DefaultOption(
@@ -209,19 +205,19 @@ class DefaultConfigOptions(Jsonkin):
         sim_light_position=DefaultOption(
             value=Point3D(0.0, 0.0, 0.0),
             type=Point3D,
-            alt=list,
+            alt=None,
             descr='''origin spawn point for light source'''
         ),
         sim_agent_position=DefaultOption(
             value=Point3D(0.0, 0.0, 0.0),
             type=Point3D,
-            alt=list,
+            alt=None,
             descr='''origin Spawn point for agents'''
         ), 
         sim_agent_yrot_rad=DefaultOption(
             value=0.0,
             type=float,
-            alt=list,
+            alt=None,
             descr='''agent spawn orientation'''
         ),
         sim_suppress_logging=DefaultOption(
@@ -239,7 +235,7 @@ class DefaultConfigOptions(Jsonkin):
         sim_data_path=DefaultOption(
             value=Path('.'),
             type=Path,
-            alt=list,
+            alt=None,
             descr='''Directory or file where to store the simulation data'''
         ),
         sim_log_path=DefaultOption(
@@ -254,7 +250,7 @@ class DefaultConfigOptions(Jsonkin):
         bn_ctrl_model_path=DefaultOption(
             value=Path('.'),
             type=Path,
-            alt=list,
+            alt=None,
             descr='''Directory or file where to store the bn model'''
         ),
         bn_slct_model_path=DefaultOption(
@@ -291,13 +287,13 @@ class DefaultConfigOptions(Jsonkin):
             value=8,
             type=int,
             alt=None,
-            descr='''number or List of nodes of the BN to be reserved as inputs'''
+            descr='''number of nodes of the BN to be reserved as inputs'''
         ),
         bn_n_outputs=DefaultOption(
             value=2,
             type=int,
             alt=None,
-            descr='''number or List of nodes of the BN to be reserved as outputs'''
+            descr='''number of nodes of the BN to be reserved as outputs'''
         ),
         slct_behaviours_map=DefaultOption(
             value=dict(),
@@ -389,13 +385,13 @@ class DefaultConfigOptions(Jsonkin):
         plot_positives_threshold=DefaultOption(
             value=2e-06,
             type=float,
-            alt=list,
+            alt=None,
             descr='''Specify a score threshold under which model are considered "good"'''
         ),
         test_data_path=DefaultOption(
             value=Path('.'),
             type=Path,
-            alt=list,
+            alt=None,
             descr='''Path where to store / read test data'''
         ),
         test_n_instances=DefaultOption(
@@ -403,7 +399,7 @@ class DefaultConfigOptions(Jsonkin):
             type=int,
             alt=None,
             descr='''# number of instances of the test cycle for each bn'''
-        ), 
+        ),
         # test_aggr_function=DefaultOption(
         #     value=FunctionWrapper('bncontroller.sim.config::empty'),
         # type=Path,    
