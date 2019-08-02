@@ -11,11 +11,11 @@ def step1_evaluation(bn: SelectiveBooleanNetwork, tna: int, atpm: dict, n_rho: f
             lambda o: constraints.test_bn_state_space_omogeneity(o, n_rho)
         ])
 
-def step2_evaluation(bn: SelectiveBooleanNetwork, fixed_input_steps: int):
+def step2_evaluation(bn: SelectiveBooleanNetwork, fixed_input_steps: int, executor=None):
 
     if bn is not None:
         c4 = constraints.test_attraction_basins(
-            bn, fix_input_for=fixed_input_steps
+            bn, fix_input_for=fixed_input_steps, executor=executor
         )
         if c4:
             bn.attractors_input_map = c4

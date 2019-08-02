@@ -4,8 +4,9 @@ from pathlib import Path
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.file.utils import get_dir, iso8106, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
-from bncontroller.stubs.selector.generation import generate_consistent_bnselector
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
+
+from multiprocessing import Pool, cpu_count
 
 ########################################################################### 
 
@@ -27,6 +28,16 @@ if __name__ == "__main__":
             )
         )
 
+    ##############################################################
+
+    NP = cpu_count()
+
+    pool = Pool(processes=NP)
+    
+    mapper = lambda f, p: pool.imap_unordered(f, p, chunksize=2*NP)
+
+    ##############################################################
+
     toiter = lambda x: x if isinstance(x, (list, tuple)) else list([x])
 
     Ns, Ks, Ps, Qs, Is, Os = tuple(map(toiter, GLOBALS.bn_params))
@@ -39,7 +50,7 @@ if __name__ == "__main__":
     
     for N, K, P, Q, I, O, tRho, nRho in params:
 
-        GLOBALS.bn_n, GLOBALS.bn_k, GLOBALS.bn_p, GLOBALS.bn_q, GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs = N, K, P, Q, I, O
+        GLOBALS.bn_params = N, K, P, Q, I, O
 
         if not isinstance(tRho, dict):
             GLOBALS.slct_target_transition_rho = {
@@ -51,7 +62,7 @@ if __name__ == "__main__":
         
         t = time.perf_counter()
 
-        bn = GLOBALS.app_core_function()
+        bn = GLOBALS.app_core_function(mapper)
 
         logger.info(time.perf_counter() - t)
 

@@ -91,10 +91,18 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
 
 ##############################################
 
-def __test_state(data: tuple):
+def __test_state(params: tuple):
+    
+    bnjson, s, i, fi = params
 
-    s, i = data
-
+    if 'bn' not in globals():
+        global bn, virgin
+        virgin = bnjson
+        bn = SelectiveBooleanNetwork.from_json(bnjson)
+    elif bnjson != virgin:
+        virgin = bnjson
+        bn = SelectiveBooleanNetwork.from_json(bnjson)
+        
     for j, node in enumerate(bn.nodes):
         node.state = s[j]
 
@@ -103,13 +111,7 @@ def __test_state(data: tuple):
     # Only one attractor shall appear for each input in absence of noise
     return binstate(i), a[0][0] if len(a) == 1 else None
 
-def __init_process(d: dict):
-    global bn, fi
-
-    bn = SelectiveBooleanNetwork.from_json(d['bn'])
-    fi = d['fi']
-
-def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
+def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int, executor=None):
     '''
     Test whether the given Boolean Network fixate itself
     on a specific attractor once a input value is settled
@@ -126,7 +128,7 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
 
     attrs = set()
     
-    if 2**len(bn) / NP < 1: # 2**8-1: #
+    if executor is None or 2**len(bn) / NP < 2**5: #
 
         for s, i in params:
         
@@ -140,28 +142,19 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
                 attrs.add((binstate(i), a[0][0]))
             else:
                 return False
+
     else:   
-
-        man = Manager()
-
-        # Shared json repr of the BN 
-        # in order to not waste compute time
-        # by serializing and deserializing the BN
-        d = man.dict(
-            bn=bn.to_json(),
-            fi=fix_input_for
+        
+        params = map(
+            lambda x: (bn.to_json(), x[0], x[1], fix_input_for),
+            params
         )
 
-        with Pool(processes=NP, initializer=__init_process, initargs=(d, )) as executor:
-
-            attrs = set(executor.map(
-                __test_state, 
-                params,
-                chunksize=NP
-            ))
-        
-        man.shutdown()
-    
+        attrs = set(executor(
+            __test_state, 
+            params
+        ))
+           
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once
     return dict(attrs) if len(attrs) == len(bn.atm.attractors) else False 

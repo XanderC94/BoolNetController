@@ -1,7 +1,7 @@
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.boolnet.factory import generate_rbn, RBNFactory, r_bool
 
-def generate_simple_rbn():
+def generate_simple_rbn(*args):
     
     N, K, P, I, O = GLOBALS.bn_params
     

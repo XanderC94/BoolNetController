@@ -9,15 +9,26 @@ from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 
+from multiprocessing import Pool, cpu_count
+
+########################################################################### 
+    
 ########################################################################### 
 
 if __name__ == "__main__":
     
     load_global_config()
 
+    NP = cpu_count()
+
+    pool = Pool(processes=NP)
+    
+    mapper = lambda f, p: pool.imap_unordered(f, p, chunksize=2*NP)
+
     for path in cpaths(GLOBALS.bn_ctrl_model_path):
         
         print(path)
+
         bnjson = read_json(path)
         
         bn = SelectiveBooleanNetwork.from_json(bnjson)
@@ -31,8 +42,9 @@ if __name__ == "__main__":
         print(time.perf_counter() - t)
         
         t = time.perf_counter()
-        c4 = constraints.test_attraction_basins(bn, GLOBALS.slct_fix_input_steps)
+        c4 = constraints.test_attraction_basins(bn, GLOBALS.slct_fix_input_steps, executor=mapper)
         print(time.perf_counter() - t)
 
         print(c1, c2, c3, bool(c4), end='\n\n')
-            
+    
+    pool.close()

@@ -627,3 +627,15 @@ class Config(Jsonkin):
             I=self.bn_n_inputs,
             O=self.bn_n_outputs
         )
+    
+    @bn_params.setter
+    def bn_params(self, params: BNParams or tuple):
+        
+        N, K, P, Q, I, O = params
+
+        self.bn_n = N
+        self.bn_k = K
+        self.bn_p = P
+        self.bn_q = Q
+        self.bn_n_inputs = I 
+        self.bn_n_outputs = O

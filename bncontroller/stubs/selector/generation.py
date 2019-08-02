@@ -5,7 +5,7 @@ from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.search.genntest import GenerateNTest
 from bncontroller.sim.utils import GLOBALS
 
-def generate_consistent_bnselector() -> SelectiveBooleanNetwork:
+def generate_consistent_bnselector(executor=None) -> SelectiveBooleanNetwork:
 
     bn_params = GLOBALS.bn_params
     
@@ -19,7 +19,7 @@ def generate_consistent_bnselector() -> SelectiveBooleanNetwork:
 
     gnt = GenerateNTest(
         sol_generator=lambda: generate_rbn(generator.new_selector, force_consistency=True),
-        sol_test=lambda sol: step1_evaluation(sol, na, at_rhos, n_rho) and step2_evaluation(sol, fixed_in_steps),
+        sol_test=lambda sol: step1_evaluation(sol, na, at_rhos, n_rho) and step2_evaluation(sol, fixed_in_steps, executor),
         sol_evaluator=lambda score: score
     )
 
