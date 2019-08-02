@@ -16,7 +16,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.file.utils import cpaths
-from bncontroller.sim.utils import GLOBALS, Config, Point3D
+from bncontroller.sim.utils import GLOBALS, Config, Point3D, load_global_config
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
@@ -34,117 +34,117 @@ def meta_str(info: dict):
 
 def plot_data(data: dict, infos: dict, positives_threshold: float):
 
-    # keys = [
-    #     f'{k}\n{meta_str(infos[k])}'
-    #     for k in data
-    # ]
+    keys = [
+        f'{k}\n{meta_str(infos[k])}'
+        for k in data
+    ]
 
-    # # # Model Tests -- Scores distribution #
+    # # Model Tests -- Scores distribution #
     
-    # bp1fig, bp1ax = plot.boxplot(
-    #     y=list(data[k]['apt_score'] - data[k]['pt_score'] for k in data),
-    #     x=keys,
-    #     window=f'test_delta_score_boxplot',
-    #     title='Model Tests -- APT-PT Delta scores distribution (Higher is Better)',
-    #     xlabel='Model',
-    #     ylabel='Score',
-    #     ylims=[-0.05e-06, 1e-06]
-    # )
+    bp1fig, bp1ax = plot.boxplot(
+        y=list(data[k]['apt_score'] - data[k]['pt_score'] for k in data),
+        x=keys,
+        window=f'test_delta_score_boxplot',
+        title='Model Tests -- APT-PT Delta scores distribution (Higher is Better)',
+        xlabel='Model',
+        ylabel='Score',
+        ylims=[-0.05e-06, 1e-06]
+    )
 
-    # bp11fig, bp11ax = plot.boxplot(
-    #     y=list(data[k]['pt_score'] for k in data),
-    #     x=keys,
-    #     window=f'test_pt_score_boxplot',
-    #     title='Model Tests -- PT scores distribution (Lower is Better)',
-    #     xlabel='Model',
-    #     ylabel='Score',
-    #     ylims=[-0.05e-06, 1e-06]
-    # )
+    bp11fig, bp11ax = plot.boxplot(
+        y=list(data[k]['pt_score'] for k in data),
+        x=keys,
+        window=f'test_pt_score_boxplot',
+        title='Model Tests -- PT scores distribution (Lower is Better)',
+        xlabel='Model',
+        ylabel='Score',
+        ylims=[-0.05e-06, 1e-06]
+    )
 
-    # bp12fig, bp12ax = plot.boxplot(
-    #     y=list(data[k]['apt_score'] - data[k]['pt_score'] for k in data),
-    #     x=keys,
-    #     window=f'test_apt_score_boxplot',
-    #     title='Model Tests -- APT scores distribution (High is Better)',
-    #     xlabel='Model',
-    #     ylabel='Score',
-    #     ylims=[-0.05e-06, 1e-06]
-    # )
+    bp12fig, bp12ax = plot.boxplot(
+        y=list(data[k]['apt_score'] - data[k]['pt_score'] for k in data),
+        x=keys,
+        window=f'test_apt_score_boxplot',
+        title='Model Tests -- APT scores distribution (High is Better)',
+        xlabel='Model',
+        ylabel='Score',
+        ylims=[-0.05e-06, 1e-06]
+    )
 
-    # # Model Tests -- rDist distribution #
+    # Model Tests -- rDist distribution #
 
-    # bp2fig, bp2ax = plot.boxplot(
-    #     y=list(data[k]['apt_fdist'] - data[k]['pt_fdist'] for k in data),
-    #     x=keys,
-    #     window=f'test_delta_fDist_boxplot',
-    #     title='Model Tests -- APT-PT Delta final Distance distribution (Positive is Better)',
-    #     xlabel='Model',
-    #     ylabel='PT Distance (m)',
-    #     ylims=[-0.25, 5]
+    bp2fig, bp2ax = plot.boxplot(
+        y=list(data[k]['apt_fdist'] - data[k]['pt_fdist'] for k in data),
+        x=keys,
+        window=f'test_delta_fDist_boxplot',
+        title='Model Tests -- APT-PT Delta final Distance distribution (Positive is Better)',
+        xlabel='Model',
+        ylabel='PT Distance (m)',
+        ylims=[-0.25, 5]
 
-    # )
+    )
 
-    # bp21fig, bp21ax = plot.boxplot(
-    #     y=list(data[k]['pt_fdist'] for k in data),
-    #     x=keys,
-    #     window=f'test_pt_fDist_boxplot',
-    #     title='Model Tests -- PT final Distance distribution (Less is Better)',
-    #     xlabel='Model',
-    #     ylabel='PT Distance (m)',
-    #     ylims=[-0.25, 5]
+    bp21fig, bp21ax = plot.boxplot(
+        y=list(data[k]['pt_fdist'] for k in data),
+        x=keys,
+        window=f'test_pt_fDist_boxplot',
+        title='Model Tests -- PT final Distance distribution (Less is Better)',
+        xlabel='Model',
+        ylabel='PT Distance (m)',
+        ylims=[-0.25, 5]
 
-    # )
+    )
 
-    # bp22fig, bp22ax = plot.boxplot(
-    #     y=list(data[k]['apt_fdist'] for k in data),
-    #     x=keys,
-    #     window=f'test_apt_fDist_boxplot',
-    #     title='Model Tests -- APT final Distance distribution (Higher is Better)',
-    #     xlabel='Model',
-    #     ylabel='APT Distance (m)',
-    #     ylims=[-0.25, 5]
+    bp22fig, bp22ax = plot.boxplot(
+        y=list(data[k]['apt_fdist'] for k in data),
+        x=keys,
+        window=f'test_apt_fDist_boxplot',
+        title='Model Tests -- APT final Distance distribution (Higher is Better)',
+        xlabel='Model',
+        ylabel='APT Distance (m)',
+        ylims=[-0.25, 5]
 
-    # )
+    )
     
-    # # # Model Tests -- TP / FP #
+    # # Model Tests -- TP / FP #
 
-    # thresholds=(
-    #     [positives_threshold] 
-    #     if isinstance(positives_threshold, float) 
-    #     else positives_threshold
-    # )
+    thresholds=(
+        [positives_threshold] 
+        if isinstance(positives_threshold, float) 
+        else positives_threshold
+    )
 
-    # tb1fig, tb1ax = plot.tbars(
-    #     y=[
-    #         [sum(s < t for s in data[k]['pt_score']) / len(data[k]) for t in thresholds]
-    #         for k in data
-    #     ],
-    #     x=keys,
-    #     thresholds=thresholds,
-    #     window=f'test_pt_positives_bars',
-    #     title=f'Model Tests -- PT Positives by Thresholds -- score < {thresholds}',
-    #     xlabel='Model',
-    #     ylabel='P (%)',
-    #     ylims=[0, 1.1],
-    #     legend_label_fmt='score < {k}'
-    # )
+    tb1fig, tb1ax = plot.tbars(
+        y=[
+            [sum(s < t for s in data[k]['pt_score']) / len(data[k]) for t in thresholds]
+            for k in data
+        ],
+        x=keys,
+        thresholds=thresholds,
+        window=f'test_pt_positives_bars',
+        title=f'Model Tests -- PT Positives by Thresholds -- score < {thresholds}',
+        xlabel='Model',
+        ylabel='P (%)',
+        ylims=[0, 1.1],
+        legend_label_fmt='score < {k}'
+    )
 
-    # tb2fig, tb2ax = plot.tbars(
-    #     y=[
-    #         [sum(s > t for s in data[k]['apt_score']) / len(data[k]) for t in thresholds]
-    #         for k in data
-    #     ],
-    #     x=keys,
-    #     thresholds=thresholds,
-    #     window=f'test_apt_positives_bars',
-    #     title=f'Model Tests -- APT Positives by Thresholds -- score > {thresholds}',
-    #     xlabel='Model',
-    #     ylabel='P (%)',
-    #     ylims=[0, 1.1],
-    #     legend_label_fmt='score > {k}'
-    # )
+    tb2fig, tb2ax = plot.tbars(
+        y=[
+            [sum(s > t for s in data[k]['apt_score']) / len(data[k]) for t in thresholds]
+            for k in data
+        ],
+        x=keys,
+        thresholds=thresholds,
+        window=f'test_apt_positives_bars',
+        title=f'Model Tests -- APT Positives by Thresholds -- score > {thresholds}',
+        xlabel='Model',
+        ylabel='P (%)',
+        ylims=[0, 1.1],
+        legend_label_fmt='score > {k}'
+    )
 
-    # plotter.show()
+    plotter.show()
     
     # # # Model Tests -- Scores / Initial Distance distribution #
     
@@ -267,6 +267,8 @@ def get_data(f: Path, pattern:str, uniqueness=3, parts=['%s','%s','%s']):
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     parser = argparse.ArgumentParser('Test Data plotter arguments parser.')
 
     parser.add_argument(

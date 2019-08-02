@@ -1,7 +1,7 @@
 import time
 import itertools
 from pathlib import Path
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.file.utils import get_dir, iso8106, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
 from bncontroller.stubs.selector.generation import generate_consistent_bnselector
@@ -11,6 +11,8 @@ from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactor
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     GLOBALS.app['mode'] = 'generate'
 
     if GLOBALS.sim_suppress_logging:

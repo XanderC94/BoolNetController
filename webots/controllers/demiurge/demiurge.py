@@ -3,8 +3,12 @@
 # You may need to import some classes of the controller module. Ex:
 #  from controller import Robot, LED, DistanceSensor
 from controller import Supervisor
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.boolnet.boolean import r_bool
+
+#-------------------------------------------
+
+load_global_config()
 
 #-------------------------------------------
 

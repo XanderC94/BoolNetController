@@ -4,12 +4,16 @@ import bncontroller.sim.robot.binarization as bin_strategies
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.robot.core import BNController, HBNAController
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
+
+#-------------------------------------------
+
+load_global_config()
 
 # print(os.getcwd())
 # print(GLOBALS.slct_behaviours_map)

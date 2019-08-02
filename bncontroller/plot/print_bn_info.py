@@ -2,13 +2,15 @@
 from pathlib import Path
 from pandas import DataFrame
 from pprint import pprint
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.file.utils import get_dir
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     for path in get_dir(GLOBALS.bn_ctrl_model_path).iterdir():
         
         if path.is_file():

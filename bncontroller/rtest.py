@@ -6,7 +6,7 @@ from collections.abc import Iterable
 
 import bncontroller.file.utils as futils
 from bncontroller.sim.config import Config
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.jsonlib.utils import read_json, jsonrepr
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
@@ -73,6 +73,8 @@ def check_config(config: Config):
 if __name__ == "__main__":
 
     ### Load Configuration ########################################################
+
+    load_global_config()
 
     check_config(GLOBALS)
 

@@ -3,10 +3,14 @@
 import bncontroller.sim.robot.binarization as bin_strategies
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.core import BNController
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.robot.utils import DeviceName
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
+
+#-------------------------------------------
+
+load_global_config()
 
 print(str(GLOBALS.bn_ctrl_model_path))
 

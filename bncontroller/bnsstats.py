@@ -4,7 +4,7 @@ from pandas import DataFrame
 import bncontroller.stubs.selector.constraints as constraints
 from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.boolnet.factory import generate_rbn
@@ -13,6 +13,8 @@ from bncontroller.boolnet.factory import generate_rbn
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     nAs= [2]
     Ns = [5, 10]
     Ks = [2, 3]

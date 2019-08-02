@@ -4,12 +4,14 @@ from pathlib import Path
 import bncontroller.stubs.utils as stub_utils
 from bncontroller.file.utils import cpaths
 from bncontroller.jsonlib.utils import read_json, write_json
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.rtest import find_bn_type
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     if isinstance(GLOBALS.bn_ctrl_model_path, list) or GLOBALS.bn_ctrl_model_path.is_dir():
         raise Exception('Model path should be a file.')
     

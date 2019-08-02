@@ -4,7 +4,7 @@ from pandas import DataFrame
 import bncontroller.stubs.selector.constraints as constraints
 from bncontroller.file.utils import get_dir, FROZEN_DATE, cpaths
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
@@ -13,6 +13,8 @@ from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     for path in cpaths(GLOBALS.bn_ctrl_model_path):
         
         print(path)

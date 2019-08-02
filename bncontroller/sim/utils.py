@@ -3,10 +3,11 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from singleton_decorator import singleton
-from bncontroller.jsonlib.utils import jsonrepr, write_json, read_json, FunctionWrapper
-from bncontroller.file.utils import FROZEN_DATE, gen_fname, get_dir
-from bncontroller.sim.config import Config
 from bncontroller.sim.data import Axis, Quadrant, Point3D, r_point3d
+from bncontroller.sim.config import Config
+from bncontroller.file.utils import FROZEN_DATE, gen_fname, get_dir
+from bncontroller.parse.utils import parse_args
+from bncontroller.jsonlib.utils import jsonrepr, write_json, read_json, FunctionWrapper
 
 ##########################################################################################
 
@@ -158,25 +159,31 @@ class Globals(Config):
 
 GLOBALS : Globals = Globals()
 
+def load_global_config():
+    
+    # import time
+    # from pprint import pprint
+
+    try:
+        # t = time.perf_counter()
+        GLOBALS.config = parse_args().config
+        print('Global Configuration loaded from file...')
+        # print(time.perf_counter() - t)
+        # pprint(vars(GLOBALS), indent=4)
+
+    except Exception as ex:
+        print('Unable to load Global Config...')
+        print(ex)
+        exit(1)
+    
+    return GLOBALS
+        
 ###########################################################################################
 
 if __name__ == "__main__":
 
-    # write_json(Config(), './config_template.json')
-    # GLOBALS
-
-    # GLOBALS.webots_nodes_defs = {
-    #     "PointLight": "Fire",
-    #     "WorldInfo": "Hyperuranium",
-    #     "E-puck": "Plato",
-    #     "RectangleArena": "Cave",
-    #     "Robot": "Demiurge",
-    #     "Emitter": "DemiurgeEmitter",
-    #     "Receiver": "DemiurgeReceiver"
-    # }
     import time, json, pprint, importlib
     from bncontroller.parse.utils import parse_args
-    # from bncontroller.sim.utils import GLOBALS
     from argparse import ArgumentParser
     from singleton_decorator import singleton
     import statistics

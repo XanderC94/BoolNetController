@@ -14,7 +14,7 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.file.utils import cpaths
-from bncontroller.sim.utils import GLOBALS, Config
+from bncontroller.sim.utils import Config
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap

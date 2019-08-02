@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import transpose
 from bncontroller.file.utils import cpaths, get_dir
-from bncontroller.sim.utils import GLOBALS, Config
+from bncontroller.sim.utils import GLOBALS, Config, load_global_config
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
 
@@ -73,6 +73,8 @@ def plot_constraints(title: str, xs: list, ys:list, size_ths=0.5):
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     path = get_dir(GLOBALS.bn_ctrl_model_path / 'stats/data', create_if_dir=True)
 
     data = dict()

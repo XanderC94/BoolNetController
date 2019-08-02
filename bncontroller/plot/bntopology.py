@@ -4,7 +4,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plotter
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.jsonlib.utils import read_json
 
 def __nodes_std_positioning(I, H, O, ydim=(25, 0, -25)):
@@ -102,6 +102,8 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     i, o = GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs
 
     bn = BooleanNetwork.from_json(read_json(GLOBALS.bn_ctrl_model_path))

@@ -1,11 +1,13 @@
 from pathlib import Path
 from pandas import DataFrame
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.stubs.selector.generation import generate_consistent_bnselector as generate_consistent_bnselector
 
 if __name__ == "__main__":
+
+    load_global_config()
 
     N, K, P, I, O = GLOBALS.bn_n, GLOBALS.bn_k, GLOBALS.bn_p, GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs
         

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plotter
 import bncontroller.plot.colors as colors
 from bncontroller.file.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
@@ -46,6 +46,8 @@ def parse_output(path, pattern=output_pattern) -> list:
 
 if __name__ == "__main__":
     
+    load_global_config()
+
     files = cpaths(GLOBALS.app_output_path, recursive=3)
 
     plots = list()

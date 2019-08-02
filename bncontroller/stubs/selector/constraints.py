@@ -3,6 +3,7 @@ Testing utils for Boolean Network Selector constraints
 '''
 import itertools
 import random
+import time
 from multiprocessing import Manager, Pool, cpu_count
 from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
@@ -98,7 +99,7 @@ def __test_state(data: tuple):
         node.state = s[j]
 
     a = get_attraction_basin(bn, fix_input_for=fi, bninput=i)
-    
+  
     # Only one attractor shall appear for each input in absence of noise
     return binstate(i), a[0][0] if len(a) == 1 else None
 
@@ -125,7 +126,7 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
 
     attrs = set()
     
-    if 2**len(bn) / NP < 2**8-1:
+    if 2**len(bn) / NP < 1: # 2**8-1: #
 
         for s, i in params:
         
@@ -158,6 +159,8 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
                 params,
                 chunksize=NP
             ))
+        
+        man.shutdown()
     
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once

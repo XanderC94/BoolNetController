@@ -26,7 +26,6 @@ def get_data(f:Path, pattern:str, uniqueness=3, parts=['%s','%s','%s']):
         DataFrame.from_dict(read_json(f))
     )
 
-
 def collect_data(
         paths: Iterable, fpattern:str,
         key_sort=lambda x: orderedby(x.name, FNAME_PATTERN),

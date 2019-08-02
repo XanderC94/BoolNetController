@@ -53,6 +53,8 @@ def check_config(config: Config):
 if __name__ == "__main__":
 
     ### Load Configuration #########################################################
+    
+    load_global_config()
 
     check_config(GLOBALS)
 
