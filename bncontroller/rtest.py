@@ -7,14 +7,14 @@ from collections.abc import Iterable
 import bncontroller.file.utils as futils
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
-from bncontroller.jsonlib.utils import read_json
+from bncontroller.jsonlib.utils import read_json, jsonrepr
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
 
 #########################################################################################################
 
-MODEL_NAME_PATTERN = r'(?:(?:rtrain|renhance)?_?output_)?bn_(?:subopt_)?'+futils.FNAME_PATTERN+'.json'
+MODEL_NAME_PATTERN = r'bn_(?:last_|subopt_|selector_|controller_)?' + futils.FNAME_PATTERN + '(?:.json)'
 
 def find_bn_type(jsonrepr: dict):
 
@@ -38,6 +38,7 @@ def collect_bn_models(
     bns = defaultdict(list)
 
     for path in futils.cpaths(paths):
+        # print(path.is_file(), re.search(MODEL_NAME_PATTERN, path.name))
         if path.is_dir():
 
             f, bn, *_ = collect_bn_models(
@@ -50,7 +51,7 @@ def collect_bn_models(
             files.update(**f)
 
         elif ffilter(path):
-            
+            # print(path)
             name = path.with_suffix('').name
             bns[name] = bn_deserializer(read_json(path))
             files[name] = path
@@ -60,7 +61,7 @@ def collect_bn_models(
 ###################################################################################
 
 def check_config(config: Config):
-
+    
     if config.webots_world_path.is_dir():
         raise Exception('Simulation world template should be a file not a dir.')
 
@@ -92,6 +93,7 @@ if __name__ == "__main__":
 
     ### Test ######################################################################
     t = time.perf_counter()
+    
     for i in range(GLOBALS.test_n_instances):
 
         logger.info(f'Test instance n°{i}')
@@ -104,8 +106,8 @@ if __name__ == "__main__":
                 futils.get_simple_fname(files[k].name, futils.FNAME_PATTERN, uniqueness=2),
                 template='rtest_data_{name}' + f'_in{i}.json',
             )
-
-            test_data.to_json(GLOBALS.test_data_path / name)
+            
+            test_data.to_json(GLOBALS.test_data_path / name, default_handler=jsonrepr)
 
             logger.info(f'Test data saved into {str(GLOBALS.test_data_path / name)}')
 

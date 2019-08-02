@@ -34,12 +34,10 @@ def evaluate_pt_bncontroller(simconfig: Config, bn: OpenBooleanNetwork, on: tupl
     simconfig.sim_agent_yrot_rad = yrot
 
     stub_utils.run_simulation(simconfig, bn)
+    
+    data = read_json(simconfig.sim_data_path)
 
-    score, fpos = simconfig.eval_aggr_function(
-        read_json(simconfig.sim_data_path)
-    )
-
-    dist = round(lpos.dist(fpos), 5)
+    score, dist = simconfig.eval_aggr_function(data, lpos)
 
     logger.info(
         'iDistance: (m)', lpos.dist(apos), '|',

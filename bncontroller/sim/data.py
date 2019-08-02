@@ -71,12 +71,14 @@ class Point3D(Jsonkin):
 
 #####################################################################
 
+@enum.unique
 class Axis(enum.Enum):
     X = lambda p: p.to(0.0, p.y, p.z)
     Y = lambda p: p.to(p.x, 0.0, p.z)
     Z = lambda p: p.to(p.x, p.y, 0.0)
     NONE = lambda p: p
 
+@enum.unique
 class Quadrant(enum.Enum):
     PPP = lambda p: abs(p)
     PPN = lambda p: p.to( abs(p.x),  abs(p.y), -abs(p.z))
@@ -88,9 +90,18 @@ class Quadrant(enum.Enum):
     PNP = lambda p: p.to( abs(p.x), -abs(p.y),  abs(p.z))
     ANY = lambda p: p
 
+    @staticmethod
+    def get(key):
+        return getattr(Quadrant, key)
+
 def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.NONE, quadrant=Quadrant.ANY):
 
-    r = R * math.sqrt(np.random.uniform(0.0, 1.0))
+    rt = math.sqrt(np.random.uniform(0.0, 1.0))
+
+    if isinstance(R, (list, tuple)) and len(R) > 1:
+        r = min(R) + abs(R[0] - R[1]) * rt
+    else:
+        r = (R[0] if isinstance(R, (list, tuple)) else R) * rt
 
     phi = math.acos(1 - 2 * np.random.uniform(0.0, 1.0))
 
@@ -114,7 +125,11 @@ class SimulationStepData(Jsonkin):
         bnstate: dict,
         light_values: list,
         distance_values: list,
-        bumps_values: list):
+        bumps_values: list,
+        noise: bool = None,
+        attr: str = None,
+        input: int = None
+        ):
 
         self.n_step = n_step
         self.bnstate = bnstate
@@ -122,15 +137,21 @@ class SimulationStepData(Jsonkin):
         self.light_values = light_values
         self.distance_values = distance_values
         self.bumps_values = bumps_values
+        self.noise = bumps_values
+        self.attr = bumps_values
+        self.input = bumps_values
         
     def to_json(self) -> dict:
         return {
-            'n_step':self.n_step,
-            'position':self.position.to_json(),
-            'bnstate':self.bnstate,
-            'light_values':self.light_values,
-            'distance_values':self.distance_values,
-            'bumps_values':self.bumps_values,
+            'n_step': self.n_step,
+            'position': self.position.to_json(),
+            'bnstate': self.bnstate,
+            'light_values': self.light_values,
+            'distance_values': self.distance_values,
+            'bumps_values': self.bumps_values,
+            'noise': self.noise,
+            'attr': self.attr,
+            'input': self.input
         }
     
     @staticmethod
@@ -141,7 +162,10 @@ class SimulationStepData(Jsonkin):
             json['bnstate'],
             json['light_values'],
             json['distance_values'],
-            json['bumps_values']
+            json['bumps_values'],
+            json['noise'],
+            json['attr'],
+            json['input']
         )
 
 #######################################################################

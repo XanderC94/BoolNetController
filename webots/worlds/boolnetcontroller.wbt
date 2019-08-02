@@ -9,8 +9,10 @@ Viewpoint {
 }
 TexturedBackground {
 }
-DEF Cave RectangleArena {
+DEF Cave RectangleArena { # CircleArena { # 
   floorSize 3 3
+  # radius 3
+  # subdivision 96
   floorAppearance RoughConcrete {
   }
   wallAppearance Roughcast {
@@ -24,7 +26,7 @@ DEF Plato E-puck {
   translation -0.75 0 0.75
   rotation 0 -1 0 0.7853981801795871
   name "Plato"
-  controller "hbns"
+  controller "hbnac"
   controllerArgs "--config=\".\""
   receiver_channel 42
 }

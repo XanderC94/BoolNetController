@@ -4,7 +4,7 @@
 #  from controller import Robot, LED, DistanceSensor
 from controller import Supervisor
 from bncontroller.sim.utils import GLOBALS
-from bncontroller.boolnet.atm import DEFAULT_ATM_WS_PATH
+from bncontroller.boolnet.boolean import r_bool
 
 #-------------------------------------------
 
@@ -32,6 +32,8 @@ t_step = trigger_step
 
 e = demiurge.getEmitter('righthand')
 
+signal = False # r_bool() # # First phototaxis
+n_signal = 0
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
 while demiurge.step(timestep) != -1 and n_steps != max_steps:
@@ -42,7 +44,14 @@ while demiurge.step(timestep) != -1 and n_steps != max_steps:
         # trigger event modifying the simulation world
         t_step +=  trigger_step
         if e is not None:
-            e.send(bytes([0]))
+            if  n_signal == 2:
+                e.send(bytes(bin(-1), 'ASCII'))
+                n_signal = 0
+            else: 
+                e.send(bytes(bin(signal), 'ASCII'))
+                signal = not signal
+                n_signal += 1
+
             print('Environment signal sent.')
         # try:
         #     ls = demiurge.getFromDef(GLOBALS.webots_nodes_defs['PointLight'])
@@ -58,5 +67,4 @@ while demiurge.step(timestep) != -1 and n_steps != max_steps:
     pass
 
 # Cleanup code.
-DEFAULT_ATM_WS_PATH.unlink()
 # --------------------------------------------

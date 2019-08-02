@@ -9,7 +9,7 @@ from bncontroller.file.utils import get_dir
 
 if __name__ == "__main__":
     
-    for path in get_dir(GLOBALS.bn_slct_model_path).iterdir():
+    for path in get_dir(GLOBALS.bn_ctrl_model_path).iterdir():
         
         if path.is_file():
             bn : SelectiveBooleanNetwork = SelectiveBooleanNetwork.from_json(

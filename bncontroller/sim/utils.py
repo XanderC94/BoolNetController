@@ -61,12 +61,11 @@ class Globals(Config):
         return self.__app
 
     def generate_sim_config(self,
-            # keyword='',
             world_fname='{name}_sim_world_{uniqueness}.{ext}',
             config_fname='{name}_sim_config_{uniqueness}.{ext}',
             data_fname='{name}_sim_data_{uniqueness}.{ext}',
             log_fname='{name}_sim_log_{uniqueness}.{ext}',
-            model_fname='{name}_sim_bn_{uniqueness}.{ext}'):
+            ctrl_fname='{name}_sim_bn_{uniqueness}.{ext}'):
         
         '''
         Generate a config ready-to-use for running a simulation.
@@ -77,7 +76,8 @@ class Globals(Config):
         uniqueness = lambda: FROZEN_DATE
 
         world_fname = gen_fname(self.app['mode'], template=world_fname, uniqueness=uniqueness, ftype='wbt')
-        model_fname = gen_fname(self.app['mode'], template=model_fname, uniqueness=uniqueness, ftype='json')
+        ctrl_fname = gen_fname(self.app['mode'], template=ctrl_fname, uniqueness=uniqueness, ftype='json')
+        # slct_fname = gen_fname(self.app['mode'], template=slct_fname, uniqueness=uniqueness, ftype='json')
         config_fname = gen_fname(self.app['mode'], template=config_fname, uniqueness=uniqueness, ftype='json')
         data_fname = gen_fname(self.app['mode'], template=data_fname, uniqueness=uniqueness, ftype='json')
         log_fname = gen_fname(self.app['mode'], template=log_fname, uniqueness=uniqueness, ftype='log')
@@ -88,8 +88,8 @@ class Globals(Config):
         sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
         
         # get_dir(sim_config.bn_ctrl_model_path, create_if_dir=True) 
-        sim_config.bn_ctrl_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / model_fname 
-        
+        sim_config.bn_ctrl_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / ctrl_fname 
+
         # get_dir(sim_config.sim_config_path, create_if_dir=True)
         sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 
         
@@ -120,7 +120,7 @@ class Globals(Config):
                     O=self.sim_agent_position, 
                     R=self.eval_agent_spawn_radius_m, 
                     axis=Axis.Y, 
-                    quadrant=Quadrant.PPN
+                    quadrant=Quadrant.get(self.eval_agent_offset_quadrant)
                 )
                 for _ in range(self.eval_n_agent_spawn_points)    
             ]
@@ -134,7 +134,7 @@ class Globals(Config):
                     O=self.sim_light_position, 
                     R=self.eval_light_spawn_radius_m, 
                     axis=Axis.Y, 
-                    quadrant=Quadrant.PPN
+                    quadrant=Quadrant.get(self.eval_light_offset_quadrant)
                 )
                 for _ in range(self.eval_n_light_spawn_points)    
             ]

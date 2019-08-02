@@ -22,15 +22,25 @@ def generate_webots_worldfile(template_path: Path, target_path: Path, world_para
 
     controller_args_pattern = TEMPLATE.format(names='|'.join(CONFIG_CLI_NAMES))
     floorsize_pattern = r'\s*floorSize\s+(\d+\s\d+)\n'
+    floorradius_pattern = r'\s*radius\s+(\d+)\n'
     controller_pattern = r'\s*controller\s+\"(\w*)\"\n'
     
     controller_args_sub_value = str(world_params.sim_config).replace('\\', '/')
-    floorsize_sub_value = str(world_params.floor_size)[1:-1].replace(',', '')
+    
+    size = world_params.floor_size
+
+    if isinstance(size, float):
+        floorradius_sub_value = str(size).replace(',', '')
+        floorsize_sub_value = str((size, size))[1:-1].replace(',', '')
+    else:
+        floorradius_sub_value = str(size[0]).replace(',', '')
+        floorsize_sub_value = str(size)[1:-1].replace(',', '')
+
     controller_sub_value = world_params.controller
 
     text = []
 
-    def sub(x:re.Match, s:str):
+    def sub(x: re.Match, s: str):
         return ''.join([x.string[:x.start(1)], s, x.string[x.end(1):]])
 
     with open(template_path, 'r') as temp:
@@ -57,6 +67,13 @@ def generate_webots_worldfile(template_path: Path, target_path: Path, world_para
                 text[i] = re.sub(
                     floorsize_pattern, 
                     lambda x: sub(x, floorsize_sub_value), 
+                    line
+                )
+
+            if hash(text[i]) == hash(line):
+                text[i] = re.sub(
+                    floorradius_pattern, 
+                    lambda x: sub(x, floorradius_sub_value), 
                     line
                 )
 
@@ -135,7 +152,12 @@ def clean_generated_worlds(template_world: Path):
             # print(p)
             p.unlink()
 
+
+def clean_dir(path: Path):
+    if Path(path).is_dir():
+        shutil.rmtree(path)
+
 def clean_tmpdir():
-    shutil.rmtree('./tmp/')
+    clean_dir(path=Path('./tmp/'))
 
 ###################################################################

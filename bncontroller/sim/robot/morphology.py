@@ -29,12 +29,17 @@ class EPuckMorphology(object):
     N_RECEVIER = 1
     N_EMITTERS = 1
 
+    LIGHT_SENSORS_POSITION = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87, 1.58784]
+    DISTANCE_SENSORS_POSITION = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
+    WHEEL_ACTUATORS_POSITION = [0.0, 3.14159]
+    LIGHT_SENSORS_POSITION = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
+
     def __init__(self, timestep: int, bot: Robot):
         
-        self.__light_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87, 1.58784]
-        self.__distance_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
-        self.__wheel_actuators_positions = [0.0, 3.14159]
-        self.__bump_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
+        # self.light_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87, 1.58784]
+        # self.distance_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
+        # self.wheel_actuators_positions = [0.0, 3.14159]
+        # self.bump_sensors_positions = [1.27, 0.77, 0.0, 5.21, 4.21, 3.14159, 2.37, 1.87]
 
         self.__devices_labels = EPuckDevicesLabels(
             self.N_DISTANCE_SENSORS, 
@@ -55,28 +60,28 @@ class EPuckMorphology(object):
             self.__devices_labels.wheel_actuators_labels, 
             timestep, 
             lambda name: bot.getMotor(name),
-            actuators_positions=self.__wheel_actuators_positions
+            actuators_positions=self.WHEEL_ACTUATORS_POSITION
         )
 
         self.__distance_sensors = sensor_array(
             self.__devices_labels.distance_sensors_labels, 
             timestep, 
             lambda name: bot.getDistanceSensor(name),
-            sensors_positions=self.__distance_sensors_positions
+            sensors_positions=self.DISTANCE_SENSORS_POSITION
         )
 
         self.__light_sensors = sensor_array(
             self.__devices_labels.light_sensors_labels, 
             timestep, 
             lambda name: bot.getLightSensor(name),
-            sensors_positions=self.__light_sensors_positions
+            sensors_positions=self.LIGHT_SENSORS_POSITION
         )
 
         # self.__bumpers = sensor_array(
         #     self.__devices_labels.bump_sensors_labels, 
         #     timestep, 
         #     lambda name: bot.getTouchSensor(name),
-        #     sensors_positions = self.__bump_sensors_positions
+        #     sensors_positions = self.bump_sensors_positions
         # )
 
         self.__gps = sensor_array(

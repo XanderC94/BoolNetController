@@ -1,8 +1,9 @@
 import unittest
 import random
-from pathlib import Path
+import asyncio
+import bncontroller.stubs.selector.constraints as constraints
 
-import bncontroller.stubs.selector.tests as constraints
+from pathlib import Path
 from bncontroller.stubs.selector.utils import template_selector_generator, noisy_update
 from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator, binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
@@ -228,4 +229,7 @@ class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
     
     def test_selector_constraint_4(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(constraints.test_attraction_basins(bn, 5))
+
+        c = constraints.test_attraction_basins(bn, 10)
+
+        self.assertTrue(c)

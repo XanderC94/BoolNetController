@@ -31,13 +31,14 @@ def normalize(defaults: dict, **kwargs):
 
     norm = dict()
 
-    def normalize_internal_dict(defaults: dict, t, alt, **kwargs):
+    def r_update_internal_dict(defaults: dict, t, alt, **kwargs):
         norm = dict(**defaults)
+
         for k, v, in kwargs.items():
             norm.update({k: 
-                normalize_internal_dict(d, t, alt, **v)
+                r_update_internal_dict(d, t, alt, **v)
                 if isinstance(v, dict) and isinstance(d, dict)
-                else objrepr(v, t, alt_type=alt)
+                else v
             })
     
         return norm
@@ -47,13 +48,18 @@ def normalize(defaults: dict, **kwargs):
         try:
             d, t, alt = defaults[k].value, defaults[k].type, defaults[k].alt
 
-            # norm.update({k: 
-            #     normalize_internal_dict(d, t, alt, **v)
-            #     if isinstance(v, dict) and isinstance(d, dict)
-            #     else objrepr(v, t, alt_type=alt)
-            # })
+            obj = objrepr(v, t, alt_type=alt)
 
-            norm.update({k: objrepr(v, t, alt_type=alt)})
+            if isinstance(obj, dict) and isinstance(d, dict):
+                norm.update({k: r_update_internal_dict(d, t, alt, **obj)})
+            elif isinstance(obj, list) and isinstance(d, dict):
+                norm.update({k: [
+                    r_update_internal_dict(d, t, alt, **o)
+                    if isinstance(o, dict) else o
+                    for o in obj
+                ]})
+            else:
+                norm.update({k: obj})
 
         except KeyError as ke:
             pass
@@ -253,12 +259,12 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''Directory or file where to store the bn model'''
         ),
-        bn_slct_model_path=DefaultOption(
-            value=Path('.'),
-            type=Path,
-            alt=None,
-            descr='''Directory or file where to store the bn selector model'''
-        ),
+        # bn_ctrl_model_path=DefaultOption(
+        #     value=Path('.'),
+        #     type=Path,
+        #     alt=None,
+        #     descr='''Directory or file where to store the bn selector model'''
+        # ),
         bn_n=DefaultOption(
             value=20,
             type=int,
@@ -349,11 +355,23 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''spawn radius of the agent'''
         ), #
+        eval_agent_offset_quadrant=DefaultOption(
+            value='ANY',
+            type=str,
+            alt=None,
+            descr='''spawn quadrant of the agent'''
+        ), #
         eval_light_spawn_radius_m=DefaultOption(
             value=0.5,
             type=float,
             alt=None,
             descr='''spawn radius of the light point'''
+        ),
+        eval_light_offset_quadrant=DefaultOption(
+            value='ANY',
+            type=str,
+            alt=None,
+            descr='''spawn quadrant of the light point'''
         ),
         eval_n_agent_spawn_points=DefaultOption(
             value=1,
@@ -470,7 +488,7 @@ class Config(Jsonkin):
     sim_data_path -- Directory or file where to store the simulation data
     sim_log_path -- Directory or file where to store the simulation general log
     bn_ctrl_model_path -- Directory or file where to store the bn model
-    bn_slct_model_path -- Directory or file where to store the bn selector model
+    bn_ctrl_model_path -- Directory or file where to store the bn selector model
     bn_n -- boolean Network cardinality
     bn_k -- boolean Network Node arity
     bn_p -- truth value bias
@@ -539,7 +557,7 @@ class Config(Jsonkin):
 
         # Boolean Network #
         self.bn_ctrl_model_path = options['bn_ctrl_model_path']
-        self.bn_slct_model_path = options['bn_slct_model_path']
+        # self.bn_ctrl_model_path = options['bn_ctrl_model_path']
         self.bn_n = options['bn_n']
         self.bn_k = options['bn_k']
         self.bn_p = options['bn_p']
@@ -557,7 +575,9 @@ class Config(Jsonkin):
         # Evaluation Parameters
         self.eval_aggr_function = options['eval_aggr_function']
         self.eval_light_spawn_radius_m = options['eval_light_spawn_radius_m']
+        self.eval_light_offset_quadrant = options['eval_light_offset_quadrant'].upper()
         self.eval_agent_spawn_radius_m = options['eval_agent_spawn_radius_m']
+        self.eval_agent_offset_quadrant = options['eval_agent_offset_quadrant'].upper()
         self.eval_n_agent_spawn_points = options['eval_n_agent_spawn_points']
         self.eval_n_light_spawn_points = options['eval_n_light_spawn_points']
         self.eval_agent_yrot_start_rad = options['eval_agent_yrot_start_rad']

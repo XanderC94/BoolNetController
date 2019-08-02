@@ -47,8 +47,8 @@ class TestBooleanNetwork(unittest.TestCase):
 
         for row in atm.tableau:
             s = sum(row)
-            # print(s)
-            self.assertTrue(s >= 1.0 and s <= 1.1)
+            print(s)
+            self.assertTrue(s >= 0.99 and s <= 1.01)
 
     def test_atm_caching(self):
 

@@ -11,15 +11,15 @@ from bncontroller.sim.robot.core import BNController, HBNAController
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
-print(os.getcwd())
-print(GLOBALS.slct_behaviours_map)
+# print(os.getcwd())
+# print(GLOBALS.slct_behaviours_map)
 
 logger = lambda *items: None
 
 #-------------------------------------------
 
 bnselector = SelectiveBooleanNetwork.from_json(
-        read_json(GLOBALS.bn_slct_model_path)
+        read_json(GLOBALS.bn_ctrl_model_path)
     )
 
 bn_pt = OpenBooleanNetwork.from_json(
@@ -78,7 +78,7 @@ dumper = SimulationDataDumper(GLOBALS.sim_run_time_s, epuck.timestep)
 
 epuck.run(
     dhbnac,
-    lambda data: dumper.add_log_entry(data)
+    data_hook=lambda data: dumper.add_log_entry(data)
 )
 
 dumper.dump_data(GLOBALS.sim_data_path)

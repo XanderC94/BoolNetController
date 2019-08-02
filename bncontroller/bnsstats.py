@@ -1,7 +1,7 @@
 import time
 import itertools
 from pandas import DataFrame
-import bncontroller.stubs.selector.tests as constraints
+import bncontroller.stubs.selector.constraints as constraints
 from bncontroller.file.utils import get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import write_json
 from bncontroller.sim.utils import GLOBALS
@@ -21,15 +21,15 @@ if __name__ == "__main__":
     Is = [1]
     Os = [0]
     nRhos = [0.1, 0.2, 0.3]
-    tRhos = [0.1, 0.2, 0.3, 0.4, 0.5]
+    tRhos = [0.19, 0.29, 0.39]
     inFixs = [5, 10]
 
     instances = 1000
     
-    prod = itertools.product(nAs, Ns, Ks, Ps, Is, Os, nRhos, tRhos, inFixs)
+    prod = itertools.product(nAs, Ns, Ks, Ps, Qs, Is, Os, nRhos, tRhos, inFixs)
 
-    mpath = get_dir(GLOBALS.bn_slct_model_path / 'stats/models', create_if_dir=True)
-    dpath = get_dir(GLOBALS.bn_slct_model_path / 'stats/data', create_if_dir=True)
+    mpath = get_dir(GLOBALS.bn_ctrl_model_path / 'stats/models', create_if_dir=True)
+    dpath = get_dir(GLOBALS.bn_ctrl_model_path / 'stats/data', create_if_dir=True)
 
     for nA, N, K, P, Q, I, O, nRho, tRho, inFix in prod:
         

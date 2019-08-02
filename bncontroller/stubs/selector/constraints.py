@@ -3,12 +3,15 @@ Testing utils for Boolean Network Selector constraints
 '''
 import itertools
 import random
+from multiprocessing import Manager, Pool, cpu_count
 from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
-from bncontroller.collectionslib.utils import first
+from bncontroller.collectionslib.utils import first, flat
 from bncontroller.stubs.selector.utils import noisy_update
+
+NP = cpu_count()
 
 def test_attractors_number(bn: BooleanNetwork, target_n_attractors: int):
     '''
@@ -74,10 +77,9 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
     while not attractor_keys:
 
         if input_fixed_for < fix_input_for:
-            # print('Fixing input...')
+            input_fixed_for += 1
             for k in bn.input_nodes:
                 bn[k].state = bninput[k]
-            input_fixed_for += 1
 
         states.append(bn.update())
         
@@ -86,33 +88,79 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
         
     return attractor_keys
 
+##############################################
+
+def __test_state(data: tuple):
+
+    s, i = data
+
+    for j, node in enumerate(bn.nodes):
+        node.state = s[j]
+
+    a = get_attraction_basin(bn, fix_input_for=fi, bninput=i)
+    
+    # Only one attractor shall appear for each input in absence of noise
+    return binstate(i), a[0][0] if len(a) == 1 else None
+
+def __init_process(d: dict):
+    global bn, fi
+
+    bn = SelectiveBooleanNetwork.from_json(d['bn'])
+    fi = d['fi']
+
 def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int):
     '''
     Test whether the given Boolean Network fixate itself
     on a specific attractor once a input value is settled
     '''
+    
     inputs = map(
         lambda x: dict(zip(bn.input_nodes, x)),
         itertools.product(TRUTH_VALUES, repeat=len(bn.input_nodes))
     )
 
-    for i in inputs:
+    states = itertools.product(TRUTH_VALUES, repeat=len(bn))
+    
+    params = itertools.product(states, inputs)
 
-        # Starts from a random state
-        for node in bn.nodes:
-            node.state = random.choice(TRUTH_VALUES)
+    attrs = set()
+    
+    if 2**len(bn) / NP < 2**8-1:
 
-        attrs = get_attraction_basin(bn, fix_input_for=fix_input_for, bninput=i)
+        for s, i in params:
+        
+            for j, node in enumerate(bn.nodes):
+                node.state = s[j]
 
-        # Only one attractor shall appear for each input in absence of noise
-        if len(attrs) == 1:
-            bn.attractors_input_map[binstate(i)] = attrs[0][0]
-        else:
-            return False
+            a = get_attraction_basin(bn, fix_input_for=fix_input_for, bninput=i)
 
-    # print(bn.attractors_input_map)
+            # Only one attractor shall appear for each input in absence of noise
+            if len(a) == 1:
+                attrs.add((binstate(i), a[0][0]))
+            else:
+                return False
+    else:   
+
+        man = Manager()
+
+        # Shared json repr of the BN 
+        # in order to not waste compute time
+        # by serializing and deserializing the BN
+        d = man.dict(
+            bn=bn.to_json(),
+            fi=fix_input_for
+        )
+
+        with Pool(processes=NP, initializer=__init_process, initargs=(d, )) as executor:
+
+            attrs = set(executor.map(
+                __test_state, 
+                params,
+                chunksize=NP
+            ))
+    
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once
-    return len(set(bn.attractors_input_map.values())) == len(bn.atm.attractors)
+    return dict(attrs) if len(attrs) == len(bn.atm.attractors) else False 
 
 ##############################################################################

@@ -103,6 +103,7 @@ class HBNAController(Controller):
         self.__selector = selector
         self.__behaviours = behaviours
 
+
         self.__bin_strategies = bin_strategies
         self.__bin_thresholds = bin_thresholds
 
@@ -119,8 +120,9 @@ class HBNAController(Controller):
                 ]
             )
         
-        self.__signaled = False
-        self.__signal = random.choice([True, False]) # True # 
+        print(self.__behaviours)
+
+        self.__signal = -1 # True # 
 
         for k in self.__selector.keys:
             self.__selector[k].state = random.choice([True, False]) # self.__signal # 
@@ -159,16 +161,18 @@ class HBNAController(Controller):
             r = morphology.receivers[-1]
 
             if r.device.getQueueLength() > 0:
-                self.__input_fixed_for = 0
-                self.__signaled = True
-                self.__signal = not self.__signal
                 
+                pkt = int(r.device.getData(), 2)
+
+                self.__input_fixed_for = 0
+                self.__signal = pkt
+                               
                 while r.device.getQueueLength() > 0:
                     r.device.nextPacket()
                 
-                print("Env. signal received.")
+                print(f"Env. signal {pkt} received.")
 
-        if self.__signaled:
+        if self.__signal != -1:
 
             if self.__input_fixed_for < self.__input_fixation_steps:
                 # print('F')
@@ -187,13 +191,14 @@ class HBNAController(Controller):
                 self.__bin_thresholds[DeviceName.LIGHT]
             )
             
-            noise_rho = max(self.__noise_rho, sum(bin_light_data.values()) / len(bin_light_data))
+            noise_rho = sum(bin_light_data.values()) / len(bin_light_data)
+            noise_rho = max(self.__noise_rho, noise_rho)
 
-            k = random.choice(list(range(1, sum(bin_light_data.values()))))
+            k = random.randint(1, max(1, sum(bin_light_data.values())))
             
             nodes = random.choices(self.__selector.keys, k=k)
             
-            for n in self.__selector.keys:
+            for n in nodes:
                 apply_noise = random.choices(TRUTH_VALUES, [noise_rho, 1.0 - noise_rho])[0]
                 
                 if apply_noise:
@@ -209,6 +214,8 @@ class HBNAController(Controller):
 
         cdata = self.__behaviours[self.__curr_attr](morphology, step, timestep, sensed)
 
-        setattr(cdata, 'attr', self.__curr_attr)
+        cdata.noise = self.__signal == -1
+        cdata.attr = self.__curr_attr
+        cdata.input = self.__signal
 
         return cdata

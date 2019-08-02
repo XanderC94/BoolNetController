@@ -264,45 +264,6 @@ def plot_data(data: dict, positives_threshold: float):
 
 #######################################################################
 
-def collect_data(
-        paths:Iterable, fpattern:str,
-        recursively=False, ds_merge_level=3, 
-        data_getter=pu.get_data):
-
-    sortbykey = lambda x: x[0]
-
-    def go(paths:Iterable, recursively, ds_merge_level):
-
-        data = OrderedDict()
-
-        for p in paths:
-            
-            print(p)
-            
-            if p.is_file():
-                name, df = data_getter(p, fpattern, uniqueness=ds_merge_level)
-                data[name] = data[name].append(df, ignore_index=True) if name in data else df
-
-            elif p.is_dir() and recursively:
-                
-                data.update(
-                    **data, 
-                    **go(
-                        sorted(
-                            p.iterdir(), 
-                            key=lambda x: pu.orderedby(x.name, fu.FNAME_PATTERN)
-                        ),
-                        recursively=recursively, 
-                        ds_merge_level=ds_merge_level
-                    )
-                )
-
-        return data
-
-    return OrderedDict(sorted(go(paths, recursively, ds_merge_level).items(), key=sortbykey))
-
-######################################################################
-
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser('Test Data plotter arguments parser.')
@@ -324,7 +285,7 @@ if __name__ == "__main__":
 
     args = parse_args(parser=parser, config_converter=Config.from_file)
 
-    data = OrderedDict(**collect_data(
+    data = OrderedDict(**pu.collect_data(
         cpaths(args.config.test_data_path),
         fpattern=r'rtest_data_(?:bn_subopt_)?' + f'{fu.FNAME_PATTERN}.json',
         recursively=args.recursively, 

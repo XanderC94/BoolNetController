@@ -15,8 +15,8 @@ class SelectiveBooleanNetwork(OpenBooleanNetwork):
         return self.__attractors_input_map
 
     @attractors_input_map.setter
-    def attractors_input_map(self, mapping: dict):
-        self.__attractors_input_map = defaultdict(type(None), **mapping)
+    def attractors_input_map(self, mapping: dict or list):
+        self.__attractors_input_map = defaultdict(type(None), mapping)
     
     def to_json(self):
         __json = super().to_json()
@@ -33,6 +33,5 @@ class SelectiveBooleanNetwork(OpenBooleanNetwork):
         nodes = [BooleanNode.from_json(node) for node in json['nodes']]
         bnsel = SelectiveBooleanNetwork(nodes, json['inputs'], json['outputs'])
         bnsel.attractors_input_map = json['attractors_input_map']
-
 
         return  bnsel

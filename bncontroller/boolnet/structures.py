@@ -59,11 +59,11 @@ class BooleanNode(Jsonkin):
         '''
         self.__state.bias = new_state
     
-    def evaluate(self, params: dict or tuple) -> bool:
+    def evaluate(self, params: tuple) -> bool:
         '''
         Evaluate the encapsulated boolean function for the given params.
 
-        Params are a dict the like of a tuple.
+        Params are the like of a tuple.
 
         Returns the current node state.
 
@@ -80,11 +80,11 @@ class BooleanNode(Jsonkin):
     def __hash__(self):
         return self.__hash
     
-    def __call__(self, params: dict or tuple) -> bool:
+    def __call__(self, params: tuple) -> bool:
         '''
         Evaluate the encapsulated boolean function for the given params.
 
-        Params are a dict the like of a tuple.
+        Params are the like of a tuple.
 
         Returns the current node state.
 

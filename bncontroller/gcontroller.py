@@ -57,9 +57,9 @@ if __name__ == "__main__":
     check_config(GLOBALS)
 
     GLOBALS.app['mode'] = (
-        'rtrain' 
+        'generate' 
         if check_path(GLOBALS.bn_ctrl_model_path, create_if_dir=True) 
-        else 'renhance' 
+        else 'enhance' 
     )
     
     ### Init logger ################################################################
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     
         logger.info(ctx)
 
-        savepath = GLOBALS.bn_ctrl_model_path / '{mode}_output_bn_{date}.json'.format(
+        savepath = GLOBALS.bn_ctrl_model_path / '{mode}_ctrl_bn_{date}.json'.format(
             mode=GLOBALS.app['mode'],
             date=FROZEN_DATE
         )

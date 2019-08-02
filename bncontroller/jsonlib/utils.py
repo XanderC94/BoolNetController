@@ -63,10 +63,10 @@ def jsonrepr(obj):
         return str(obj)
     elif isinstance(obj, float) and obj in (float('inf'), float('+inf'), float('-inf')):
         return str(obj)
-    elif isinstance(obj, dict):
-        return dict((k, jsonrepr(v)) for k, v, in obj)
-    elif isinstance(obj, Iterable):
-        return type(obj)(jsonrepr(i) for i in obj)
+    # elif isinstance(obj, dict):
+    #     return dict((k, jsonrepr(v)) for k, v in obj)
+    # elif isinstance(obj, Iterable):
+    #     return type(obj)(jsonrepr(i) for i in obj)
     else:
         return obj
 

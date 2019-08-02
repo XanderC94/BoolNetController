@@ -7,16 +7,19 @@ FNAME_PATTERN = r'(D?\d{8,}T\d{6,})(?:.*it([+-]?\d+))?(?:.*in([+-]?\d+))?'
 
 FNAME_PARTS = ['%s', 'it%s', 'in%s']
 
-def iso8106(format_type=0, ms=0):
+def iso8106(format_type=0, ms=6):
     '''
-    Return actual datetime under iso8106 standard
+    Return actual datetime under iso8106 standard.
     '''
-    max_ms = 6
+    MAX_MS = 6
+    ms = min(ms, 6)
 
     if format_type == 0:
-        return f'{datetime.datetime.now():%Y%m%dT%H%M%S%f}'[:ms-max_ms]
+        date = f'{datetime.datetime.now():%Y%m%dT%H%M%S%f}'
+        return date if ms == MAX_MS else date[:ms-MAX_MS]
     else:
-        return f'{datetime.datetime.now():%Y%m%dT%H%M%S-%f}'[:ms-max_ms]
+        date = f'{datetime.datetime.now():%Y-%m-%dT%H:%M:%S.%f}'
+        return date if ms == MAX_MS else date[:ms-MAX_MS]
 
 FROZEN_DATE = iso8106(ms=3)
 

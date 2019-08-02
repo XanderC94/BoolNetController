@@ -1,7 +1,9 @@
 import json
+import random
+import string
 from pathlib import Path
 from collections import defaultdict
-from bncontroller.file.utils import FROZEN_DATE, check_path
+from bncontroller.file.utils import iso8106, check_path
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
 from rpy2.robjects.packages import importr
@@ -10,9 +12,10 @@ rBoolNet = importr('BoolNet')
 rDiffeRenTES = importr('diffeRenTES')
 rJSONlite = importr('jsonlite')
 
-DEFAULT_ATM_WS_PATH = Path(f'./tmp/atm-workspace_{FROZEN_DATE}.txt')
 
 class AttractorsTransitionMatrix(object):
+    
+    
     '''
     Attractors Transition Matrix for Boolean Networks.
 
@@ -25,14 +28,21 @@ class AttractorsTransitionMatrix(object):
         self.id = hash(ebnf_str)
         # print(ebnf_str)
         self.N = len(list(filter(lambda x: x, ebnf_str.split('\n')[1:])))
-        
         # print(self.N)
-        if not DEFAULT_ATM_WS_PATH.exists():
-            check_path(DEFAULT_ATM_WS_PATH, create_if_file=True)
-
-        DEFAULT_ATM_WS_PATH.write_text(ebnf_str, encoding='UTF-8')
         
-        net = rBoolNet.loadNetwork(str(DEFAULT_ATM_WS_PATH))
+        abc = ''.join(random.SystemRandom().choice(
+                string.ascii_uppercase + string.digits + string.ascii_lowercase
+            ) for _ in range(self.N))
+
+        self.DEFAULT_ATM_WS_PATH = Path(f'./tmp/atm-workspace_{iso8106()}_{abc}.txt').absolute()
+
+        # print(self.DEFAULT_ATM_WS_PATH)
+        
+        check_path(self.DEFAULT_ATM_WS_PATH, create_if_file=True)
+
+        self.DEFAULT_ATM_WS_PATH.write_text(ebnf_str, encoding='UTF-8')
+        
+        net = rBoolNet.loadNetwork(str(self.DEFAULT_ATM_WS_PATH))
 
         # atm_ws_path.unlink()
         atm = rDiffeRenTES.getATM(
@@ -49,6 +59,9 @@ class AttractorsTransitionMatrix(object):
         self.tableau, self.attractors = self.__from_parts(
             jATM['ATM'], jATM['attractors']['binary']
         )
+
+        # if self.DEFAULT_ATM_WS_PATH.exists():
+        self.DEFAULT_ATM_WS_PATH.unlink()
 
     @property
     def dtableau(self) -> dict:
