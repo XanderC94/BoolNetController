@@ -17,11 +17,11 @@ def bnstates_distance(s1:dict, s2:dict, comp = lambda v1, v2: v1 == v2, crit = l
 ################################################################################################
 
 def compact_state(state: dict):
-    return [int(v) for k, v in sorted(state.items())]
+    return [int(v) for k, v in sorted(state.items(), key=lambda x: int(x[0]))]
 
 def binstate(state: dict or list) -> str:
     '''
-    Return a compact strin representation for the given BN state.
+    Return a compact string representation for the given BN state.
 
     Input can either be an dict or a list.
     '''

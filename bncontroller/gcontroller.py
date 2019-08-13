@@ -7,7 +7,7 @@ from pathlib import Path
 from bncontroller.boolnet.factory import generate_rbn
 from bncontroller.stubs.controller.utils import template_controller_generator
 from bncontroller.sim.config import Config
-from bncontroller.sim.utils import GLOBALS
+from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.data import BNParams
 from bncontroller.file.utils import check_path, get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import read_json, write_json
