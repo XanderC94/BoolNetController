@@ -155,7 +155,9 @@ class HBNAController(Controller):
             self.__next_sensing += int(self.__sensing_interval / timestep)
 
             # Collect light data            
-            self.light_data = dict((k, l.read()) for k, l in morphology.light_sensors.items())
+            self.__light_data = dict((k, l.read()) for k, l in morphology.light_sensors.items())
+
+            # print(self.__light_data)
 
             # Collect Radio messages
             r = morphology.receivers[-1]
@@ -187,7 +189,7 @@ class HBNAController(Controller):
 
             # Apply Binarization Strategies
             bin_light_data = self.__bin_strategies[DeviceName.LIGHT](
-                self.light_data, 
+                self.__light_data, 
                 self.__bin_thresholds[DeviceName.LIGHT]
             )
             

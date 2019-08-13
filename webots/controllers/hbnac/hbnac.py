@@ -78,7 +78,11 @@ epuck = EPuck(
 epuck.position = GLOBALS.sim_agent_position
 epuck.orientation = GLOBALS.sim_agent_yrot_rad
 
-dumper = SimulationDataDumper(GLOBALS.sim_run_time_s, epuck.timestep)
+dumper = SimulationDataDumper(
+    GLOBALS.slct_behaviours_map, 
+    GLOBALS.sim_run_time_s, 
+    epuck.timestep
+)
 
 epuck.run(
     dhbnac,

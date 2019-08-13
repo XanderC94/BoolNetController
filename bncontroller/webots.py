@@ -40,4 +40,8 @@ if __name__ == "__main__":
         
     stub_utils.clean_dir(f'./webots/controllers/{GLOBALS.webots_agent_controller}/tmp')
 
+    config.webots_world_path.unlink()
+    wbproj = config.webots_world_path.with_suffix('.wbproj').name
+    (config.webots_world_path.parent / f'.{wbproj}').unlink()
+
     exit(proc_closure.returncode)

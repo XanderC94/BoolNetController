@@ -52,24 +52,29 @@ def pt_evaluation_for_test(bn: OpenBooleanNetwork, test_params: Iterable):
     '''
     Run a simulation for each set of test parameters. 
     '''
-    ### Generate ad hoc configuration for training ################################
+    
+    data = []
 
-    simconfig = GLOBALS.generate_sim_config()
-
-    ### Generate simulation world file for training ################################
-
-    if not simconfig.webots_world_path.exists():
-
-        logger.info('Generated webots world file from template...')
+    for tp in test_params:
         
-        stub_utils.generate_webots_worldfile(
-            GLOBALS.webots_world_path, 
-            simconfig.webots_world_path,
-            simconfig.arena_params
-        )
+        ### Generate ad hoc configuration for simulation purposes only ################################
+        simconfig = GLOBALS.generate_sim_config()
 
-    # May be launched parallel (... ?)
-    data = [evaluate_pt_bncontroller(simconfig, bn, tp) for tp in test_params] 
+        ### Generate simulation world file for simulation purposes only ################################
+        if not simconfig.webots_world_path.exists():
+
+            logger.info('Generated webots world file from template...')
+            
+            stub_utils.generate_webots_worldfile(
+                GLOBALS.webots_world_path, 
+                simconfig.webots_world_path,
+                simconfig.arena_params
+            )
+        
+        # May be launched parallel (... ?)
+        data.append(
+            evaluate_pt_bncontroller(simconfig, bn, tp)
+        )
 
     return tuple(list(e) for e in zip(*data))
 

@@ -1,8 +1,10 @@
 import unittest
+import math
 from pathlib import Path
 from bncontroller.stubs.utils import ArenaParams
 from bncontroller.stubs.utils import generate_webots_worldfile
 from bncontroller.stubs.utils import generate_webots_props_file
+from bncontroller.sim.data import r_point3d, Axis, Quadrant
 
 class TestUtils(unittest.TestCase):
 
@@ -44,5 +46,18 @@ class TestUtils(unittest.TestCase):
 
         pass
 
+    def test_random_point3d_generation(self):
+        
+        R1, R2 = 1.0, 2.0
 
-
+        for _ in range(100):
+            p = r_point3d(R=R1, axis=Axis.Y)
+            self.assertTrue(0.0 <= math.sqrt(p.x**2 + p.z**2 + p.y**2) <= R1)
+        
+        for _ in range(100):
+            p = r_point3d(R=[R1, R2], axis=Axis.Y)
+            self.assertTrue(R1 <= math.sqrt(p.x**2 + p.z**2 + p.y**2) <= R2)
+        
+        for _ in range(100):
+            p = r_point3d(R=[R1, R2], axis=Axis.Y, quadrant=Quadrant.PPP)
+            self.assertTrue(R1 <= math.sqrt(p.x**2 + p.z**2 + p.y**2) <= R2)

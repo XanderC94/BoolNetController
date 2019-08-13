@@ -3,8 +3,7 @@ Testing utils for Boolean Network Selector constraints
 '''
 import itertools
 import random
-import time
-from multiprocessing import Manager, Pool, cpu_count
+from multiprocessing import cpu_count
 from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork

@@ -46,8 +46,11 @@ epuck = EPuck(
 epuck.position = GLOBALS.sim_agent_position
 epuck.orientation = GLOBALS.sim_agent_yrot_rad
 
-dumper = SimulationDataDumper(GLOBALS.sim_run_time_s, epuck.timestep)
-
+dumper = SimulationDataDumper(
+    GLOBALS.bn_ctrl_model_path, 
+    GLOBALS.sim_run_time_s, 
+    epuck.timestep
+)
 
 epuck.run(
     phototaxist, 
