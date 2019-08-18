@@ -9,7 +9,7 @@ from bncontroller.stubs.controller.utils import template_controller_generator
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.data import BNParams
-from bncontroller.file.utils import check_path, get_dir, FROZEN_DATE
+from bncontroller.filelib.utils import check_path, get_dir, FROZEN_DATE
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.boolnet.structures import OpenBooleanNetwork
 from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactory
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     
         logger.info(ctx)
 
-        savepath = GLOBALS.bn_ctrl_model_path / '{mode}_ctrl_bn_{date}.json'.format(
+        savepath = GLOBALS.bn_ctrl_model_path / 'bn_controller_{date}.json'.format(
             mode=GLOBALS.app['mode'],
             date=FROZEN_DATE
         )

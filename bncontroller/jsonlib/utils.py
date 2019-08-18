@@ -97,7 +97,7 @@ def objrepr(json_repr, obj_type, alt_type=None):
         return obj_type(json_repr)
 
     if isinstance(json_repr, list):
-        return list(go(i, obj_type, alt_type) for i in json_repr)
+        return [go(i, obj_type, alt_type) for i in json_repr]
     else:
         return go(json_repr, obj_type, alt_type) 
 

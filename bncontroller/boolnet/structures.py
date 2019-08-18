@@ -262,7 +262,8 @@ class OpenBooleanNetwork(BooleanNetwork):
     def is_consistent(self):
         '''
         Return whether:
-            * each of Input Node i in I has at least 1 outgoing edges
+            * each Input Node i in I has at least 1 outgoing edge
+            * each  Output Node o in O has at least 1 incoming edge
         '''
         # Each Input node must have at least 1 outgoing edge
         input_node_consistency = all(
@@ -273,7 +274,12 @@ class OpenBooleanNetwork(BooleanNetwork):
             for i in self.input_nodes
         )
 
-        return input_node_consistency
+        output_node_consistency = all(
+            len(self[o].predecessors) > 0
+            for o in self.output_nodes
+        )
+
+        return input_node_consistency and output_node_consistency
 
     def to_json(self):
         __json = super().to_json()

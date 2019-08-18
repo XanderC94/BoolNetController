@@ -225,7 +225,8 @@ class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
 
     def test_selector_constraint_3(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
-        self.assertTrue(constraints.test_bn_state_space_omogeneity(bn, 0.1))
+        i = max(map(len, bn.atm.attractors))*len(bn)*20
+        self.assertTrue(constraints.test_bn_state_space_omogeneity(bn, i, 0.1))
     
     def test_selector_constraint_4(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))

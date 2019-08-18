@@ -1,4 +1,5 @@
 from bncontroller.jsonlib.utils import Jsonkin
+from bncontroller.collectionslib.utils import flat
 import json, random, math, enum, numpy as np
 from collections import defaultdict
 from pathlib import Path
@@ -55,10 +56,18 @@ class Point3D(Jsonkin):
         return vars(self)
 
     def to_tuple(self) -> tuple:
-        return tuple(self.x, self.y, self.z)
+        return tuple(self)
 
     @staticmethod
-    def from_json(json:dict):
+    def from_polar(r, theta, phi):
+        return Point3D(
+                x = r * math.cos(theta) * math.sin(phi), 
+                y = r * math.sin(theta) * math.sin(phi),
+                z = r * math.cos(phi)
+            )
+
+    @staticmethod
+    def from_json(json: dict):
         return Point3D(
             json['x'],
             json['y'],
@@ -73,10 +82,10 @@ class Point3D(Jsonkin):
 
 @enum.unique
 class Axis(enum.Enum):
-    X = lambda p: p.to(0.0, p.y, p.z)
-    Y = lambda p: p.to(p.x, 0.0, p.z)
-    Z = lambda p: p.to(p.x, p.y, 0.0)
-    NONE = lambda p: p
+    X = lambda r, theta, phi: Point3D.from_polar(r, math.pi / 2, phi)
+    Y = lambda r, theta, phi: Point3D.from_polar(r, 0.0, phi)
+    Z = lambda r, theta, phi: Point3D.from_polar(r, theta, math.pi / 2)
+    NONE = lambda r, theta, phi: Point3D.from_polar(r, theta, phi)
 
 @enum.unique
 class Quadrant(enum.Enum):
@@ -94,26 +103,19 @@ class Quadrant(enum.Enum):
     def get(key):
         return getattr(Quadrant, key)
 
-def r_point3d(O = Point3D(0.0,0.0,0.0), R = 1.0, axis = Axis.NONE, quadrant=Quadrant.ANY):
+def r_point3d(O=Point3D(0.0, 0.0, 0.0), R=1.0, axis=Axis.NONE, quadrant=Quadrant.ANY):
+    
+    R = R if isinstance(R, (list, tuple)) and len(R) > 1 else flat([0.0, R])
 
-    rt = math.sqrt(np.random.uniform(0.0, 1.0))
+    rt = np.random.uniform(min(R) / max(R), 1.0) # **1/3.0
+    
+    r = min(R) + abs(R[0] - R[1]) * rt
 
-    if isinstance(R, (list, tuple)) and len(R) > 1:
-        r = min(R) + abs(R[0] - R[1]) * rt
-    else:
-        r = (R[0] if isinstance(R, (list, tuple)) else R) * rt
+    theta = np.random.uniform(0.0, 1.0) * 2 * math.pi 
 
-    phi = math.acos(1 - 2 * np.random.uniform(0.0, 1.0))
+    phi = math.acos(1.0 - 2.0 * np.random.uniform(0.0, 1.0))
 
-    theta = np.random.uniform(0.0, 1.0) * 2 * math.pi
-
-    P = Point3D(
-        x = r * math.cos(theta) * math.sin(phi), 
-        y = r * math.sin(theta) * math.sin(phi),
-        z = r * math.cos(phi)
-    )
-
-    return O + axis(quadrant(P))
+    return O + quadrant(axis(r, theta, phi))
 
 ##################################################################
 

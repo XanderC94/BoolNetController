@@ -1,11 +1,12 @@
 import math
 import numpy as np
+import time
 from pathlib import Path
 from collections import defaultdict
 from singleton_decorator import singleton
 from bncontroller.sim.data import Axis, Quadrant, Point3D, r_point3d
 from bncontroller.sim.config import Config
-from bncontroller.file.utils import FROZEN_DATE, gen_fname, get_dir
+from bncontroller.filelib.utils import FROZEN_DATE, gen_fname, get_dir, iso8106, check_path
 from bncontroller.parse.utils import parse_args
 from bncontroller.jsonlib.utils import jsonrepr, write_json, read_json, FunctionWrapper
 
@@ -77,11 +78,18 @@ class Globals(Config):
         uniqueness = lambda: FROZEN_DATE
 
         world_fname = gen_fname(self.app['mode'], template=world_fname, uniqueness=uniqueness, ftype='wbt')
+
         ctrl_fname = gen_fname(self.app['mode'], template=ctrl_fname, uniqueness=uniqueness, ftype='json')
-        # slct_fname = gen_fname(self.app['mode'], template=slct_fname, uniqueness=uniqueness, ftype='json')
         config_fname = gen_fname(self.app['mode'], template=config_fname, uniqueness=uniqueness, ftype='json')
-        data_fname = gen_fname(self.app['mode'], template=data_fname, uniqueness=uniqueness, ftype='json')
-        log_fname = gen_fname(self.app['mode'], template=log_fname, uniqueness=uniqueness, ftype='log')
+
+        data_fname = gen_fname(
+                self.app['mode'], 
+                template=data_fname, 
+                uniqueness=uniqueness if self.sim_unique_data_file else iso8106, 
+                ftype='json'
+            )
+
+        log_fname = gen_fname(self.app['mode'], template=log_fname, uniqueness=iso8106, ftype='log')
 
         # Create Sim Config based on the Experiment Config
         sim_config = Config.from_json(self.to_json())
@@ -94,9 +102,12 @@ class Globals(Config):
         # get_dir(sim_config.sim_config_path, create_if_dir=True)
         sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 
         
-        sim_config.sim_data_path = get_dir(sim_config.sim_data_path, create_if_dir=True) / data_fname
+        if check_path(sim_config.sim_data_path) in (1, -2):
 
-        sim_config.sim_log_path = get_dir(sim_config.sim_log_path, create_if_dir=True) / log_fname
+            sim_config.sim_data_path = get_dir(sim_config.sim_data_path / FROZEN_DATE) / data_fname
+        
+        if check_path(sim_config.sim_log_path) in (1, -2):
+                sim_config.sim_log_path = get_dir(sim_config.sim_log_path / FROZEN_DATE) / log_fname
 
         return sim_config
     
@@ -161,14 +172,13 @@ GLOBALS : Globals = Globals()
 
 def load_global_config():
     
-    # import time
     # from pprint import pprint
 
     try:
         # t = time.perf_counter()
         GLOBALS.config = parse_args().config
-        print('Global Configuration loaded from file...')
         # print(time.perf_counter() - t)
+        # print('Global Configuration loaded from file...')
         # pprint(vars(GLOBALS), indent=4)
 
     except Exception as ex:

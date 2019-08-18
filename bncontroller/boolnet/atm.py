@@ -3,7 +3,7 @@ import random
 import string
 from pathlib import Path
 from collections import defaultdict
-from bncontroller.file.utils import iso8106, check_path
+from bncontroller.filelib.utils import iso8106, check_path
 from bncontroller.collectionslib.utils import transpose
 from rpy2 import robjects as robjs
 from rpy2.robjects.packages import importr
@@ -11,7 +11,6 @@ from rpy2.robjects.packages import importr
 rBoolNet = importr('BoolNet')
 rDiffeRenTES = importr('diffeRenTES')
 rJSONlite = importr('jsonlite')
-
 
 class AttractorsTransitionMatrix(object):
     
@@ -82,6 +81,12 @@ class AttractorsTransitionMatrix(object):
                 for ki, t in enumerate(self.attractors)
             ]
         )
+
+    def mapped_attractors(self, mapping) -> dict:
+        return [
+            list(map(mapping, a))
+            for a in self.attractors
+        ]
 
     def __from_parts(self, atm: dict, attractors: dict):
         

@@ -5,7 +5,7 @@ import statistics
 import matplotlib.pyplot as plotter
 import matplotlib.patches as mpatches
 import bncontroller.plot.utils as pu
-import bncontroller.file.utils as fu
+import bncontroller.filelib.utils as fu
 # from mpl_toolkits.mplot3d import Axes3D
 from pandas import DataFrame, Series
 from pathlib import Path
@@ -13,12 +13,13 @@ from collections import OrderedDict
 from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
 from bncontroller.collectionslib.utils import transpose
-from bncontroller.file.utils import cpaths, get_dir
+from bncontroller.filelib.utils import cpaths, get_dir
 from bncontroller.sim.utils import GLOBALS, Config, load_global_config
 from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap
+from bncontroller.plot.utils import save_plots
 
-fn_pattern = r'n(?P<N>\d+)_k(?P<K>\d+)_nrho(?P<nRho>\d+.?\d+)_trho(?P<tRho>\d+.?\d+)_if(?P<if>\d+)'
+fn_pattern = r'n(?P<N>\d+)_k(?P<K>\d+)_nrho(?P<nRho>\d+.?\d+)_ttau(?P<tTau>\d+.?\d+)_iphi(?P<if>\d+)'
 
 def plot_constraints(title: str, xs: list, ys:list, size_ths=0.5):
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         ]
     )
 
-    labels_template = ' {N},{K},{nRho},{tRho},{infix}'
+    labels_template = ' {N},{K},{nRho},{},{infix}'
 
     f1, a1 = plot_constraints('Constr. 1 Satisfaction' + labels_template, params, frames1, size_ths=0.5)
     f2, a2 = plot_constraints('Constr. 2 Satisfaction' + labels_template, params, frames2, size_ths=0.5)
@@ -124,5 +125,7 @@ if __name__ == "__main__":
 
     ################################################################################
     
-    plotter.show()
+    # plotter.show()
+
+    save_plots(GLOBALS.plot_image_path / 'stats', [f1, f2, f3, f4, f123, f1234])
 

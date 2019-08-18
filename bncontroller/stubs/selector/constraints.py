@@ -3,6 +3,7 @@ Testing utils for Boolean Network Selector constraints
 '''
 import itertools
 import random
+from collections import defaultdict
 from multiprocessing import cpu_count
 from bncontroller.boolnet.boolean import TRUTH_VALUES
 from bncontroller.boolnet.utils import search_attractors, binstate
@@ -20,21 +21,19 @@ def test_attractors_number(bn: BooleanNetwork, target_n_attractors: int):
     '''
     return len(bn.atm.attractors) == target_n_attractors
 
-def test_attractors_transitions(bn: BooleanNetwork, at_threshold_map: dict):
+def test_attractors_transitions(bn: BooleanNetwork, at_taus: dict):
     '''
     Check if the transition probability from (some) attractors to another
     matches the ones specified in the given threshold map.
     '''
 
-    # print(at_threshold_map)
-
     return all(
-        bn.atm.dtableau[ki][kj] >= at_threshold_map[ki][kj] 
-        for ki in at_threshold_map
-        for kj in at_threshold_map[ki]
+        bn.atm.dtableau[i][j] > at_taus[i][j] 
+        for i in at_taus
+        for j in at_taus[i]
     )
 
-def test_bn_state_space_omogeneity(bn: BooleanNetwork, noise_rho:float):
+def test_bn_state_space_omogeneity(bn: BooleanNetwork, i: int, noise_rho:float):
     '''
     Checks whether the attractor space is:
         * Deaf to inputs values in presence of "ambient" noise.
@@ -44,12 +43,7 @@ def test_bn_state_space_omogeneity(bn: BooleanNetwork, noise_rho:float):
 
         * Displays, to some degree of alternance, all the attractors (see ATM).
     '''
-    states = noisy_update(
-        bn,
-        max(map(len, bn.atm.attractors))*len(bn)*20,
-        noise_rho
-        # input_step=max(map(len, atm.attractors)) * 2,
-    )
+    states = noisy_update(bn, i, noise_rho)
 
     # print(f'Finding attractor in {len(states)} states')
 
@@ -57,7 +51,7 @@ def test_bn_state_space_omogeneity(bn: BooleanNetwork, noise_rho:float):
 
     return len(set(found_attrs)) == len(bn.atm.attractors)
 
-def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: dict):
+def get_attraction_basin(bn: OpenBooleanNetwork, phi: int, bninput: dict):
     '''
     Search indefinitely for matching attractors for the given input values.
     and returns the first matching attractors found
@@ -71,19 +65,18 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
     
     attractor_keys = list()
     states = []
-    input_fixed_for = 0
     it = 0
 
     while not attractor_keys:
 
-        if input_fixed_for < fix_input_for:
-            input_fixed_for += 1
+        if it < phi:
+            it += 1
             for k in bn.input_nodes:
                 bn[k].state = bninput[k]
 
         states.append(bn.update())
         
-        # Search which attractractors have developed in the run
+        # Search which attractors have developed in the run
         attractor_keys = search_attractors(states, bn.atm.dattractors)
         
     return attractor_keys
@@ -92,7 +85,7 @@ def get_attraction_basin(bn: OpenBooleanNetwork, fix_input_for: int, bninput: di
 
 def __test_state(params: tuple):
     
-    bnjson, s, i, fi = params
+    bnjson, s, i, phi = params
 
     if 'bn' not in globals():
         global bn, virgin
@@ -105,12 +98,12 @@ def __test_state(params: tuple):
     for j, node in enumerate(bn.nodes):
         node.state = s[j]
 
-    a = get_attraction_basin(bn, fix_input_for=fi, bninput=i)
+    a = get_attraction_basin(bn, phi=phi, bninput=i)
   
     # Only one attractor shall appear for each input in absence of noise
     return binstate(i), a[0][0] if len(a) == 1 else None
 
-def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int, executor=None):
+def test_attraction_basins(bn: SelectiveBooleanNetwork, phi: int, executor=None):
     '''
     Test whether the given Boolean Network fixate itself
     on a specific attractor once a input value is settled
@@ -125,37 +118,39 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, fix_input_for: int, exec
     
     params = itertools.product(states, inputs)
 
-    attrs = set()
+    attrs = dict()
     
     if executor is None or 2**len(bn) / NP < 2**5: #
 
         for s, i in params:
-        
+            # Set initial network state
             for j, node in enumerate(bn.nodes):
                 node.state = s[j]
 
-            a = get_attraction_basin(bn, fix_input_for=fix_input_for, bninput=i)
+            a = get_attraction_basin(bn, phi=phi, bninput=i)
 
             # Only one attractor shall appear for each input in absence of noise
-            if len(a) == 1:
-                attrs.add((binstate(i), a[0][0]))
-            else:
+            if len(a) > 1 or binstate(i) in attrs and attrs[binstate(i)] != a[0][0]:
                 return False
+            elif binstate(i) not in attrs:
+                attrs[binstate(i)] = a[0][0]
 
     else:   
         
         params = map(
-            lambda x: (bn.to_json(), x[0], x[1], fix_input_for),
+            lambda x: (bn.to_json(), x[0], x[1], phi),
             params
         )
 
-        attrs = set(executor(
-            __test_state, 
-            params
-        ))
-           
+        for s, a in set(executor(__test_state, params)):
+
+            if a is None or s in attrs and attrs[s] != a:
+                return False
+            elif s not in attrs:
+                attrs[s] = a
+    
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once
-    return dict(attrs) if len(attrs) == len(bn.atm.attractors) else False 
+    return attrs if len(set(attrs.values())) == len(bn.atm.attractors) else False 
 
 ##############################################################################

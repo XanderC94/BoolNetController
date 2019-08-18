@@ -1,7 +1,7 @@
 from pathlib import Path
 from pandas import DataFrame
 from bncontroller.sim.utils import GLOBALS, load_global_config
-from bncontroller.file.utils import get_dir, FROZEN_DATE
+from bncontroller.filelib.utils import get_dir, FROZEN_DATE
 from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.stubs.selector.generation import generate_consistent_bnselector as generate_consistent_bnselector
 

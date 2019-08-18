@@ -5,9 +5,9 @@ from pathlib import Path
 from collections import namedtuple
 from bncontroller.jsonlib.utils import Jsonkin, FunctionWrapper
 from bncontroller.jsonlib.utils import read_json, jsonrepr, objrepr, write_json
-from bncontroller.collectionslib.utils import first
+from bncontroller.collectionslib.utils import first, flat
 from bncontroller.sim.data import Point3D, ArenaParams, BNParams
-from bncontroller.file.utils import iso8106, gen_fname, get_dir
+from bncontroller.filelib.utils import iso8106, gen_fname, get_dir
 from bncontroller.sim.robot.utils import DeviceName
 from singleton_decorator import singleton
 
@@ -53,6 +53,7 @@ def normalize(defaults: dict, **kwargs):
             if isinstance(obj, dict) and isinstance(d, dict):
                 norm.update({k: r_update_internal_dict(d, t, alt, **obj)})
             elif isinstance(obj, list) and isinstance(d, dict):
+            
                 norm.update({k: [
                     r_update_internal_dict(d, t, alt, **o)
                     if isinstance(o, dict) else o
@@ -214,6 +215,12 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''origin spawn point for light source'''
         ),
+        sim_light_intensity=DefaultOption(
+            value=1.0,
+            type=float,
+            alt=None,
+            descr='''light source intensity'''
+        ),
         sim_agent_position=DefaultOption(
             value=Point3D(0.0, 0.0, 0.0),
             type=Point3D,
@@ -249,6 +256,12 @@ class DefaultConfigOptions(Jsonkin):
             type=Path,
             alt=None,
             descr='''Directory or file where to store the simulation general log'''
+        ),
+        sim_unique_data_file=DefaultOption(
+            value=False,
+            type=bool,
+            alt=None,
+            descr='''Whether or not each simulation (of a single run) have to use the same data file or not'''
         ),
 
         # Boolean Networks Generation Control Parameters #
@@ -313,7 +326,7 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''number of wanted attractors'''
         ),
-        slct_target_transition_rho=DefaultOption(
+        slct_target_transition_tau=DefaultOption(
             value=dict(),
             type=float,
             alt=dict,
@@ -340,7 +353,7 @@ class DefaultConfigOptions(Jsonkin):
         # alt=None,
         #     descr='''Fractions of update steps (it) on each which apply inputs on input node.'''
         # ),
-        slct_fix_input_steps=DefaultOption(
+        slct_input_steps_phi=DefaultOption(
             value=1,
             type=int,
             alt=None,
@@ -405,6 +418,12 @@ class DefaultConfigOptions(Jsonkin):
             type=float,
             alt=None,
             descr='''Specify a score threshold under which model are considered "good"'''
+        ),
+        plot_image_path=DefaultOption(
+            value=Path('.'),
+            type=Path,
+            alt=None,
+            descr='''ath where to store / read plot images'''
         ),
         test_data_path=DefaultOption(
             value=Path('.'),
@@ -495,9 +514,9 @@ class Config(Jsonkin):
     bn_n_inputs -- number or List of nodes of the BN to be reserved as inputs
     bn_n_outputs -- number or List of nodes of the BN to be reserved as outputs
     slct_target_n_attractors -- number of wanted attractors
-    slct_target_transition_rho -- probability to jump from an attractor to another different from itself.
+    slct_target_transition_tau -- probability to jump from an attractor to another different from itself.
     slct_noise_rho -- Probability of noise to flip the state of a BN
-    slct_fix_input_steps --
+    slct_input_steps_phi --
                 For how many steps the input should be enforced in the network
                 (after each sensing)
 
@@ -548,10 +567,12 @@ class Config(Jsonkin):
         self.sim_sensors_thresholds = options['sim_sensors_thresholds']
         self.sim_event_timer_s = options['sim_event_timer_s']
         self.sim_light_position = options['sim_light_position']
+        self.sim_light_intensity = options['sim_light_intensity']
         self.sim_agent_position = options['sim_agent_position']
         self.sim_agent_yrot_rad = options['sim_agent_yrot_rad']
         self.sim_config_path = options['sim_config_path']
         self.sim_data_path = options['sim_data_path']
+        self.sim_unique_data_file = options['sim_unique_data_file']
         self.sim_log_path = options['sim_log_path']
         self.sim_suppress_logging = options['sim_suppress_logging']
 
@@ -566,11 +587,11 @@ class Config(Jsonkin):
         self.bn_n_outputs = options['bn_n_outputs']
         self.slct_behaviours_map = options['slct_behaviours_map']
         self.slct_target_n_attractors = options['slct_target_n_attractors']
-        self.slct_target_transition_rho = options['slct_target_transition_rho']
+        self.slct_target_transition_tau = options['slct_target_transition_tau']
         # self.slct_in_attr_map = options['slct_in_attr_map']
         self.slct_noise_rho = options['slct_noise_rho']
         # self.slct_input_step_frac = options['slct_input_step_frac']
-        self.slct_fix_input_steps = options['slct_fix_input_steps']
+        self.slct_input_steps_phi = options['slct_input_steps_phi']
 
         # Evaluation Parameters
         self.eval_aggr_function = options['eval_aggr_function']
@@ -585,6 +606,7 @@ class Config(Jsonkin):
 
         # Test #
         self.plot_positives_threshold = options['plot_positives_threshold']
+        self.plot_image_path = options['plot_image_path']
         self.test_data_path = options['test_data_path']
         self.test_n_instances = options['test_n_instances']
         # self.test_aggr_function = options['test_aggr_function']
