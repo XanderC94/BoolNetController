@@ -10,7 +10,7 @@ from bncontroller.boolnet.utils import search_attractors, binstate
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
 from bncontroller.collectionslib.utils import first, flat
-from bncontroller.stubs.selector.utils import noisy_update
+from bncontroller.stubs.selector.utils import noisy_update, udict
 
 NP = cpu_count()
 
@@ -51,7 +51,7 @@ def test_bn_state_space_omogeneity(bn: BooleanNetwork, i: int, noise_rho:float):
 
     return len(set(found_attrs)) == len(bn.atm.attractors)
 
-def get_attraction_basin(bn: OpenBooleanNetwork, phi: int, bninput: dict):
+def get_attraction_basin(bn: OpenBooleanNetwork, phi: int, bninput: dict) -> list:
     '''
     Search indefinitely for matching attractors for the given input values.
     and returns the first matching attractors found
@@ -83,27 +83,32 @@ def get_attraction_basin(bn: OpenBooleanNetwork, phi: int, bninput: dict):
 
 ##############################################
 
-def __test_state(params: tuple):
+def test_state_attraction(bn, state, inputs, phi) -> (str, str):
+
+    for j, node in enumerate(bn.nodes):
+        node.state = state[j]
+
+    attractors = get_attraction_basin(bn, phi=phi, bninput=inputs)
+    
+    # Only one attractor shall appear for each input in absence of noise
+    return binstate(inputs), attractors[0][0] if len(attractors) == 1 else None
+
+def __task__test_state_attraction(params: tuple):
     
     bnjson, s, i, phi = params
 
     if 'bn' not in globals():
         global bn, virgin
+        virgin = None
+        # bn = SelectiveBooleanNetwork.from_json(bnjson)
+
+    if bnjson != virgin:
         virgin = bnjson
         bn = SelectiveBooleanNetwork.from_json(bnjson)
-    elif bnjson != virgin:
-        virgin = bnjson
-        bn = SelectiveBooleanNetwork.from_json(bnjson)
-        
-    for j, node in enumerate(bn.nodes):
-        node.state = s[j]
 
-    a = get_attraction_basin(bn, phi=phi, bninput=i)
-  
-    # Only one attractor shall appear for each input in absence of noise
-    return binstate(i), a[0][0] if len(a) == 1 else None
+    return test_state_attraction(bn, s, i, phi)
 
-def test_attraction_basins(bn: SelectiveBooleanNetwork, phi: int, executor=None):
+def test_attraction_basins(bn: SelectiveBooleanNetwork, phi: int, executor=None) -> dict or bool:
     '''
     Test whether the given Boolean Network fixate itself
     on a specific attractor once a input value is settled
@@ -118,23 +123,17 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, phi: int, executor=None)
     
     params = itertools.product(states, inputs)
 
-    attrs = dict()
+    attrs = udict()
     
     if executor is None or 2**len(bn) / NP < 2**5: #
-
+        
         for s, i in params:
-            # Set initial network state
-            for j, node in enumerate(bn.nodes):
-                node.state = s[j]
+            
+            bs, a = test_state_attraction(bn, s, i, phi)
 
-            a = get_attraction_basin(bn, phi=phi, bninput=i)
-
-            # Only one attractor shall appear for each input in absence of noise
-            if len(a) > 1 or binstate(i) in attrs and attrs[binstate(i)] != a[0][0]:
+            if not attrs.update(bs, a):
                 return False
-            elif binstate(i) not in attrs:
-                attrs[binstate(i)] = a[0][0]
-
+            
     else:   
         
         params = map(
@@ -142,12 +141,9 @@ def test_attraction_basins(bn: SelectiveBooleanNetwork, phi: int, executor=None)
             params
         )
 
-        for s, a in set(executor(__test_state, params)):
-
-            if a is None or s in attrs and attrs[s] != a:
+        for bs, a in set(executor(__task__test_state_attraction, params)):
+            if not attrs.update(bs, a):
                 return False
-            elif s not in attrs:
-                attrs[s] = a
     
     # An attractor should appear for at least 1 set of inputs
     # # that is, even if there are repeated keys, all key shall appears at least once

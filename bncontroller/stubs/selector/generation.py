@@ -11,15 +11,15 @@ def generate_consistent_bnselector(executor=None) -> SelectiveBooleanNetwork:
     
     max_iters = GLOBALS.sd_max_iters
     na = GLOBALS.slct_target_n_attractors
-    at_rhos = GLOBALS.slct_target_transition_rho
+    at_taus = GLOBALS.slct_target_transition_tau
     n_rho = GLOBALS.slct_noise_rho
-    fixed_in_steps = GLOBALS.slct_fix_input_steps
+    i_phi = GLOBALS.slct_input_steps_phi
 
     generator = template_selector_generator(*bn_params)
 
     gnt = GenerateNTest(
         sol_generator=lambda: generate_rbn(generator.new_selector, force_consistency=True),
-        sol_test=lambda sol: step1_evaluation(sol, na, at_rhos, n_rho) and step2_evaluation(sol, fixed_in_steps, executor),
+        sol_test=lambda sol: step1_evaluation(sol, na, at_taus, n_rho) and step2_evaluation(sol, i_phi, executor),
         sol_evaluator=lambda score: score
     )
 
