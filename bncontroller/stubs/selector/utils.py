@@ -17,30 +17,6 @@ def template_selector_generator(
 
     return RBNFactory(_N, _K, P, Q, _I, _O, F)
 
-###################################################################################
-
-def noisy_update(bn: OpenBooleanNetwork, steps: int, noise_rho: float):
-
-    states = []
-    # __input_step = 0
-
-    for _ in range(steps):
-
-        # if input_step + __input_step == i:
-        #     __input_step += input_step
-        #     for k in bn.input_nodes:
-        #         bn[k].state = random.choice([True, False])
-
-        if random.choices([True, False], [noise_rho, 1.0 - noise_rho])[0]:
-
-            node = random.choice(bn.keys)
-
-            bn[node].state = not bn[node].state
-
-        states.append(bn.update())
-
-    return states
-
 ##############################################################################
 
 def test_contraints(obj: object, constraints_tests: list) -> bool:

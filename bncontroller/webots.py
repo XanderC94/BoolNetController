@@ -2,7 +2,6 @@ import subprocess
 from pathlib import Path
 
 import bncontroller.stubs.utils as stub_utils
-from bncontroller.file.utils import cpaths
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.boolnet.structures import OpenBooleanNetwork

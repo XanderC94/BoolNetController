@@ -157,10 +157,10 @@ class VariableNeighborhoodSearch(
 
             if self.__compare(new_score, ctx.score):
 
+                ctx.score = new_score
                 ctx.stagnation = 0
                 ctx.n_stalls = 0
                 ctx.n_flips = params.min_flips
-                ctx.score = new_score
 
             else:
 

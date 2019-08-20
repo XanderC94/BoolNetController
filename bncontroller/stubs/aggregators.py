@@ -27,8 +27,15 @@ def antiphototaxis(sim_data: dict, lpos: Point3D) -> (float, float):
 
     score, position = phototaxis(sim_data, lpos)
 
+    return score, position 
+
+def antiphototaxis_min(sim_data: dict, lpos: Point3D) -> (float, float):
+
+    score, position = phototaxis(sim_data, lpos)
+
     return 1 / score, position 
 
+######################################################################################
 
 def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
 
@@ -42,7 +49,6 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
         else:
             return float('inf')
 
-
     noise_phase_data = df[df['noise'] == True]
     phase_l = int(len(noise_phase_data)/2)
 
@@ -51,15 +57,19 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
 
     ##################################################################
 
-    noise_a01_count = noise_phase_data[:phase_l]['attr'].value_counts()
+    noise_a01_count1 = noise_phase_data[:phase_l]['attr'].value_counts()
+    noise1_a0_count = noise_a01_count1['a0'] if 'a0' in df else 0
+    noise1_a1_count = noise_a01_count1['a1'] if 'a0' in df else 0
 
-    noise_score1 = get_attr_ratio(noise_a01_count)
+    noise_score1 = get_attr_ratio(noise_a01_count1)
 
     ##################################################################
 
-    noise_a01_count = noise_phase_data[phase_l:]['attr'].value_counts()
+    noise_a01_count2 = noise_phase_data[phase_l:]['attr'].value_counts()
+    noise2_a0_count = noise_a01_count2['a0'] if 'a0' in df else 0
+    noise2_a1_count = noise_a01_count2['a1'] if 'a0' in df else 0
 
-    noise_score2 = get_attr_ratio(noise_a01_count)
+    noise_score2 = get_attr_ratio(noise_a01_count2)
 
     ##################################################################
 
@@ -77,42 +87,64 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
 
     ##################################################################
 
-    pt_apos = pt_data['position'].iloc[0]
-    apt_apos = apt_data['position'].iloc[0]
+    pt_apos = pt_data.iloc[0]['position']
+    pt_fapos = pt_data.iloc[-1]['position']
+    apt_apos = apt_data.iloc[0]['position']
+    apt_fapos = apt_data.iloc[-1]['position']
 
-    apt_yrot = list(apt_data['light_values'].iloc[0].values())
-    pt_yrot = list(pt_data['light_values'].iloc[0].values())
+    apt_ilv = [*apt_data.iloc[0]['light_values'].values()]
+    apt_flv = [*apt_data.iloc[-1]['light_values'].values()]
+    pt_ilv = [*pt_data.iloc[0]['light_values'].values()]
     
-    apt_yrot_idx = apt_yrot.index(max(apt_yrot))
-
+    apt_yrot_idx = apt_ilv.index(max(apt_ilv))
     apt_yrot = EPuckMorphology.LIGHT_SENSORS_POSITION[apt_yrot_idx]
+    
+    apt_fyrot_idx = apt_flv.index(max(apt_flv))
+    apt_fyrot = EPuckMorphology.LIGHT_SENSORS_POSITION[apt_fyrot_idx]
 
-    pt_yrot_idx = pt_yrot.index(max(pt_yrot))
+    pt_yrot_idx = pt_ilv.index(max(pt_ilv))
 
     pt_yrot = EPuckMorphology.LIGHT_SENSORS_POSITION[pt_yrot_idx]
 
     return (
-            {
-                'noise_score1': noise_score1, 
-                'pt_score': pt_score, 
-                'pt_a01_ratio': pt_a01_ratio, 
-                'apt_score': apt_score, 
-                'apt_a01_ratio': apt_a01_ratio, 
-                'noise_score2': noise_score2
-            }, {
-                # 'lpos': lpos.to_json(),
-                'pt_apos': pt_apos,
-                'pt_yrot': pt_yrot,
-                'pt_idist': lpos.dist(pt_apos),
-                'apt_apos': apt_apos,
-                'apt_yrot': apt_yrot,
-                'apt_idist': lpos.dist(apt_apos),
-                'pt_fdist': pt_dist, 
-                'apt_fdist': apt_dist
-            }
-        )
+        {
+            'noise_score1': noise_score1, 
+            'noise1_a0_count': noise1_a0_count, 
+            'noise1_a1_count': noise1_a1_count, 
+            'pt_score': pt_score, 
+            'pt_a01_ratio': pt_a01_ratio, 
+            'apt_score': apt_score, 
+            'apt_a01_ratio': apt_a01_ratio, 
+            'noise_score2': noise_score2,
+            'noise2_a0_count': noise2_a0_count,
+            'noise2_a1_count': noise2_a1_count,
+        }, {
+            # 'lpos': lpos.to_json(),
+            'pt_apos': pt_apos,
+            'pt_yrot': pt_yrot,
+            'pt_idist': lpos.dist(pt_apos),
+            'apt_apos': apt_apos,
+            'apt_yrot': apt_yrot,
+            'apt_idist': lpos.dist(apt_apos),
+            'pt_fdist': pt_dist, 
+            'pt_fapos': pt_fapos, 
+            'apt_fdist': apt_dist,
+            'apt_fyrot': apt_fyrot,
+            'apt_fapos': apt_fapos,
+        }
+    )
 
 ############################################################################
+
+def weighted_pt(s, i, f):
+
+    return s * f / i
+
+def weighted_apt(s, i, f):
+    
+    return s * f / i
+
+#############################################################################
 
 if __name__ == "__main__":
     

@@ -1,7 +1,8 @@
 from bncontroller.boolnet.function import BooleanFunction
-from bncontroller.boolnet.boolean import Boolean, r_bool
+from bncontroller.boolnet.boolean import Boolean, r_bool, random, TRUTH_VALUES
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.jsonlib.utils import Jsonkin, jsonrepr
+from bncontroller.collectionslib.utils import cdiff
 
 class BooleanNode(Jsonkin):
     '''
@@ -163,6 +164,22 @@ class BooleanNetwork(Jsonkin):
         '''
         return self()
     
+    def noisy_update(self, noise_rho: float, m=1):
+
+        flipped = set()
+        
+        for _ in range(m):
+            
+            if random.choices(TRUTH_VALUES, [1.0 - noise_rho, noise_rho])[0]:
+
+                node = random.choice(cdiff(self.keys, flipped))
+
+                flipped.add(node)
+
+                self[node].state = not self[node].state
+
+        return self.update()
+
     def __setitem__(self, nlabel:str, new_node: BooleanNode):
         self.__nodes[str(nlabel)] = new_node
 

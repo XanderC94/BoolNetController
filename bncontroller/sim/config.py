@@ -90,6 +90,12 @@ class DefaultConfigOptions(Jsonkin):
             alt=None,
             descr='''value to which reduce the objective function'''
         ), #  
+        eval_cmp_function=DefaultOption(
+            value=FunctionWrapper('bncontroller.sim.config::empty'),
+            type=FunctionWrapper,
+            alt=None,
+            descr='''comparator of the evaluation scores'''
+        ), #  
         
         # Simulator Launch Options #
 
@@ -480,59 +486,6 @@ class DefaultConfigOptions(Jsonkin):
 
 class Config(Jsonkin):
     '''      
-    app_output_path -- Directory or file where to store the simulation general log
-    webots_path -- path to webots executable
-    webots_world_path -- path to webots world file
-    webots_launch_opts -- simulator command line arguements
-    webots_quit_on_termination -- quit simulator after simulation ends
-    webots_nodes_defs -- simulation world node definitions (node custom names)
-    webots_agent_controller -- simulation world node definitions (node custom names)
-    webots_arena_size -- simulation world arena size
-    sd_max_iters -- stochastic descent max iterations
-    sd_min_flips -- stochastic descent min flipped TT entries by iteration
-    sd_max_stalls -- -1 -> Adaptive Walk, 0+ -> VNS
-    sd_max_stagnation -- close the algorithm if no further improvement are found after i iteration
-    sd_target_score -- value to which reduce the objective function
-    app_core_function -- value to which reduce the objective function
-    sim_run_time_s -- execution time of the simulation in seconds
-    sim_timestep_ms -- simulation Loop synch time in ms
-    sim_sensing_interval_ms -- execution time of the simulation in milli-seconds
-    sim_sensors_thresholds -- sensors threshold to apply as binarization filters
-    sim_event_timer_s -- perturbation event triggered after t seconds. if -1 => not triggered.
-    sim_light_position -- origin spawn point for light source
-    sim_agent_position -- origin Spawn point for agents
-    sim_agent_yrot_rad -- agent spawn orientation
-    sim_suppress_logging -- shut the simulation logger unit
-    sim_config_path -- Directory or file where to store the simulation config
-    sim_data_path -- Directory or file where to store the simulation data
-    sim_log_path -- Directory or file where to store the simulation general log
-    bn_ctrl_model_path -- Directory or file where to store the bn model
-    bn_ctrl_model_path -- Directory or file where to store the bn selector model
-    bn_n -- boolean Network cardinality
-    bn_k -- boolean Network Node arity
-    bn_p -- truth value bias
-    bn_n_inputs -- number or List of nodes of the BN to be reserved as inputs
-    bn_n_outputs -- number or List of nodes of the BN to be reserved as outputs
-    slct_target_n_attractors -- number of wanted attractors
-    slct_target_transition_tau -- probability to jump from an attractor to another different from itself.
-    slct_noise_rho -- Probability of noise to flip the state of a BN
-    slct_input_steps_phi --
-                For how many steps the input should be enforced in the network
-                (after each sensing)
-
-    eval_agent_spawn_radius_m -- spawn radius of the agent
-    eval_light_spawn_radius_m -- spawn radius of the light point
-    eval_n_agent_spawn_points -- How many agent position to evaluate, If 0 uses always the same point (specified in sim_agent_position) to spawn the agent
-    eval_n_light_spawn_points -- How many light position to evaluate, If 0 uses always the same point (specified in sim_light_position) to spawn the light
-    eval_agent_yrot_start_rad -- From where to start sampling the yrot angles
-    eval_agent_n_yrot_samples -- Number of rotation to evaluate If 0 uses always the same value (specified in sim_agent_yrot_rad) to set the agent rotation
-    plot_positives_threshold -- Specify a score threshold under which model are considered "good"
-    test_data_path -- Path where to store / read test data
-    test_n_instances -- # number of instances of the test cycle for each bn
-    test_aggr_function -- how test parameters should be aggregated in the test loop
-    train_save_suboptimal_models -- save bn model with score under the specified threshold
-    train_generate_only -- Only generate training bn without running SD
-    app --
     '''
 
     def __init__(self, **kwargs):
@@ -595,6 +548,7 @@ class Config(Jsonkin):
 
         # Evaluation Parameters
         self.eval_aggr_function = options['eval_aggr_function']
+        self.eval_cmp_function = options['eval_cmp_function']
         self.eval_light_spawn_radius_m = options['eval_light_spawn_radius_m']
         self.eval_light_offset_quadrant = options['eval_light_offset_quadrant'].upper()
         self.eval_agent_spawn_radius_m = options['eval_agent_spawn_radius_m']

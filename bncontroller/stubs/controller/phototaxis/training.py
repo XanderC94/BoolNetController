@@ -3,7 +3,6 @@
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS
 from bncontroller.boolnet.utils import get_terminal_nodes
-from bncontroller.typeslib.comparators import lesser, seq_compare, mixed_compare
 from bncontroller.search.pvns import VariableNeighborhoodSearch as VNS
 from bncontroller.search.pvns import VNSParameters, VNSOutput
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
@@ -18,10 +17,10 @@ def train_bncontroller(bn: OpenBooleanNetwork) -> (OpenBooleanNetwork, VNSOutput
     terminal_nodes = get_terminal_nodes(bn)
     to_never_flip = set(map(hash, bn.input_nodes + terminal_nodes))
 
-    train_scores_cmp = lambda a, b: seq_compare(a, b, strat=lesser, fallback=mixed_compare)
+    train_scores_cmp = GLOBALS.eval_cmp_function
     train_eval_fn = lambda bn, ct: pt_evaluation_for_train(bn, ct, spawn_points)
     train_scramble_strategy = lambda bn, nf, e: bn_scramble_strategy(bn, nf, e.union(to_never_flip))
-    train_tidy_strategy = lambda bn, nf: edit_boolean_network(bn, nf)
+    train_tidy_strategy = edit_boolean_network
 
     pvns = VNS(
         sol_evaluator=train_eval_fn,

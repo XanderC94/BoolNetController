@@ -2,8 +2,8 @@ import os
 from collections.abc import Iterable
 from pathlib import Path
 
-def collection_diff(first: Iterable, second: Iterable):
-    return [item for item in first if item not in set(second)]
+def cdiff(first: Iterable, second: Iterable, to=list):
+    return to(item for item in first if item not in set(second))
 
 def flat(x: Iterable, to=list, exclude=(dict, str)):
     '''

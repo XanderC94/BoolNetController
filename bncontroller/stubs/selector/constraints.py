@@ -10,7 +10,7 @@ from bncontroller.boolnet.utils import search_attractors, binstate
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import OpenBooleanNetwork, BooleanNetwork
 from bncontroller.collectionslib.utils import first, flat
-from bncontroller.stubs.selector.utils import noisy_update, udict
+from bncontroller.stubs.selector.utils import udict
 
 NP = cpu_count()
 
@@ -28,12 +28,12 @@ def test_attractors_transitions(bn: BooleanNetwork, at_taus: dict):
     '''
 
     return all(
-        bn.atm.dtableau[i][j] > at_taus[i][j] 
+        bn.atm.dtableau[i][j] >= at_taus[i][j] 
         for i in at_taus
         for j in at_taus[i]
     )
 
-def test_bn_state_space_omogeneity(bn: BooleanNetwork, i: int, noise_rho:float):
+def test_bn_state_space_homogeneity(bn: BooleanNetwork, i: int, noise_rho:float):
     '''
     Checks whether the attractor space is:
         * Deaf to inputs values in presence of "ambient" noise.
@@ -43,9 +43,7 @@ def test_bn_state_space_omogeneity(bn: BooleanNetwork, i: int, noise_rho:float):
 
         * Displays, to some degree of alternance, all the attractors (see ATM).
     '''
-    states = noisy_update(bn, i, noise_rho)
-
-    # print(f'Finding attractor in {len(states)} states')
+    states = [bn.noisy_update(noise_rho) for _ in range(i)]
 
     found_attrs = search_attractors(states, bn.atm.dattractors)
 

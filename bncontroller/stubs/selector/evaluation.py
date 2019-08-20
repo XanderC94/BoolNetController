@@ -10,7 +10,7 @@ def step1_evaluation(bn: SelectiveBooleanNetwork, na: int, ataus: dict, nrho: fl
     return test_contraints(bn, [
             lambda o: constraints.test_attractors_number(o, na),
             lambda o: constraints.test_attractors_transitions(o, ataus),
-            lambda o: constraints.test_bn_state_space_omogeneity(o, i, nrho)
+            lambda o: constraints.test_bn_state_space_homogeneity(o, i, nrho)
         ])
 
 def step2_evaluation(bn: SelectiveBooleanNetwork, phi: int, executor=None):

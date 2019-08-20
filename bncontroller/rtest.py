@@ -4,7 +4,7 @@ from pathlib import Path
 from collections import defaultdict
 from collections.abc import Iterable
 
-import bncontroller.file.utils as futils
+import bncontroller.filelib.utils as futils
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.jsonlib.utils import read_json, jsonrepr
@@ -21,7 +21,7 @@ def find_bn_type(jsonrepr: dict):
     def go(jsonrepr: set):
         if 'attractors_input_map' in jsonrepr:
             return SelectiveBooleanNetwork
-        elif 'input' in jsonrepr and 'output' in jsonrepr:
+        elif 'inputs' in jsonrepr and 'outputs' in jsonrepr:
             return OpenBooleanNetwork
         else:
             return BooleanNetwork
