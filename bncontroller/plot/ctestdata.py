@@ -1,266 +1,293 @@
 import matplotlib.pyplot as plotter
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.patches as mpatches
 
-import random, math, argparse, itertools
+import random, math, argparse
 import numpy as np
-import re as regx
-import statistics
 import bncontroller.plot.utils as pu
-import bncontroller.file.utils as fu
+import bncontroller.plot.plotter as plots
+import bncontroller.filelib.utils as fu
 from pandas import DataFrame
-from pathlib import Path
 from collections import OrderedDict
-from collections.abc import Iterable
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.file.utils import cpaths
+from bncontroller.filelib.utils import cpaths
 from bncontroller.sim.utils import Config
 from bncontroller.parse.utils import parse_args
 from bncontroller.plot.ilegend import interactive_legend
-from bncontroller.plot.colors import get_cmap
-from bncontroller.plot.outputdata import plot_output
-from bncontroller.collectionslib.utils import flat
+from bncontroller.collectionslib.utils import flat, transpose
+from bncontroller.stubs.aggregators import weighted_pt, weighted_apt
 
 #################################################################################
 
-def plot_data(data: dict, positives_threshold: float):
+def plot_data(data: dict, positives_threshold: float, ascending=True):
 
-    cmap = get_cmap(len(data), name='rainbow')
+    simple_keys = set(map(lambda x: fu.get_simple_fname(x, fu.FNAME_PATTERN, parts=['%s','%s','%s'], uniqueness=2), data.keys()))
+
+    # print(simple_keys)
+
+    model = 'all' if len(simple_keys) > 1 else simple_keys.pop()
+
+    print(model)
+
+    ds = DataFrame()
+
+    c = ['score', 'wscore', 'idist', 'fdist', 'yrot']
+
+    for k in data:
+        data[k]['bn'] = k
+        data[k]['wscore'] = weighted_pt(data[k]['score'], data[k]['idist'], data[k]['fdist'])
+        data[k]['yrot'] = data[k]['yrot'].apply(pu.to_deg)
+        ds = ds.append(data[k][['bn'] + c], ignore_index=True, sort=False)
+
+    means = DataFrame(ds[['bn', 'score', 'wscore']]).groupby(by=['bn'], as_index=False).mean()
+    
+    ranks = DataFrame(dict(
+        bn=means['bn'].values,
+        mscore=means['score'].rank(axis=0, method='dense', numeric_only=True, ascending=ascending).values,
+        mwscore=means['wscore'].rank(axis=0, method='dense', numeric_only=True, ascending=ascending).values
+    ))
+
+    ranks['rscore'] = ranks.sum(axis=1)
+    ranks['frank'] = ranks['rscore'].rank(axis=0, method='dense', numeric_only=True, ascending=True)
+    # ranks.sort_values(by=['frank'], inplace=True)
+    
+    ds['mfrank'] = float('+inf')
+    means['frank'] = float('+inf')
+
+    for k, r in ranks[['bn', 'frank']].values:
+        means.loc[means['bn'] == k, ['frank']] = r
+        ds.loc[ds['bn'] == k, ['mfrank']] = r
+
+    means.sort_values(by=['frank'], inplace=True)
+    ds.sort_values(by=['mfrank'], inplace=True)
+
+    print(means)
+
+    keys = ds['bn'].unique()
+
+    (
+        scores, wscores, idists, fdists, yrots
+    ) = ds[['bn'] + c].groupby(by=['bn'], sort=False)[c].agg(list).T.values
 
     # Model Tests -- Scores distribution #
 
-    bpfig, bpax = plotter.subplots(num=f'test_score_boxplot')
-
-    bpax.set_title('Model Tests -- Scores distribution (Less is Better)')
-    bpax.set_xlabel('BN model')
-    bpax.set_ylabel('Score')
-
-    bpax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-
-    bpax.set_ylim([0.0, 2.5e-05])
-
-    bpax.boxplot(
-        x=list(data[k]['score'] for k in data),
-        labels=list(data.keys()),
-        whis=[5, 95], # 1.5,
-        # meanline=True,
-        flierprops=dict(markerfacecolor='r', marker='D'),
+    bpfig, bpax = plots.boxplot(
+        y=scores,
+        x=keys,
+        window=f'test_score_boxplot_{model}',
+        title='Model Tests -- Scores distribution (Less is Better)',
+        xlabel='Model',
+        ylabel='Score',
+        ylims=[0.0, 2.5e-05]
     )
 
-    plotter.xticks(
-        list(range(1, len(data) + 1)),
-        list(data.keys()), 
-        rotation=15
-    )
-
-    bpfig.subplots_adjust(
-        left=0.04,
-        right=0.96,
-        bottom=0.13,
-        top=0.96,
-        wspace= 0.0,
-        hspace=0.0
+    bp1fig, bp1ax = plots.boxplot(
+        y=wscores,
+        x=keys,
+        window=f'test_wscore_boxplot_{model}',
+        title='Model Tests -- wScores distribution (Less is Better)',
+        xlabel='Model',
+        ylabel='wScore',
+        ylims=[0.0, 2.5e-05]
     )
 
     # Model Tests -- rDist distribution #
 
-    bp2fig, bp2ax = plotter.subplots(num=f'test_fDist_boxplot')
-
-    bp2ax.set_title('Model Tests -- final Distance distribution (Less is Better)')
-
-    bp2ax.set_xlabel('BN model')
-    bp2ax.set_ylabel('Final Distance (m)')
-
-    bp2ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-
-    bp2ax.set_ylim([0.0, 2.6])
-
-    bp2ax.boxplot(
-        x=list(data[k]['fdist'] for k in data),
-        labels=list(data.keys()),
-        whis=[5, 95], # 1.5,
-        # meanline=True,
-        flierprops=dict(markerfacecolor='r', marker='D'),
-    )
-
-    plotter.xticks(
-        list(range(1, len(data) + 1)),
-        list(data.keys()), 
-        rotation=15
-    )
-
-    bp2fig.subplots_adjust(
-        left=0.04,
-        right=0.96,
-        bottom=0.13,
-        top=0.96,
-        wspace= 0.0,
-        hspace=0.0
+    bp2fig, bp2ax = plots.boxplot(
+        y=fdists,
+        x=keys,
+        window=f'test_fDist_boxplot_{model}',
+        title='Model Tests -- final Distance distribution (Less is Better)',
+        xlabel='Model',
+        ylabel='Final Distance (m)',
+        ylims=[0.0, 2.6]
     )
 
     # Model Tests -- TP / FP #
 
-    bfig, bax = plotter.subplots(num=f'test_positives_bars')
+    fi_ratio = 1.0 / 3.0
 
-    bax.set_title(f'Model Tests -- Positives by Thresholds -- score <= {positives_threshold}')
+    thresholds = flat([positives_threshold])
+    wthresholds = [
+        round(t * fi_ratio, 7) 
+        for t in thresholds
+    ] if ascending else [
+        round(t * 1.0 / fi_ratio, 7) for t in thresholds
+    ]
 
-    bax.set_xlabel('BN model')
-    bax.set_ylabel('P|N (%)')
+    sign = '<' if ascending else '>'
 
-    bax.set_ylim([0, 1.1])
-
-    x = 0
-
-    thresholds = (
-        [positives_threshold] 
-        if isinstance(positives_threshold, float) 
-        else positives_threshold
+    bfig, bax = plots.tbars(
+        y=[
+            *map(
+                lambda __scores: [
+                    sum(s < t if ascending else s > t for s in __scores) / len(__scores) 
+                    for t in thresholds
+                ],
+                scores
+            )
+        ],
+        x=keys,
+        thresholds=thresholds,
+        window=f'test_positives_bars_{model}',
+        title=f'Model Tests -- Success Rate by Thresholds -- score {sign} {thresholds}',
+        xlabel='Model',
+        ylabel='Success Rate (%)',
+        ylims=[0, 1.1],
+        legend_label_fmt=f'score {sign} '+'{k}'
     )
 
-    cmap_bars = get_cmap(len(thresholds), 'rainbow')
-    colors = [cmap_bars(i) for i in range(len(thresholds))]
-
-    for k in data:
-        
-        ps = [sum(s < t for s in data[k]['score']) / len(data[k]) for t in thresholds]
-        
-        bax.bar(
-            x=[x+i for i in range(len(thresholds))],
-            height=ps,
-            color=colors,
-            align='center'
-        )
-
-        x+=len(thresholds) + 3
-
-    plotter.xticks(
-        np.arange(1.5, len(data) * (len(thresholds) + 3), len(thresholds) + 3),
-        list(data.keys()), 
-        rotation=15
+    b1fig, b1ax = plots.tbars(
+        y=[
+            *map(
+                lambda __wscores: [
+                    sum(ws < wt if ascending else ws > wt for ws in __wscores) / len(__wscores) 
+                    for wt in wthresholds
+                ],
+                wscores
+            )
+        ],
+        x=keys,
+        thresholds=wthresholds,
+        window=f'test_wpositives_bars_{model}',
+        title=f'Model Tests -- Success Rate by Thresholds -- wscore {sign} {wthresholds}',
+        xlabel='Model',
+        ylabel='Success Rate (%)',
+        ylims=[0, 1.1],
+        legend_label_fmt=f'wscore {sign} '+'{k}'
     )
 
-    plotter.legend(handles=[
-        mpatches.Patch(color=cmap_bars(i), label=f'score < {str(k)}')
-        for i, k in enumerate(thresholds)
-    ])
-
-    bfig.subplots_adjust(
-        left=0.04,
-        right=0.96,
-        bottom=0.13,
-        top=0.96,
-        wspace= 0.0,
-        hspace=0.0
+    b2fig, b2ax = plots.tbars(
+        y=[
+            *map(
+                lambda __wscores: [
+                    sum(ws < t if ascending else ws > t for ws in __wscores) / len(__wscores) 
+                    for t in thresholds
+                ],
+                wscores
+            )
+        ],
+        x=keys,
+        thresholds=thresholds,
+        window=f'test_wtpositives_bars_{model}',
+        title=f'Model Tests -- Success Rate by Thresholds -- wscore {sign} {thresholds}',
+        xlabel='Model',
+        ylabel='Success Rate (%)',
+        ylims=[0, 1.1],
+        legend_label_fmt=f'wscore {sign} '+'{k}'
     )
 
-    plotter.show()
+    # plotter.show()
     
     # # Model Tests -- Scores / Initial Distance distribution #
 
-    sfig, sax = plotter.subplots(num=f'test_scores_by_iDist_scatter')
-
-    sax.set_title('Model Tests -- Scores / Initial Distance (m) distribution')
-
-    sax.set_xlabel('Initial Distance (m)')
-    sax.set_ylabel('Score')
-
-    sax.set_ylim([0.0, 2.5e-05])
-
-    sax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-
-    for i, k in enumerate(data):
-
-        sax.scatter(
-            x = data[k]['idist'],
-            y = data[k]['score'],
-            color=cmap(i),
-            label=k
-        )
-    
-    sfig.subplots_adjust(
-        left=0.04,
-        right=0.96,
-        bottom=0.13,
-        top=0.96,
-        wspace= 0.0,
-        hspace=0.0
+    sfig, sax = plots.scatter2d(
+        y=scores, 
+        x=idists,
+        k=keys,
+        window=f'test_scores_by_iDist_scatter_{model}',
+        title=f'Model Tests -- Scores / Initial Distance (m) distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='Score',
+        ylims=[0.0, 2.5e-05]
     )
-
-    interactive_legend(sax).show()
-
-    # # Model Tests -- Scores / yRot distribution #
-
-    # s2fig, s2ax = plotter.subplots()
-
-    # s2ax.set_title('Model Tests -- Scores / yRot distribution')
-
-    # s2ax.set_ylim([0.0, 1.5e-05])
-
-    # s2ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-
-    # for k in data:
-    #     s2ax.scatter(
-    #         x = [r * 180 / math.pi for r in data[k]['yrot']],
-    #         y = data[k]['scores'],
-    #         color=np.random.rand(3,),
-    #         label=k
-    #     )
     
-    # interactive_legend(s2ax).show()
+
+    s1fig, s1ax = plots.scatter2d(
+        y=wscores, 
+        x=idists,
+        k=keys,
+        window=f'test_wscores_by_iDist_scatter_{model}',
+        title=f'Model Tests -- wScores / Initial Distance (m) distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='wScore',
+        ylims=[0.0, 2.5e-05]
+    )
+    
+    # interactive_legend(sax).show()
 
     # Model Tests -- Scores / Initial Distance / yRot Distribution #
 
-    s3dax = plotter.figure(num=f'test_scores_by_iDist_yRot_scatter3d').gca(projection='3d')
-
-    s3dax.set_title(f'Model Tests -- Scores / Initial Distance (m) / yRot (°) Distribution')
+    s3fig, s3dax = plots.scatter3d(
+        y=yrots, 
+        x=idists, 
+        z=scores,
+        k=keys,
+        window=f'test_scores_by_iDist_yRot_scatter3d_{model}',
+        title=f'Model Tests -- Scores / Initial Distance (m) / yRot (°) Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
+        zlabel='Score',
+        zlims=[0, 2.5e-05]
+    )
     
-    s3dax.set_xlabel('Initial Distance (m)')
-    s3dax.set_ylabel('yRot (°)')
-    s3dax.set_zlabel('Score')
+    # interactive_legend(s3dax).show()
 
-    s3dax.set_zlim3d(0, 2.5e-05)
-
-    s3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
+    s31fig, s31dax = plots.scatter3d(
+        y=yrots, 
+        x=idists, 
+        z=wscores,
+        k=keys,
+        window=f'test_wscores_by_iDist_yRot_scatter3d_{model}',
+        title=f'Model Tests -- wScores / Initial Distance (m) / yRot (°) Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
+        zlabel='wScore',
+        zlims=[0, 2.5e-05]
+    )
     
-    for i, k in enumerate(data):
-        
-        s3dax.scatter(
-            xs=data[k]['idist'],
-            ys=[r * 180 /math.pi for r in data[k]['yrot']],
-            zs=data[k]['score'],
-            # cmap=plotter.get_cmap('rainbow'),
-            color= cmap(i), # np.random.rand(3,),
-            label=k
-        )
-
-    interactive_legend(s3dax).show()
+    # interactive_legend(s31dax).show()
 
     # Model Tests -- Final Distance / Initial Distance / yRot Distribution #
 
-    f3dax = plotter.figure(num=f'test_fDist_by_iDist_yRot_scatter3d').gca(projection='3d')
-
-    f3dax.set_title(f'Model Tests -- Final Distance (m) / Initial Distance (m) / yRot (°) Distribution')
+    f3fig, f3dax = plots.scatter3d(
+        y=yrots, 
+        x=idists, 
+        z=fdists,
+        k=keys,
+        window=f'test_fDist_by_iDist_yRot_scatter3d_{model}',
+        title=f'Model Tests -- Final Distance (m) / Initial Distance (m) / yRot (°) Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
+        zlabel='Final Distance (m)',
+        zlims=[0, 2.6]
+    )
     
-    f3dax.set_xlabel('Initial Distance (m)')
-    f3dax.set_ylabel('yRot (°)')
-    f3dax.set_zlabel('Final Distance (m)')
+    # interactive_legend(f3dax).show()
 
-    f3dax.ticklabel_format(axis='z', style='sci', scilimits=(0,0))
+    fsfig, fsdax = plots.scatter3d(
+        y=fdists, 
+        x=idists, 
+        z=wscores,
+        k=keys,
+        window=f'test_wscore_by_iDist_fDist_scatter3d_{model}',
+        title=f'Model Tests -- wScore / Initial Distance (m) / Final Distance (m) Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='Final Distance (m)',
+        zlabel='wScore',
+        zlims=[0, 2.5e-05]
+    )
+    
+    # interactive_legend(fsdax).show()
 
-    f3dax.set_zlim3d(0, 2.6)
+    # fsdax.show()
 
-    for i, k in enumerate(data):
-        
-        f3dax.scatter(
-            xs=data[k]['idist'],
-            ys=[r * 180 / math.pi for r in data[k]['yrot']],
-            zs=data[k]['fdist'],
-            # cmap=plotter.get_cmap('rainbow'),
-            color= cmap(i), # np.random.rand(3,),
-            label=k
-        )
+    # plotter.show()
+    
+    # exit(1)
 
-    interactive_legend(f3dax).show()
+    return model, [
+        (bpfig, bpax),
+        (bp1fig, bp1ax),
+        (bp2fig, bp2ax),
+        (bfig, bax),
+        (b1fig, b1ax),
+        (b2fig, b2ax),
+        (sfig, sax),
+        (s1fig, s1ax),
+        (s3fig, s3dax),
+        (s31fig, s31dax),
+        (f3fig, f3dax),
+        (fsfig, fsdax),
+    ]
 
 #######################################################################
 
@@ -292,6 +319,40 @@ if __name__ == "__main__":
         ds_merge_level=args.merge_level
     ))
 
-    plot_data(data, args.config.plot_positives_threshold)
+    if args.merge_level == 3:
+
+        q = set(data.keys())
+
+        for k, d in data.items():
+            
+            if k in q:
+
+                ks = {k: d}
+
+                for l in q:
+                    if k != l and k.split('_')[:2] == l.split('_')[:2]:
+                        ks.update({l: data[l]})  
+
+                q.difference_update(set(ks.keys()))
+
+                model, figs = plot_data(
+                    ks, args.config.plot_positives_threshold, 
+                    ascending=args.config.webots_agent_controller == "phototaxis"
+                )
+
+                pu.save_plots(
+                    fu.get_dir(args.config.plot_image_path / model, create_if_dir=True), 
+                    transpose(figs)[0]
+                )
+    else:
+        model, figs = plot_data(
+            data, args.config.plot_positives_threshold, 
+            ascending=args.config.webots_agent_controller == "phototaxis"
+        )
+
+        pu.save_plots(
+            fu.get_dir(args.config.plot_image_path / model, create_if_dir=True), 
+            transpose(figs)[0]
+        )
 
 

@@ -214,8 +214,8 @@ class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
     def test_selector_constraint_2(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         self.assertTrue(constraints.test_attractors_transitions(bn, {
-            'a0':{'a1': 0.3},
-            'a1':{'a0': 0.3},
+            'a0':{'a0': 0.3, 'a1': 0.3},
+            'a1':{'a0': 0.3, 'a1': 0.3},
         }))
 
     def test_selector_constraint_3(self):

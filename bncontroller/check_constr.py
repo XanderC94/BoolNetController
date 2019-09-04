@@ -47,9 +47,11 @@ if __name__ == "__main__":
         else:
             tTau_map = GLOBALS.slct_target_transition_tau
 
+        print(bn.atm.dtableau)
+
         c1 = constraints.test_attractors_number(bn, GLOBALS.slct_target_n_attractors)
         c2 = constraints.test_attractors_transitions(bn, tTau_map)
-        c3 = constraints.test_bn_state_space_omogeneity(bn, i, GLOBALS.slct_noise_rho)
+        c3 = constraints.test_bn_state_space_homogeneity(bn, i, GLOBALS.slct_noise_rho)
         print(time.perf_counter() - t)
         
         t = time.perf_counter()

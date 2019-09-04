@@ -20,7 +20,7 @@ try:
     ls = demiurge.getFromDef(GLOBALS.webots_nodes_defs['PointLight'])
     ls.getField('location').setSFVec3f(list(GLOBALS.sim_light_position))
     # print(ls.getField('location').getSFVec3f())
-    ls.getField('intensity').setSFFloat(5.0)
+    ls.getField('intensity').setSFFloat(GLOBALS.sim_light_intensity)
     # hyperuranium = demiurge.getFromDef(GLOBALS.webots_nodes_defs['WorldInfo'])
     # hyperuranium.getField('basicTimeStep').setSFFloat(GLOBALS.sim_timestep_ms)
     # print(hyperuranium.getField('basicTimeStep').getSFFloat())
@@ -36,14 +36,14 @@ t_step = trigger_step
 
 e = demiurge.getEmitter('righthand')
 
-signal = False # r_bool() # # First phototaxis
+signal = False # r_bool() # # First phototaxis, in order to have comparable results
 n_signal = 0
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
 while demiurge.step(timestep) != -1 and n_steps != max_steps:
     
     # -------------------- PERFORM SIMULATION STEP ------------------------
-
+    
     if n_steps == t_step:
         # trigger event modifying the simulation world
         t_step +=  trigger_step

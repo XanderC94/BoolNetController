@@ -1,4 +1,4 @@
-from bncontroller.boolnet.structures import BooleanNetwork
+from bncontroller.boolnet.structures import BooleanNetwork, OpenBooleanNetwork
 import networkx as nx
 from collections import defaultdict
 import matplotlib.pyplot as plotter
@@ -6,6 +6,9 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.jsonlib.utils import read_json
+from bncontroller.filelib.utils import cpaths
+from bncontroller.rtest import find_bn_type
+from bncontroller.plot.utils import get_simple_fname, FNAME_PATTERN
 
 def __nodes_std_positioning(I, H, O, ydim=(25, 0, -25)):
 
@@ -40,7 +43,7 @@ def __fill_nx_legend(ax, legend, cmap):
 
 #########################################################################
 
-def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
+def plot_booleannetwork(name, bn: BooleanNetwork, I:list = [], O:list = []):
 
     # Build DiGraph #
 
@@ -64,20 +67,20 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
     ## https://matplotlib.org/examples/color/colormaps_reference.html
     color_map = plotter.get_cmap('rainbow')
 
+    
     # Node Standard Positioning #
     spos = __nodes_std_positioning(I, [k for k in dg.nodes() if k not in I + O], O)
-
     # fixed=list(k for k in dg.nodes() if k in I + O)
     # print(fixed)
-
     # pos = nx.spring_layout(dg, pos=spos, k=5.0, center=(0,0))
+    
     dis = dict((k, dict((p, 1.0) for p in dg.nodes() if p != k))for k in dg.nodes())
     # dis = None
     pos = nx.kamada_kawai_layout(dg, dist= dis, pos=spos, center=(0,0))
 
     # Plotting #
 
-    fig = plotter.figure()
+    fig = plotter.figure(num=f'topology_{name}', figsize=(10, 10), dpi=69)
     ax = fig.add_subplot(1,1,1)
 
     __fill_nx_legend(ax, color_legend, color_map)
@@ -92,6 +95,15 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
         arrows=True
     )
 
+    fig.subplots_adjust(
+        left=0.01,
+        right=0.99,
+        bottom=0.1,
+        top=0.99,
+        wspace= 0.0,
+        hspace=0.0
+    )
+
     plotter.legend(
         frameon=False,
         loc='upper right'
@@ -103,9 +115,15 @@ def plot_booleannetwork(bn: BooleanNetwork, I:list = [], O:list = []):
 if __name__ == "__main__":
     
     load_global_config()
+    
+    for path in cpaths(GLOBALS.bn_ctrl_model_path):
+        bn = find_bn_type(read_json(path))
 
-    i, o = GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs
+        i = []
+        o = []
 
-    bn = BooleanNetwork.from_json(read_json(GLOBALS.bn_ctrl_model_path))
+        if isinstance(bn, OpenBooleanNetwork):
+            i = bn.input_nodes
+            o = bn.output_nodes
 
-    plot_booleannetwork(bn, list(map(str, range(i))), list(map(str, range(i, i+o))))
+        plot_booleannetwork(get_simple_fname(path.with_suffix('').name, FNAME_PATTERN, ['%s', '%s', '%s']), bn, i, o)

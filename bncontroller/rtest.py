@@ -37,8 +37,9 @@ def collect_bn_models(
     files = dict()
     bns = defaultdict(list)
 
-    for path in futils.cpaths(paths):
+    for path in futils.cpaths(paths, recursive=3):
         # print(path.is_file(), re.search(MODEL_NAME_PATTERN, path.name))
+        
         if path.is_dir():
 
             f, bn, *_ = collect_bn_models(

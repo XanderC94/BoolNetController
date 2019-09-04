@@ -66,7 +66,7 @@ dhbnac = HBNAController(
     },
     noise_rho=float(GLOBALS.slct_noise_rho),
     sensing_interval=int(GLOBALS.sim_sensing_interval_ms),
-    input_fixation_steps=int(GLOBALS.slct_fix_input_steps)
+    input_fixation_steps=int(GLOBALS.slct_input_steps_phi)
 )
 
 epuck = EPuck(

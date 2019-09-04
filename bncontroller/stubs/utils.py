@@ -4,12 +4,12 @@ import shutil
 from pathlib import Path
 from bncontroller.sim.config import CONFIG_CLI_NAMES
 from bncontroller.sim.utils import GLOBALS
-from bncontroller.file.utils import check_path, FROZEN_DATE
+from bncontroller.filelib.utils import check_path, FROZEN_DATE
 from bncontroller.jsonlib.utils import read_json, write_json
 from bncontroller.sim.config import Config
 from bncontroller.sim.data import ArenaParams
 from bncontroller.boolnet.structures import OpenBooleanNetwork
-from bncontroller.file.utils import get_dir
+from bncontroller.filelib.utils import get_dir
 
 def generate_webots_worldfile(template_path: Path, target_path: Path, world_params: ArenaParams):
 

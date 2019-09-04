@@ -2,7 +2,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plotter
 import bncontroller.plot.colors as colors
-from bncontroller.file.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
+from bncontroller.filelib.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
 from bncontroller.sim.utils import GLOBALS, load_global_config
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'

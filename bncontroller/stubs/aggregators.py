@@ -57,30 +57,30 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
 
     ##################################################################
 
-    noise_a01_count1 = noise_phase_data[:phase_l]['attr'].value_counts()
-    noise1_a0_count = noise_a01_count1['a0'] if 'a0' in df else 0
-    noise1_a1_count = noise_a01_count1['a1'] if 'a0' in df else 0
+    noise1_a01_count = noise_phase_data[:phase_l]['attr'].value_counts()
+    noise1_a0_count = noise1_a01_count['a0'] if 'a0' in df else 0
+    noise1_a1_count = noise1_a01_count['a1'] if 'a0' in df else 0
 
-    noise_score1 = get_attr_ratio(noise_a01_count1)
-
-    ##################################################################
-
-    noise_a01_count2 = noise_phase_data[phase_l:]['attr'].value_counts()
-    noise2_a0_count = noise_a01_count2['a0'] if 'a0' in df else 0
-    noise2_a1_count = noise_a01_count2['a1'] if 'a0' in df else 0
-
-    noise_score2 = get_attr_ratio(noise_a01_count2)
+    # noise1_score = get_attr_ratio(noise1_a01_count)
 
     ##################################################################
 
-    pt_score, pt_dist = __pt_stub(pt_data, lpos) # minimize
+    noise2_a01_count = noise_phase_data[phase_l:]['attr'].value_counts()
+    noise2_a0_count = noise2_a01_count['a0'] if 'a0' in df else 0
+    noise2_a1_count = noise2_a01_count['a1'] if 'a0' in df else 0
+
+    # noise2_score = get_attr_ratio(noise2_a01_count)
+
+    ##################################################################
+
+    pt_score, pt_fdist = __pt_stub(pt_data, lpos) # minimize
     
     pt_a01_count = pt_data['attr'].value_counts()
     pt_a01_ratio = get_attr_ratio(pt_a01_count)
 
     ##################################################################
 
-    apt_score, apt_dist = __pt_stub(apt_data, lpos) # maximize
+    apt_score, apt_fdist = __pt_stub(apt_data, lpos) # maximize
     
     apt_a01_count = apt_data['attr'].value_counts()
     apt_a01_ratio = get_attr_ratio(apt_a01_count)
@@ -108,29 +108,35 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
 
     return (
         {
-            'noise_score1': noise_score1, 
+            # 'noise1_score': noise1_score, 
             'noise1_a0_count': noise1_a0_count, 
-            'noise1_a1_count': noise1_a1_count, 
+            'noise1_a1_count': noise1_a1_count,
+
             'pt_score': pt_score, 
-            'pt_a01_ratio': pt_a01_ratio, 
+            # 'wpt_score': pt_score * pt_fdist / lpos.dist(pt_apos), 
+            'pt_a01_ratio': pt_a01_ratio,
+
+            # 'wapt_score': apt_score * apt_fdist / lpos.dist(apt_apos), 
             'apt_score': apt_score, 
-            'apt_a01_ratio': apt_a01_ratio, 
-            'noise_score2': noise_score2,
+            'apt_a01_ratio': apt_a01_ratio,
+
+            # 'noise2_score': noise2_score,
             'noise2_a0_count': noise2_a0_count,
             'noise2_a1_count': noise2_a1_count,
         }, {
             # 'lpos': lpos.to_json(),
             'pt_apos': pt_apos,
-            'pt_yrot': pt_yrot,
             'pt_idist': lpos.dist(pt_apos),
-            'apt_apos': apt_apos,
-            'apt_yrot': apt_yrot,
-            'apt_idist': lpos.dist(apt_apos),
-            'pt_fdist': pt_dist, 
+            'pt_yrot': pt_yrot,
             'pt_fapos': pt_fapos, 
-            'apt_fdist': apt_dist,
-            'apt_fyrot': apt_fyrot,
+            'pt_fdist': pt_fdist, 
+
+            'apt_apos': apt_apos,
+            'apt_idist': lpos.dist(apt_apos),
+            'apt_yrot': apt_yrot,
             'apt_fapos': apt_fapos,
+            'apt_fdist': apt_fdist,
+            'apt_fyrot': apt_fyrot,
         }
     )
 

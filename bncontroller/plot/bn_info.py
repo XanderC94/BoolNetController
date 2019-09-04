@@ -6,7 +6,7 @@ from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 from bncontroller.boolnet.structures import BooleanNetwork
 from bncontroller.jsonlib.utils import read_json
-from bncontroller.file.utils import get_dir
+from bncontroller.filelib.utils import get_dir
 
 if __name__ == "__main__":
     

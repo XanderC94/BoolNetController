@@ -1,6 +1,6 @@
 from pathlib import Path
 from bncontroller.jsonlib.utils import write_json
-from bncontroller.file.utils import check_path
+from bncontroller.filelib.utils import check_path
 
 class SimulationDataDumper(object):
     

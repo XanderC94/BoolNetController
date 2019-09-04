@@ -1,7 +1,7 @@
 import logging, os, sys
 from pathlib import Path
 from singleton_decorator import singleton
-from bncontroller.file.utils import iso8106
+from bncontroller.filelib.utils import iso8106
 
 class Logger(object):
 

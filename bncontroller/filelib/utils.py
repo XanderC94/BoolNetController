@@ -3,7 +3,7 @@ import re as regx
 from pathlib import Path
 from bncontroller.typeslib.utils import isnotnone, hasnotnone, str2num
 
-FNAME_PATTERN = r'(D?\d{8,}T\d{6,})(?:.*it([+-]?\d+))?(?:.*in([+-]?\d+))?'
+FNAME_PATTERN = r'(D?\d{8,}T\d{6,})(?:_(?:it)?([+-]?\d+))?(?:_(?:in)?([+-]?\d+))?'
 
 FNAME_PARTS = ['%s', 'it%s', 'in%s']
 
