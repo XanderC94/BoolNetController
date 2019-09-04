@@ -5,7 +5,7 @@ from bncontroller.stubs.selector.utils import test_contraints
 
 def step1_evaluation(bn: SelectiveBooleanNetwork, na: int, ataus: dict, nrho: float):
     
-    i = max(map(len, bn.atm.attractors))*len(bn)*20
+    i = 4*max(map(len, bn.atm.attractors))*len(bn)**2
 
     return test_contraints(bn, [
             lambda o: constraints.test_attractors_number(o, na),

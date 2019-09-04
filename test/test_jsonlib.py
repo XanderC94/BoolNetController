@@ -1,6 +1,6 @@
 import unittest
 from bncontroller.jsonlib.utils import jsonrepr, objrepr
-from bncontroller.typeslib.comparators import seq_compare
+from bncontroller.stubs.comparators import __mixed_compare
 
 class Foo1(object):
 

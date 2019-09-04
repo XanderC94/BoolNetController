@@ -26,11 +26,11 @@ def test_attractors_transitions(bn: BooleanNetwork, at_taus: dict):
     Check if the transition probability from (some) attractors to another
     matches the ones specified in the given threshold map.
     '''
-
     return all(
         bn.atm.dtableau[i][j] >= at_taus[i][j] 
         for i in at_taus
         for j in at_taus[i]
+        if i in bn.atm.dtableau and j in bn.atm.dtableau[i]
     )
 
 def test_bn_state_space_homogeneity(bn: BooleanNetwork, i: int, noise_rho:float):

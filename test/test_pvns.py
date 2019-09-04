@@ -1,8 +1,8 @@
 import unittest
+import bncontroller.stubs.comparators as cmp
 from bncontroller.boolnet.structures import BooleanNetwork
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
 from bncontroller.stubs.controller.utils import template_controller_generator
-from bncontroller.typeslib.comparators import seq_compare
 
 class TestParametricVNS(unittest.TestCase):
 
@@ -26,10 +26,10 @@ class TestParametricVNS(unittest.TestCase):
         t3 = 4,5,6,7,8,9
         t4 = 4,5,6,7
 
-        self.assertFalse(seq_compare(t1, t2, strat=lambda a, b: a < b))
-        self.assertFalse(seq_compare(t3, t1, strat=lambda a, b: a < b))
-        self.assertTrue(seq_compare(t1, t2, strat=lambda a, b: a == b))
-        self.assertTrue(seq_compare(t3, t1, strat=lambda a, b: a > b))
-        self.assertTrue(seq_compare(t3, t4, strat=lambda a, b: a > b))
+        self.assertFalse(cmp.mixed_ls(t1, t2))
+        self.assertFalse(cmp.mixed_ls(t3, t1))
+        self.assertTrue(cmp.mixed_eq(t1, t2))
+        self.assertTrue(cmp.mixed_gr(t3, t1))
+        self.assertTrue(cmp.mixed_gr(t3, t4))
        
         

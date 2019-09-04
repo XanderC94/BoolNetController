@@ -16,3 +16,6 @@ def lesserequal(a, b):
 
 def greaterequal(a, b):
     return a >= b
+
+def equal(a, b):
+    return a == b

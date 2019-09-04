@@ -1,4 +1,4 @@
-from bncontroller.typeslib.comparators import lesser, greater, greaterequal, lesserequal, none_cmp
+import bncontroller.typeslib.comparators as cmp
 from bncontroller.collectionslib.utils import flat
 
 def __mixed_compare(a, b, strat):
@@ -10,7 +10,7 @@ def __mixed_compare(a, b, strat):
     '''
     # Transform inputs to sequence
     if a is None or b is None:
-        return none_cmp(a, b)
+        return cmp.none_cmp(a, b)
 
     a = flat([a])
     b = flat([b])
@@ -30,16 +30,17 @@ def __mixed_compare(a, b, strat):
     return strat(a[0], b[0])
 
 def mixed_le(a, b):
-    return __mixed_compare(a, b, lesserequal)
+    return __mixed_compare(a, b, cmp.lesserequal)
 
 def mixed_ls(a, b):
-    return __mixed_compare(a, b, lesser)
+    return __mixed_compare(a, b, cmp.lesser)
 
 def mixed_gr(a, b):
-    return __mixed_compare(a, b, greater)
+    return __mixed_compare(a, b, cmp.greater)
 
 def mixed_ge(a, b):
-    return __mixed_compare(a, b, greaterequal)
+    return __mixed_compare(a, b, cmp.greaterequal)
 
-   
+def mixed_eq(a, b):
+    return __mixed_compare(a, b, cmp.equal)
     

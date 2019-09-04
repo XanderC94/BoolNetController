@@ -4,7 +4,7 @@ import asyncio
 import bncontroller.stubs.selector.constraints as constraints
 
 from pathlib import Path
-from bncontroller.stubs.selector.utils import template_selector_generator, noisy_update
+from bncontroller.stubs.selector.utils import template_selector_generator
 from bncontroller.boolnet.utils import search_attractors, random_neighbors_generator, binstate
 from bncontroller.boolnet.atm import AttractorsTransitionMatrix as ATM
 from bncontroller.boolnet.structures import BooleanNetwork, BooleanNode, OpenBooleanNetwork
@@ -72,12 +72,7 @@ class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
         bn = g.new_selector()
         atm = bn.atm
 
-        states = noisy_update(
-            bn, 
-            steps=max(map(len, atm.attractors))*len(bn)*10, 
-            noise_rho=0.2
-            # input_step=max(map(len, atm.attractors)) * 2,
-        )
+        states = [bn.noisy_update(noise_rho=0.2) for _ in range(max(map(len, atm.attractors))*len(bn)*10)]
 
         self.assertTrue(len(states) == max(map(len, atm.attractors))*len(bn)*10)
         self.assertTrue(all(x == 5 for x in map(len, states)))
@@ -226,7 +221,7 @@ class TestSelectiveBooleanNetworkGeneration(unittest.TestCase):
     def test_selector_constraint_3(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
         i = max(map(len, bn.atm.attractors))*len(bn)*20
-        self.assertTrue(constraints.test_bn_state_space_omogeneity(bn, i, 0.1))
+        self.assertTrue(constraints.test_bn_state_space_homogeneity(bn, i, 0.1))
     
     def test_selector_constraint_4(self):
         bn = SelectiveBooleanNetwork.from_json(read_json('./test/bn_for_test.json'))
