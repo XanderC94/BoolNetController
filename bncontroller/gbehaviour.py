@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from bncontroller.boolnet.factory import generate_rbn
-from bncontroller.stubs.controller.utils import template_controller_generator
+from bncontroller.stubs.behaviour.utils import template_behaviour_generator
 from bncontroller.sim.config import Config
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.data import BNParams
@@ -22,7 +22,7 @@ def generate_or_load_bn(params: BNParams, path: Path, save_virgin=False):
 
     if check_path(path, create_if_dir=True):
 
-        generator = template_controller_generator(*params)
+        generator = template_behaviour_generator(*params)
 
         __bn = generate_rbn(generator.new_obn, force_consistency=True)
 
@@ -43,7 +43,7 @@ def generate_or_load_bn(params: BNParams, path: Path, save_virgin=False):
 
 def check_config(config: Config):
 
-    if isinstance(config.bn_ctrl_model_path, list):
+    if isinstance(config.bn_model_path, list):
         raise Exception('Model path should be a dir or file')
     elif config.webots_world_path.is_dir():
         raise Exception('Simulation world GLOBALS should be a file not a dir.') 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     GLOBALS.app['mode'] = (
         'generate' 
-        if check_path(GLOBALS.bn_ctrl_model_path, create_if_dir=True) 
+        if check_path(GLOBALS.bn_model_path, create_if_dir=True) 
         else 'enhance' 
     )
     
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     bn = generate_or_load_bn(
         params=GLOBALS.bn_params,
-        path=GLOBALS.bn_ctrl_model_path, 
+        path=GLOBALS.bn_model_path, 
         save_virgin=True
     )
     
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     
         logger.info(ctx)
 
-        savepath = GLOBALS.bn_ctrl_model_path / 'bn_controller_{date}.json'.format(
+        savepath = GLOBALS.bn_model_path / 'behavioural_bn_{date}.json'.format(
             mode=GLOBALS.app['mode'],
             date=FROZEN_DATE
         )

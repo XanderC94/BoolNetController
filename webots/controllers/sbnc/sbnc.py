@@ -1,4 +1,4 @@
-"""hbnac controller."""
+"""sbnc controller."""
 import os, sys
 import bncontroller.sim.robot.binarization as bin_strategies
 from bncontroller.boolnet.selector import SelectiveBooleanNetwork
@@ -7,7 +7,7 @@ from bncontroller.jsonlib.utils import read_json
 from bncontroller.sim.utils import GLOBALS, load_global_config
 from bncontroller.sim.robot.agent import EPuck
 from bncontroller.sim.robot.utils import DeviceName
-from bncontroller.sim.robot.core import BNController, HBNAController
+from bncontroller.sim.robot.core import BNController, SBNController
 from bncontroller.sim.logging.logger import FileLogger
 from bncontroller.sim.logging.datadumper import SimulationDataDumper
 
@@ -23,7 +23,7 @@ logger = lambda *items: None
 #-------------------------------------------
 
 bnselector = SelectiveBooleanNetwork.from_json(
-        read_json(GLOBALS.bn_ctrl_model_path)
+        read_json(GLOBALS.bn_model_path)
     )
 
 bn_pt = OpenBooleanNetwork.from_json(
@@ -54,7 +54,7 @@ antiphototaxist = BNController(
     led_color=0xff00ff
 )
 
-dhbnac = HBNAController(
+dsbnc = SBNController(
     selector=bnselector,
     behaviours={
         bnselector.attractors_input_map['0']: phototaxist, 
@@ -85,7 +85,7 @@ dumper = SimulationDataDumper(
 )
 
 epuck.run(
-    dhbnac,
+    dsbnc,
     data_hook=lambda data: dumper.add_log_entry(data)
 )
 

@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     ### Load Test Model(s) from Template paths ####################################
 
-    files, bns = collect_bn_models(GLOBALS.bn_ctrl_model_path)
+    files, bns = collect_bn_models(GLOBALS.bn_model_path)
 
     ### Test ######################################################################
     t = time.perf_counter()

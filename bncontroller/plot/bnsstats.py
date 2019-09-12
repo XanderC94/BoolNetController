@@ -158,7 +158,7 @@ if __name__ == "__main__":
     def c2no1(bnname, c):
         # bnname, c = cols
         print(bnname)
-        bn = BooleanNetwork.from_json(read_json(GLOBALS.bn_ctrl_model_path / 'stats/models' / bnname))
+        bn = BooleanNetwork.from_json(read_json(GLOBALS.bn_model_path / 'stats/models' / bnname))
         return c if len(bn.atm.attractors) > 1 else False
     
     for ds in data.values():

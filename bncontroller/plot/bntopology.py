@@ -116,7 +116,7 @@ if __name__ == "__main__":
     
     load_global_config()
     
-    for path in cpaths(GLOBALS.bn_ctrl_model_path):
+    for path in cpaths(GLOBALS.bn_model_path):
         bn = find_bn_type(read_json(path))
 
         i = []

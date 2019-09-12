@@ -1,5 +1,6 @@
 import pandas
-# import statistics
+import math
+import numpy as np
 from bncontroller.sim.data import Point3D
 from bncontroller.sim.robot.morphology import EPuckMorphology
 
@@ -37,18 +38,23 @@ def antiphototaxis_min(sim_data: dict, lpos: Point3D) -> (float, float):
 
 ######################################################################################
 
-def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
+def sbnc(sim_data: dict, lpos: Point3D) -> (float, float):
 
     df = pandas.DataFrame(sim_data['data'])
 
-    def get_attr_ratio(df):
-        if 'a0' in df and 'a1' in df and df['a1'] > 0:
-            return df['a0'] / df['a1']
-        elif 'a0' not in df:
-            return 0.0
-        else:
-            return float('inf')
+    def get_attr(df, attr, default):
+        return df[attr] if attr in df else default
 
+    def get_attr_ratio(df, a1, a2):
+
+        v1 = get_attr(df, a1, 0)
+        v2 = get_attr(df, a2, 0)
+
+        if v2 > 0:
+            return  v1 / v2
+        else:
+            return math.inf
+       
     noise_phase_data = df[df['noise'] == True]
     phase_l = int(len(noise_phase_data)/2)
 
@@ -58,32 +64,40 @@ def hbnac(sim_data: dict, lpos: Point3D) -> (float, float):
     ##################################################################
 
     noise1_a01_count = noise_phase_data[:phase_l]['attr'].value_counts()
-    noise1_a0_count = noise1_a01_count['a0'] if 'a0' in df else 0
-    noise1_a1_count = noise1_a01_count['a1'] if 'a0' in df else 0
+    noise1_a0_count = get_attr(noise1_a01_count, 'a0', 0)
+    noise1_a1_count = get_attr(noise1_a01_count, 'a1', 0)
+
+    # print(noise1_a0_count, noise1_a1_count)
 
     # noise1_score = get_attr_ratio(noise1_a01_count)
 
     ##################################################################
 
     noise2_a01_count = noise_phase_data[phase_l:]['attr'].value_counts()
-    noise2_a0_count = noise2_a01_count['a0'] if 'a0' in df else 0
-    noise2_a1_count = noise2_a01_count['a1'] if 'a0' in df else 0
+    noise2_a0_count = get_attr(noise2_a01_count, 'a0', 0)
+    noise2_a1_count = get_attr(noise2_a01_count, 'a1', 0)
+
+    # print(noise2_a0_count, noise2_a1_count)
 
     # noise2_score = get_attr_ratio(noise2_a01_count)
 
     ##################################################################
 
-    pt_score, pt_fdist = __pt_stub(pt_data, lpos) # minimize
+    pt_score, pt_fdist = __pt_stub(pt_data, lpos) # minimize+
     
     pt_a01_count = pt_data['attr'].value_counts()
-    pt_a01_ratio = get_attr_ratio(pt_a01_count)
+    pt_a01_ratio = get_attr_ratio(pt_a01_count, 'a0', 'a1')
+
+    # print(pt_a01_ratio)
 
     ##################################################################
 
     apt_score, apt_fdist = __pt_stub(apt_data, lpos) # maximize
     
     apt_a01_count = apt_data['attr'].value_counts()
-    apt_a01_ratio = get_attr_ratio(apt_a01_count)
+    apt_a01_ratio = get_attr_ratio(apt_a01_count, 'a0', 'a1')
+
+    # print(apt_a01_ratio)
 
     ##################################################################
 
@@ -160,7 +174,7 @@ if __name__ == "__main__":
         'D:\\Xander\\Documenti\\Projects\\BoolNetController\\res\\data\\sim\\handcheck_sim_data_20190730T145525281.json'
     )
 
-    print(hbnac(data, Point3D.from_json({
+    print(sbnc(data, Point3D.from_json({
         "x": 0.0,
         "y": 0.3,
         "z": -0.0

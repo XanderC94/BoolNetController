@@ -107,7 +107,7 @@ def pt_evaluation_for_train(bn: OpenBooleanNetwork, ctx: VNSEvalContext, spawn_p
     if ctx.comparator(new_score, ctx.score):
         
         stub_utils.save_subopt_model(
-            GLOBALS.bn_ctrl_model_path,
+            GLOBALS.bn_model_path,
             new_score,
             ctx.it,
             bn.to_json(), 

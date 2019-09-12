@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     params = itertools.product(Ns, Ks, Ps, Qs, Is, Os, aNs, tTaus, nRhos, iPhis)
 
-    FOLDER = get_dir(GLOBALS.bn_ctrl_model_path, create_if_dir=True)
+    FOLDER = get_dir(GLOBALS.bn_model_path, create_if_dir=True)
     
     for N, K, P, Q, I, O, aN, tTau, nRho, iPhi in params:
 

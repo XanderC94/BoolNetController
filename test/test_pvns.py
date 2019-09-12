@@ -2,13 +2,13 @@ import unittest
 import bncontroller.stubs.comparators as cmp
 from bncontroller.boolnet.structures import BooleanNetwork
 from bncontroller.search.utils import edit_boolean_network, bn_scramble_strategy
-from bncontroller.stubs.controller.utils import template_controller_generator
+from bncontroller.stubs.behaviour.utils import template_behaviour_generator
 
 class TestParametricVNS(unittest.TestCase):
 
     def test_default_scramble_strategy(self):
 
-        bn = template_controller_generator(5, 2, 0.5, 0.0, 1, 0).new()
+        bn = template_behaviour_generator(5, 2, 0.5, 0.0, 1, 0).new()
         bn_copy = BooleanNetwork.from_json(bn.to_json())
 
         bn_copy, flips = bn_scramble_strategy(bn_copy, 1)

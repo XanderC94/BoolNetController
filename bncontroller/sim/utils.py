@@ -96,8 +96,8 @@ class Globals(Config):
         
         sim_config.webots_world_path = get_dir(sim_config.webots_world_path, create_if_dir=True) / world_fname
         
-        # get_dir(sim_config.bn_ctrl_model_path, create_if_dir=True) 
-        sim_config.bn_ctrl_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / ctrl_fname 
+        # get_dir(sim_config.bn_model_path, create_if_dir=True) 
+        sim_config.bn_model_path = get_dir(Path('./tmp/model').absolute(), create_if_dir=True) / ctrl_fname 
 
         # get_dir(sim_config.sim_config_path, create_if_dir=True)
         sim_config.sim_config_path = get_dir(Path('./tmp/config').absolute(), create_if_dir=True) / config_fname 

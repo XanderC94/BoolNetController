@@ -11,6 +11,11 @@ from bncontroller.plot.ilegend import interactive_legend
 from bncontroller.plot.colors import get_cmap, get_weighted_cmap
 from bncontroller.collectionslib.utils import flat
 
+TICK_SIZE = 10
+LEG_LABEL_SIZE = 8
+
+TICK_ROT = 30
+
 def boxplot(
         y: list, x: list,
         window: str, title: str, xlabel: str, ylabel: str, ylims: list):
@@ -40,8 +45,8 @@ def boxplot(
     plotter.xticks(
         list(range(1, len(x) + 1)),
         x, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
     fig.subplots_adjust(
@@ -98,8 +103,8 @@ def twin_bars(
     plotter.xticks(
         np.arange(1.5, len(y1) * (2 * bars_offset), 2 * bars_offset),
         x, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
     plotter.legend(handles=[
@@ -178,8 +183,8 @@ def htwin_bars(
     plotter.yticks(
         np.arange(1.5, len(x1) * (2 * bars_offset), 2 * bars_offset),
         y, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
     plotter.legend(handles=[
@@ -253,11 +258,11 @@ def bars(
     plotter.xticks(
         np.arange(1.5, len(y) * (n + bars_offset), n + bars_offset),
         x, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
-    ax.legend(prop={'size': 7}, handles=[
+    ax.legend(prop={'size': LEG_LABEL_SIZE}, handles=[
         mpatches.Patch(color=cmap(i), label=legend_labels[i])
         for i in range(n)
     ])
@@ -309,8 +314,8 @@ def hbars(
     plotter.yticks(
         np.arange(1.5, len(x) * (n + bars_offset), n + bars_offset),
         y, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
     plotter.legend(handles=[
@@ -363,8 +368,8 @@ def tbars(
     plotter.xticks(
         np.arange(1.5, len(y) * (len(thresholds) + 3), len(thresholds) + 3),
         x, 
-        rotation=15,
-        size=10
+        rotation=TICK_ROT,
+        size=TICK_SIZE
     )
 
     plotter.legend(handles=[
@@ -409,7 +414,7 @@ def scatter2d(
             label=_k
         )
     
-    ax.legend(prop={'size': 10})
+    ax.legend(prop={'size': LEG_LABEL_SIZE})
 
     fig.subplots_adjust(
         left=0.04,
@@ -454,7 +459,7 @@ def scatter3d(
     
     ax.view_init(elev=30, azim=225)
         
-    ax.legend(prop={'size': 10})
+    ax.legend(prop={'size': LEG_LABEL_SIZE})
 
     return fig, ax
 
@@ -486,12 +491,11 @@ def scatter4d(
             xs=x[i],
             ys=y[i],
             zs=z[i],
+            c=w[i],
             color=cmap.to_rgba(w[i]),
             label=_k
         )
         
-    ax.legend(prop={'size': 10})
+    ax.legend(prop={'size': LEG_LABEL_SIZE})
 
     return fig, ax
-
-    pass

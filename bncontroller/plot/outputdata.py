@@ -2,16 +2,18 @@ import re
 import numpy as np
 import matplotlib.pyplot as plotter
 import bncontroller.plot.colors as colors
+from bncontroller.plot.utils import save_plots
+from bncontroller.collectionslib.utils import transpose
 from bncontroller.filelib.utils import get_simple_fname, FNAME_PATTERN, cpaths, is_file
 from bncontroller.sim.utils import GLOBALS, load_global_config
 
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
-def plot_output(dataset: str, data: list):
+def plot_output(fname: str, data: list):
 
-    fig, ax = plotter.subplots(num=f'train_score_trend_{fname}')
+    fig, ax = plotter.subplots(num=f'development_score_trend_{fname}')
 
-    ax.set_title('Model Train -- Scores trend')
+    ax.set_title('Network Development -- Iterations / Scores trend')
     ax.set_xlabel('Iteration')
     ax.set_ylabel('Score')
 
@@ -19,7 +21,8 @@ def plot_output(dataset: str, data: list):
     ax.set_ylim([0.0, 3.5e-05])
     ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
-    ax.plot(data, color='r')
+    for d in data:
+        ax.plot(d, color='r')
 
     fig.subplots_adjust(
         left=0.05,
@@ -50,15 +53,23 @@ if __name__ == "__main__":
 
     files = cpaths(GLOBALS.app_output_path, recursive=3)
 
+    is_train_output = lambda x: (str(x.name).startswith('generate') or str(x.name).startswith('enhance')) and is_file(x)
+
     plots = list()
 
-    for f in filter(is_file, files):
+    ds = list()
+
+    for f in filter(is_train_output, files):
 
         fname = get_simple_fname(f.name, FNAME_PATTERN, uniqueness=1)
 
         data = parse_output(f)
         
-        if data:
-            plots.append(plot_output(fname, data))
+        ds.append(data)
 
-    plotter.show()
+        # if data:
+        #     fig, ax = plot_output(fname, [data])
+        #     save_plots(GLOBALS.plot_image_path / 'out' / fname, [fig])
+
+    fig, ax = plot_output('all', ds)
+    save_plots(GLOBALS.plot_image_path / 'all', [fig])

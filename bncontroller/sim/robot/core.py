@@ -89,7 +89,7 @@ class BNController(Controller):
                 self.touch_data
             )
 
-class HBNAController(Controller):
+class SBNController(Controller):
 
     def __init__(self,
             selector: SelectiveBooleanNetwork,

@@ -26,6 +26,17 @@ from bncontroller.boolnet.selector import SelectiveBooleanNetwork
 
 #################################################################################
 
+to_world_ref_system = {
+    0: 315*math.pi/180,
+    0.77: 0,
+    1.27: math.pi/6,
+    1.87: math.pi/3,
+    2.37: math.pi/2,
+    3.14159: math.pi/2 + math.pi/4,
+    4.21: 195*math.pi/180,
+    5.21: 255*math.pi/180,
+}
+
 def meta_str(info: dict):
 
     return '{N}_{K}_{T}'.format(
@@ -51,7 +62,9 @@ def aggregate_data(data: dict, infos: dict, phase_len: int, light_intensity: flo
         'n1rd', 'n2rd', 
         's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8',
         'ss', 'sr',
-        'a0len', 'a1len'
+        'a0len', 'a1len',
+        'pt_apos_x', 'pt_apos_z',
+        'apt_apos_x', 'apt_apos_z',
     ]
 
     for k in data:
@@ -77,7 +90,7 @@ def aggregate_data(data: dict, infos: dict, phase_len: int, light_intensity: flo
             data[k]['noise1_a0_count'] = data[k]['noise1_score'] * data[k]['noise1_a1_count']
             data[k]['noise2_a1_count'] = phase_len / (1 + data[k]['noise2_score'])
             data[k]['noise2_a0_count'] = data[k]['noise2_score'] * data[k]['noise2_a1_count']
-
+        
         data[k]['n1a0p'] = data[k]['noise1_a0_count'] / (data[k]['noise1_a1_count'] + data[k]['noise1_a0_count'])
         data[k]['n1a1p'] = 1.0 - data[k]['n1a0p']
         data[k]['n2a0p'] = data[k]['noise2_a0_count'] / (data[k]['noise2_a1_count'] + data[k]['noise2_a0_count'])
@@ -114,9 +127,9 @@ def aggregate_data(data: dict, infos: dict, phase_len: int, light_intensity: flo
         # data[k]['delta_score'] = data[k]['apt_score'] * light_intensity - data[k]['pt_score'] * light_intensity
         
         # data[k]['pt_yrot'] = data[k]['pt_yrot'].apply(lambda x: pu.to_deg(x - math.pi / 2))
-        data[k]['pt_yrot'] = pu.to_deg(data[k]['pt_yrot'] - math.pi / 2)
+        data[k]['pt_yrot'] = data[k]['pt_yrot'].apply(lambda x: pu.to_deg(to_world_ref_system[x]))
         # data[k]['apt_yrot'] = data[k]['apt_yrot'].apply(lambda x: pu.to_deg(x - math.pi / 2))
-        data[k]['apt_yrot'] = pu.to_deg(data[k]['apt_yrot'] - math.pi / 2)
+        data[k]['apt_yrot'] = data[k]['apt_yrot'].apply(lambda x: pu.to_deg(to_world_ref_system[x]))
         
         if 'apt_fyrot' not in data[k]:
             data[k]['apt_fyrot'] = 180
@@ -127,6 +140,10 @@ def aggregate_data(data: dict, infos: dict, phase_len: int, light_intensity: flo
         data[k]['a0len'] = infos[k]['a_len']['a0']
         data[k]['a1len'] = infos[k]['a_len']['a1']
 
+        data[k][['pt_apos_x', 'pt_apos_y', 'pt_apos_z']] = data[k]['pt_apos'].apply(Series)
+        
+        data[k][['apt_apos_x', 'apt_apos_y', 'apt_apos_z']] = data[k]['apt_apos'].apply(Series)
+                
         ds = ds.append(data[k][cols1], ignore_index=True)
                 
         # print(data[k][['pt_score', 'wpt', 'pt_idist', 'pt_fdist', 'apt_score', 'wapt', 'apt_fdist']])
@@ -185,7 +202,7 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
 
     thresholds = [t * light_intensity for t in flat([positives_threshold])]
     
-    LEAST_OPT_WPT_SCORE = round(max(thresholds), 7) # round(max(thresholds) * 1.0 / 3.0, 7) 
+    LEAST_OPT_WPT_SCORE = round(sum(thresholds) / len(thresholds), 7) # round(max(thresholds) * 1.0 / 3.0, 7) 
     
     # LEAST_OPT_WAPT_SCORE = round(max(thresholds) * 3.0 / 1.0, 7) 
 
@@ -205,7 +222,9 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         's1', 's2', 's3', 's4', 's5', 's6', 
         's7', 's8', 
         'ss', 'sr',
-        'a0len', 'a1len'
+        'a0len', 'a1len',
+        'pt_apos_x', 'pt_apos_z',
+        'apt_apos_x', 'apt_apos_z',
     ]
 
     ds = aggregate_data(data, infos, phase_len, light_intensity, LEAST_OPT_WPT_SCORE)
@@ -236,12 +255,18 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
 
     ranks.sort_values(by=['frank'], inplace=True)
 
+    ds['mrscore'] = float('+inf')
     ds['mfrank'] = float('+inf')
+    means['rscore'] = float('+inf')
     means['frank'] = float('+inf')
 
     for k, r in ranks[['bn', 'frank']].values:
         means.loc[means['bn'] == k, ['frank']] = r
         ds.loc[ds['bn'] == k, ['mfrank']] = r
+
+    for k, r in ranks[['bn', 'rscore']].values:
+        means.loc[means['bn'] == k, ['rscore']] = r
+        ds.loc[ds['bn'] == k, ['mrscore']] = r
 
     means.sort_values(by=['frank'], inplace=True)
     ds.sort_values(by=['mfrank'], inplace=True)
@@ -279,22 +304,19 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
             'apt -- fdist - idist > 0.35',
             f'wpt <= {LEAST_OPT_WPT_SCORE}',
             f'apt >= wpt',
-            'pt -- |APT| / |PT| < 0.15',
-            'apt -- |PT| / |APT| < 0.15',
+            '|APT| / |PT| < 0.15    (pt)',
+            '|PT| / |APT| < 0.15    (apt)',
         ]
     )
 
-    b2fig, b2ax = plot.twin_bars(
-        y1=means['a0len'].values,
-        y2=means['a1len'].values,
+    b2fig, b2ax = plot.bars(
+        y=means[['a0len', 'a1len']].values,
         x=means['bn'].values,
         window=f'test_attr_length_bars_{model}',
         title='Model Tests -- Attractors Length -- by Rank (Left-most is Better)',
         xlabel='Model',
-        y1label='Attractor 0 length',
-        y2label='Attractor 1 length',
-        y1lims=[],
-        y2lims=[],
+        ylabel='Attractor <i> length',
+        ylims=[],
         legend_labels=[
             'a0',
             'a1'
@@ -310,7 +332,9 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         'wpt', 'wapt', 
         'pt_idist', 'apt_idist', 
         'pt_fdist', 'apt_fdist', 
-        'pt_yrot', 'apt_yrot', 'apt_fyrot'
+        'pt_yrot', 'apt_yrot', 'apt_fyrot',
+        'pt_apos_x', 'pt_apos_z',
+        'apt_apos_x', 'apt_apos_z',
     ]
 
     (
@@ -318,7 +342,9 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         wpt,        wapt,
         ptidist,    aptidist,
         ptfdist,    aptfdist,
-        ptyrot,     aptyrot,    aptfyrot
+        ptyrot,     aptyrot,    aptfyrot,
+        pt_apos_x, pt_apos_z,
+        apt_apos_x, apt_apos_z,
 
     ) = ds[['bn'] + c].groupby(by=['bn'], sort=False)[c].agg(list).T.values
 
@@ -329,7 +355,7 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         title='Model Tests -- wPT scores distribution (Lower is Better)',
         xlabel='Model',
         ylabel='wPT Score',
-        ylims=[-0.1e-05, 1.5e-05]
+        ylims=[-0.1e-05, 2.5e-05]
     )
 
     bp12fig, bp12ax = plot.boxplot(
@@ -362,6 +388,32 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         ylims=[-0.1e-05, 2.5e-05]
     )
 
+    bp31fig, bp31ax = plot.boxplot(
+        y=[
+            [a/b for a, b in zip(__apt, __pt)]
+            for __apt, __pt in zip(apt, pt)
+        ],
+        x=keys,
+        window=f'test_apt_pt_score_ratio_boxplot_{model}',
+        title='Model Tests -- APT/PT scores ratio distribution (High is Better)',
+        xlabel='Model',
+        ylabel='APT/PT Score Ratio',
+        ylims=[0, 3]
+    )
+
+    bp32fig, bp32ax = plot.boxplot(
+        y=[
+            [wa/wb for wa, wb in zip(__wapt, __wpt)]
+            for __wapt, __wpt in zip(wapt, wpt)
+        ],
+        x=keys,
+        window=f'test_wapt_wpt_score_ratio_boxplot_{model}',
+        title='Model Tests -- wAPT/wPT scores ratio distribution (High is Better)',
+        xlabel='Model',
+        ylabel='wAPT/wPT Score Ratio',
+        ylims=[0, 100]
+    )
+
     # Model Tests -- rDist distribution #
     
     # plotter.show()
@@ -369,26 +421,48 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
     # # # Model Tests -- Scores | Initial Distance distribution #
     
     sp1fig, sp1ax = plot.scatter2d(
+        pt, 
+        ptidist, 
+        keys,
+        window=f'test_pt_scores_by_iDist_scatter_{model}',
+        title=f'Model Tests -- PT Scores | Initial Distance (m) distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='PT Score',
+        ylims=[-0.1e-05, 2.5e-05]
+    )
+    
+    sp11fig, sp11ax = plot.scatter2d(
         wpt, 
         ptidist, 
         keys,
         window=f'test_wpt_scores_by_iDist_scatter_{model}',
         title=f'Model Tests -- wPT Scores | Initial Distance (m) distribution',
         xlabel='Initial Distance (m)',
-        ylabel='PT Score',
+        ylabel='wPT Score',
         ylims=[-0.1e-05, 2.5e-05]
     )
 
     # interactive_legend(sp1ax).show()
 
     sp2fig, sp2ax = plot.scatter2d(
+        apt, 
+        aptidist, 
+        keys,
+        window=f'test_apt_scores_by_iDist_scatter_{model}',
+        title=f'Model Tests -- APT Scores | Initial Distance (m) distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='APT Score',
+        ylims=[-0.1e-05, 5e-05]
+    )
+
+    sp21fig, sp21ax = plot.scatter2d(
         wapt, 
         aptidist, 
         keys,
         window=f'test_wapt_scores_by_iDist_scatter_{model}',
         title=f'Model Tests -- wAPT Scores | Initial Distance (m) distribution',
         xlabel='Initial Distance (m)',
-        ylabel='APT Score',
+        ylabel='wAPT Score',
         ylims=[-0.1e-05, 5e-05]
     )
 
@@ -419,10 +493,23 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         xlabel='Initial Distance (m)',
         ylabel='yRot (°)',
         zlabel='PT Score',
-        zlims=[0, 1.5e-05]
+        zlims=[0, 2.5e-05]
     )
 
-    # interactive_legend(sp3d11ax).show()
+    sp3d14fig, sp3d14ax = plot.scatter3d(
+        ptyrot, 
+        ptidist, 
+        wpt, 
+        keys,
+        window=f'test_wpt_scores_by_iDist_yRot_scatter3d_{model}',
+        title=f'Model Tests -- wPT Scores | Initial Distance (m) | yRot (°) Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
+        zlabel='wPT Score',
+        zlims=[0, 2.5e-05]
+    )
+
+    # interactive_legend(sp3d14ax).show()
     
     sp3d12fig, sp3d12ax = plot.scatter3d(
         ptfdist, 
@@ -439,7 +526,7 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
 
     # interactive_legend(sp3d12ax).show()
 
-    sp3d12fig, sp3d12ax = plot.scatter3d(
+    sp3d13fig, sp3d13ax = plot.scatter3d(
         ptfdist, 
         ptidist, 
         wpt, 
@@ -449,20 +536,33 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         xlabel='Initial Distance (m)',
         ylabel='Final Distance (m)',
         zlabel='wPT Score',
-        zlims=[0, 1.5e-05]
+        zlims=[0, 2.5e-05]
     )
 
-    # interactive_legend(sp3d12ax).show()
+    # interactive_legend(sp3d13ax).show()
     
     sp3d21fig, sp3d21ax = plot.scatter3d(
         aptfdist, 
         aptidist, 
         apt, 
         keys,
-        window=f'test_apt_scores_by_iDist_fDist_scatter3d_{model}',
+        window=f'test_apt_scores_by_iDist_yrot_scatter3d_{model}',
         title=f'Model Tests -- APT Scores | Initial Distance (m) | Final Distance (m) Distribution',
         xlabel='Initial Distance (m)',
         ylabel='Final Distance (m)',
+        zlabel='APT Score',
+        zlims=[0, 2.5e-05]
+    )
+    
+    sp3d23fig, sp3d23ax = plot.scatter3d(
+        aptyrot, 
+        aptidist, 
+        apt, 
+        keys,
+        window=f'test_apt_scores_by_iDist_fDist_scatter3d_{model}',
+        title=f'Model Tests -- APT Scores | Initial Distance (m) | yRot (°)  Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
         zlabel='APT Score',
         zlims=[0, 2.5e-05]
     )
@@ -482,9 +582,51 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         zlims=[0, 5e-05]
     )
 
-    # interactive_legend(sp3d22ax).show()
+    sp3d24fig, sp3d24ax = plot.scatter3d(
+        y=aptyrot, 
+        x=aptidist, 
+        z=wapt, 
+        k=keys,
+        window=f'test_wapt_scores_by_iDist_yrot_scatter3d_{model}',
+        title=f'Model Tests -- wAPT Scores | Initial Distance (m) | yRot (°)  Distribution',
+        xlabel='Initial Distance (m)',
+        ylabel='yRot (°)',
+        zlabel='wAPT Score',
+        zlims=[0, 5e-05]
+    )
+
+    sp3d25fig, sp3d25ax = plot.scatter3d(
+        y=aptfyrot, 
+        x=aptfdist, 
+        z=wapt, 
+        k=keys,
+        window=f'test_wapt_scores_by_fDist_fyrot_scatter3d_{model}',
+        title=f'Model Tests -- wAPT Scores | Final Distance (m) | Final yRot (°)  Distribution',
+        xlabel='Final Distance (m)',
+        ylabel='Final yRot (°)',
+        zlabel='wAPT Score',
+        zlims=[0, 5e-05]
+    )
+
+    # sp4d1fig, sp4d1ax = plot.scatter3d(
+    #     y=pt_apos_z, 
+    #     x=pt_apos_x, 
+    #     z=ptyrot, 
+    #     # w=wpt, 
+    #     k=keys,
+    #     window=f'test_wpt_scores_by_idist_fDist_yrot_scatter4d_{model}',
+    #     title=f'Model Tests -- wPT Scores | Initial Distance (m) | Final Distance (m) | yRot (°)  Distribution',
+    #     xlabel='Initial Distance (m)',
+    #     ylabel='yRot (°)',
+    #     zlabel='Final Distance',
+    #     zlims=[0, 360]
+    # )
+
+    # interactive_legend(sp4d1ax).show()
 
     # plotter.show()
+
+    # exit(1)
 
     return model, [
         (b0fig, b0ax),
@@ -494,12 +636,23 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
         (bp12fig, bp12ax),
         (bp21fig, bp21ax),
         (bp22fig, bp22ax),
+        (bp31fig, bp31ax),
+        (bp32fig, bp32ax),
         (sp1fig, sp1ax),
+        (sp11fig, sp11ax),
         (sp2fig, sp2ax),
+        (sp21fig, sp21ax),
+        (sp3fig, sp3ax),
         (sp3d11fig, sp3d11ax),
         (sp3d12fig, sp3d12ax),
+        (sp3d13fig, sp3d13ax),
+        (sp3d14fig, sp3d14ax),
         (sp3d21fig, sp3d21ax),
-        (sp3d22fig, sp3d22ax)
+        (sp3d22fig, sp3d22ax),
+        (sp3d23fig, sp3d23ax),
+        (sp3d24fig, sp3d24ax),
+        (sp3d25fig, sp3d25ax),
+        # (sp4d1fig, sp4d1ax),
     ]
 
 #######################################################################
@@ -553,7 +706,7 @@ if __name__ == "__main__":
 
     bninfos = OrderedDict()
 
-    for path in cpaths(args.config.bn_ctrl_model_path, recursive=3):
+    for path in cpaths(args.config.bn_model_path, recursive=3):
         if path.is_file() and 'json' in path.suffix and 'bn' in path.name:
 
             jsonrepr = read_json(path)
@@ -568,8 +721,8 @@ if __name__ == "__main__":
                 info['a_len'] = dict(map(lambda a: (a[0], len(a[1])), bn.atm.dattractors.items()))
 
                 name = pu.get_simple_fname(path.name, fu.FNAME_PATTERN, parts=['%s','%s','%s'], uniqueness=2)
-
-                name = list(filter(
+                
+                name = set(filter(
                     lambda x: '_'.join(x.split('_')[:2]) == name,
                     data.keys()
                 ))

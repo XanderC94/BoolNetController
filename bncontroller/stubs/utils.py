@@ -113,7 +113,7 @@ def generate_webots_props_file(template_path: Path, target_path: Path):
 def run_simulation(config: Config, bn: OpenBooleanNetwork) -> dict:
 
     # Save model (inside or outside of the config? mumble rumble)
-    write_json(bn.to_json(), config.bn_ctrl_model_path) # BN Model
+    write_json(bn.to_json(), config.bn_model_path) # BN Model
     write_json(config.to_json(), config.sim_config_path, indent=True) # Simulation Configuration
 
     # Run Webots    

@@ -68,7 +68,7 @@ def predecessors(node: BooleanNode, N: list, I: list, O: list, pp=0.8):
 
 ######################################################################################################
 
-def template_controller_generator(N: int, K: int, P: float, Q: float, I:int, O:int, F=predecessors) -> RBNFactory:
+def template_behaviour_generator(N: int, K: int, P: float, Q: float, I:int, O:int, F=predecessors) -> RBNFactory:
     """
     Generates a Random Boolean Network Generator which bn have the following properties:
 

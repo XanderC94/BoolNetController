@@ -272,13 +272,13 @@ class DefaultConfigOptions(Jsonkin):
 
         # Boolean Networks Generation Control Parameters #
 
-        bn_ctrl_model_path=DefaultOption(
+        bn_model_path=DefaultOption(
             value=Path('.'),
             type=Path,
             alt=None,
             descr='''Directory or file where to store the bn model'''
         ),
-        # bn_ctrl_model_path=DefaultOption(
+        # bn_model_path=DefaultOption(
         #     value=Path('.'),
         #     type=Path,
         #     alt=None,
@@ -530,8 +530,7 @@ class Config(Jsonkin):
         self.sim_suppress_logging = options['sim_suppress_logging']
 
         # Boolean Network #
-        self.bn_ctrl_model_path = options['bn_ctrl_model_path']
-        # self.bn_ctrl_model_path = options['bn_ctrl_model_path']
+        self.bn_model_path = options['bn_model_path']
         self.bn_n = options['bn_n']
         self.bn_k = options['bn_k']
         self.bn_p = options['bn_p']

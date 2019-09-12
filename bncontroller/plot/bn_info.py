@@ -12,7 +12,7 @@ if __name__ == "__main__":
     
     load_global_config()
 
-    for path in get_dir(GLOBALS.bn_ctrl_model_path).iterdir():
+    for path in get_dir(GLOBALS.bn_model_path).iterdir():
         
         if path.is_file():
             bn : BooleanNetwork = BooleanNetwork.from_json(

@@ -14,7 +14,7 @@ from bncontroller.jsonlib.utils import read_json
 
 load_global_config()
 
-print(str(GLOBALS.bn_ctrl_model_path))
+print(str(GLOBALS.bn_model_path))
 
 logger = lambda *items: None
 
@@ -23,7 +23,7 @@ if not GLOBALS.sim_suppress_logging:
     logger.suppress(GLOBALS.sim_suppress_logging)
 
 bn = OpenBooleanNetwork.from_json(
-        read_json(GLOBALS.bn_ctrl_model_path),        
+        read_json(GLOBALS.bn_model_path),        
     ) 
 
 #-------------------------------------------
@@ -47,7 +47,7 @@ epuck.position = GLOBALS.sim_agent_position
 epuck.orientation = GLOBALS.sim_agent_yrot_rad
 
 dumper = SimulationDataDumper(
-    GLOBALS.bn_ctrl_model_path, 
+    GLOBALS.bn_model_path, 
     GLOBALS.sim_run_time_s, 
     epuck.timestep
 )

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     
     mapper = lambda f, p: pool.imap_unordered(f, p, chunksize=2*NP)
 
-    for path in cpaths(GLOBALS.bn_ctrl_model_path, recursive=3):
+    for path in cpaths(GLOBALS.bn_model_path, recursive=3):
         
         print(path)
 

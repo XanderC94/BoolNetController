@@ -85,7 +85,7 @@ if __name__ == "__main__":
     load_global_config()
 
     ps = cpaths(
-        GLOBALS.bn_ctrl_model_path, recursive=3
+        GLOBALS.bn_model_path, recursive=3
     ) + cpaths(
         list(map(Path, GLOBALS.slct_behaviours_map.values()))
     )

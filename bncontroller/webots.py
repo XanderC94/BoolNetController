@@ -11,12 +11,12 @@ if __name__ == "__main__":
     
     load_global_config()
 
-    if isinstance(GLOBALS.bn_ctrl_model_path, list) or GLOBALS.bn_ctrl_model_path.is_dir():
+    if isinstance(GLOBALS.bn_model_path, list) or GLOBALS.bn_model_path.is_dir():
         raise Exception('Model path should be a file.')
     
     GLOBALS.app['mode'] = 'handcheck'
     
-    bn = find_bn_type(read_json(GLOBALS.bn_ctrl_model_path))
+    bn = find_bn_type(read_json(GLOBALS.bn_model_path))
     
     config = GLOBALS.generate_sim_config()
     
