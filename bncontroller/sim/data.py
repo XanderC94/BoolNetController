@@ -59,11 +59,11 @@ class Point3D(Jsonkin):
         return tuple(self)
 
     @staticmethod
-    def from_polar(r, theta, phi):
+    def from_polar(r, el, az):
         return Point3D(
-                x = r * math.cos(theta) * math.sin(phi), 
-                y = r * math.sin(theta) * math.sin(phi),
-                z = r * math.cos(phi)
+                x = r * math.sin(el) * math.sin(az),
+                y = r * math.cos(el),
+                z = r * math.sin(el) * math.cos(az)
             )
 
     @staticmethod
@@ -82,10 +82,10 @@ class Point3D(Jsonkin):
 
 @enum.unique
 class Axis(enum.Enum):
-    X = lambda r, theta, phi: Point3D.from_polar(r, math.pi / 2, phi)
-    Y = lambda r, theta, phi: Point3D.from_polar(r, 0.0, phi)
-    Z = lambda r, theta, phi: Point3D.from_polar(r, theta, math.pi / 2)
-    NONE = lambda r, theta, phi: Point3D.from_polar(r, theta, phi)
+    X = lambda r, el, az: Point3D.from_polar(r, el=el, az=0.0)
+    Y = lambda r, el, az: Point3D.from_polar(r, el=math.pi/2, az=az)
+    Z = lambda r, el, az: Point3D.from_polar(r, el=el, az=math.pi/2)
+    NONE = lambda r, el, az: Point3D.from_polar(r, el, az)
 
 @enum.unique
 class Quadrant(enum.Enum):
@@ -106,16 +106,14 @@ class Quadrant(enum.Enum):
 def r_point3d(O=Point3D(0.0, 0.0, 0.0), R=1.0, axis=Axis.NONE, quadrant=Quadrant.ANY):
     
     R = R if isinstance(R, (list, tuple)) and len(R) > 1 else flat([0.0, R])
-
-    rt = np.random.uniform(min(R) / max(R), 1.0) # **1/3.0
     
-    r = min(R) + abs(R[0] - R[1]) * rt
+    r = min(R) + abs(R[0] - R[1]) * np.random.uniform(0, 1.0)
 
-    theta = np.random.uniform(0.0, 1.0) * 2 * math.pi 
+    el = math.acos(1.0 - 2.0 * np.random.uniform(0.0, 1.0)) # better distribution
+    # el = np.random.uniform(-1.0, 1.0) * math.pi 
+    az = np.random.uniform(0.0, 1.0) * 2 * math.pi
 
-    phi = math.acos(1.0 - 2.0 * np.random.uniform(0.0, 1.0))
-
-    return O + quadrant(axis(r, theta, phi))
+    return O + quadrant(axis(r, el, az))
 
 ##################################################################
 
@@ -202,4 +200,28 @@ class ArenaParams(object):
         self.sim_config = sim_config
         self.controller = controller
     
-        
+if __name__ == "__main__":
+    
+    from bncontroller.sim.data import r_point3d, Axis, Quadrant, Point3D
+    import matplotlib.pyplot as plotter
+    from mpl_toolkits.mplot3d import Axes3D
+    
+    fig = plotter.figure()
+    ax = fig.gca(projection='3d')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Z')
+    ax.set_zlabel('Y')
+    xs = []
+    ys = []
+    zs = []
+
+    for _ in range(1000):
+        p = r_point3d(O=Point3D(-0.0, 0.0, 0.0), R=[3.0, 3.0], axis=Axis.Y, quadrant=Quadrant.ANY)
+        # print(p.to_tuple())
+        xs.append(p.x)
+        ys.append(p.y)
+        zs.append(p.z)
+
+    ax.scatter(xs, zs, ys)
+
+    plotter.show()
