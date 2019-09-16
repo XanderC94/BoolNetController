@@ -109,8 +109,8 @@ def r_point3d(O=Point3D(0.0, 0.0, 0.0), R=1.0, axis=Axis.NONE, quadrant=Quadrant
     
     r = min(R) + abs(R[0] - R[1]) * np.random.uniform(0, 1.0)
 
-    el = math.acos(1.0 - 2.0 * np.random.uniform(0.0, 1.0)) # better distribution
-    # el = np.random.uniform(-1.0, 1.0) * math.pi 
+    # el = math.acos(1.0 - np.random.uniform(0.0, 2.0)) # better distribution but fails for Z | X == 0
+    el = np.random.uniform(0.0, 1.0) * 2 * math.pi 
     az = np.random.uniform(0.0, 1.0) * 2 * math.pi
 
     return O + quadrant(axis(r, el, az))
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     zs = []
 
     for _ in range(1000):
-        p = r_point3d(O=Point3D(-0.0, 0.0, 0.0), R=[3.0, 3.0], axis=Axis.Y, quadrant=Quadrant.ANY)
+        p = r_point3d(O=Point3D(-0.0, 0.0, 0.0), R=[3.0, 3.0], axis=Axis.Z, quadrant=Quadrant.ANY)
         # print(p.to_tuple())
         xs.append(p.x)
         ys.append(p.y)
