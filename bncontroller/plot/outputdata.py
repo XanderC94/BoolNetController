@@ -10,8 +10,9 @@ from bncontroller.sim.utils import GLOBALS, load_global_config
 output_pattern = r'old:\s?\(?(\d+\.\d+e[+-]?\d+)(?:,\s?(\d+\.\d+e[+-]?\d+)\))?'
 
 def plot_output(fname: str, data: list):
+    cmap = colors.get_cmap(len(data), name='rainbow')
 
-    fig, ax = plotter.subplots(num=f'development_score_trend_{fname}')
+    fig, ax = plotter.subplots(num=f'development_score_trend_{fname}', figsize=(8, 5), dpi=35)
 
     ax.set_title('Network Development -- Iterations / Scores trend')
     ax.set_xlabel('Iteration')
@@ -21,8 +22,8 @@ def plot_output(fname: str, data: list):
     ax.set_ylim([0.0, 3.5e-05])
     ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
-    for d in data:
-        ax.plot(d, color='r')
+    for i, d in enumerate(data):
+        ax.plot(d, color=cmap(i), linewidth=1.0)
 
     fig.subplots_adjust(
         left=0.05,

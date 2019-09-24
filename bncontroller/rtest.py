@@ -14,7 +14,7 @@ from bncontroller.sim.logging.logger import staticlogger as logger, LoggerFactor
 
 #########################################################################################################
 
-MODEL_NAME_PATTERN = r'bn_(?:last_|subopt_|selector_|controller_)?' + futils.FNAME_PATTERN + '(?:.json)'
+MODEL_NAME_PATTERN = r'(?:behavioural_|selective_)?bn_(?:last_|subopt_|selector_|controller_)?' + futils.FNAME_PATTERN + '(?:.json)'
 
 def find_bn_type(jsonrepr: dict):
 

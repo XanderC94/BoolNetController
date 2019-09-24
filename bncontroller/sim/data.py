@@ -211,16 +211,24 @@ if __name__ == "__main__":
     ax.set_xlabel('X')
     ax.set_ylabel('Z')
     ax.set_zlabel('Y')
+
+    ax.set_xlim3d([-7.0, 7.0])
+    ax.set_ylim3d([-7.0, 7.0])
+    ax.set_zlim3d([-7.0, 7.0])
+
     xs = []
     ys = []
     zs = []
 
     for _ in range(1000):
-        p = r_point3d(O=Point3D(-0.0, 0.0, 0.0), R=[3.0, 3.0], axis=Axis.Z, quadrant=Quadrant.ANY)
+        p = r_point3d(O=Point3D(3.0, 0.0, -3.0), R=[2.0, 3.0], axis=Axis.NONE, quadrant=Quadrant.ANY)
+        px = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.X, quadrant=Quadrant.ANY)
+        py = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.Y, quadrant=Quadrant.ANY)
+        pz = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.Z, quadrant=Quadrant.ANY)
         # print(p.to_tuple())
-        xs.append(p.x)
-        ys.append(p.y)
-        zs.append(p.z)
+        xs.extend([p.x, px.x, py.x, pz.x])
+        ys.extend([p.y, px.y, py.y, pz.y])
+        zs.extend([p.z, px.z, py.z, pz.z])
 
     ax.scatter(xs, zs, ys)
 

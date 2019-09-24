@@ -80,7 +80,7 @@ if __name__ == "__main__":
         logger.info(dict(**bn.atm.dtableau))
         logger.info(dict(**bn.atm.dattractors))
 
-        path = FOLDER / f'bn_selector_{iso8106(ms=3)}.json'
+        path = FOLDER / f'selective_bn_{iso8106(ms=3)}.json'
 
         bnjson = bn.to_json()
 
