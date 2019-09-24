@@ -109,8 +109,11 @@ def r_point3d(O=Point3D(0.0, 0.0, 0.0), R=1.0, axis=Axis.NONE, quadrant=Quadrant
     
     r = min(R) + abs(R[0] - R[1]) * np.random.uniform(0, 1.0)
 
-    # el = math.acos(1.0 - np.random.uniform(0.0, 2.0)) # better distribution but fails for Z | X == 0
-    el = np.random.uniform(0.0, 1.0) * 2 * math.pi 
+    if axis is Axis.NONE:
+        el = math.acos(1.0 - np.random.uniform(0.0, 2.0)) # better distribution but fails for Z | X == 0
+    else:
+        el = np.random.uniform(0.0, 1.0) * 2 * math.pi 
+
     az = np.random.uniform(0.0, 1.0) * 2 * math.pi
 
     return O + quadrant(axis(r, el, az))
@@ -212,23 +215,26 @@ if __name__ == "__main__":
     ax.set_ylabel('Z')
     ax.set_zlabel('Y')
 
-    ax.set_xlim3d([-7.0, 7.0])
-    ax.set_ylim3d([-7.0, 7.0])
-    ax.set_zlim3d([-7.0, 7.0])
+    ax.set_xlim3d([-8.0, 8.0])
+    ax.set_ylim3d([-8.0, 8.0])
+    ax.set_zlim3d([-8.0, 8.0])
 
     xs = []
     ys = []
     zs = []
 
     for _ in range(1000):
-        p = r_point3d(O=Point3D(3.0, 0.0, -3.0), R=[2.0, 3.0], axis=Axis.NONE, quadrant=Quadrant.ANY)
-        px = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.X, quadrant=Quadrant.ANY)
-        py = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.Y, quadrant=Quadrant.ANY)
-        pz = r_point3d(O=Point3D(-3.0, 0.0, 3.0), R=[2.0, 3.0], axis=Axis.Z, quadrant=Quadrant.ANY)
+        p1 = r_point3d(O=Point3D(4.0, 0.0, -4.0), R=[0.0, 3.0], axis=Axis.NONE, quadrant=Quadrant.ANY)
+        p2 = r_point3d(O=Point3D(4.0, 0.0, 4.0), R=[1.0, 3.0], axis=Axis.NONE, quadrant=Quadrant.ANY)
+        p3 = r_point3d(O=Point3D(-4.0, 0.0, -4.0), R=[3.0, 3.0], axis=Axis.NONE, quadrant=Quadrant.ANY)
+        
+        px = r_point3d(O=Point3D(-4.0, 0.0, 4.0), R=[2.0, 3.0], axis=Axis.X, quadrant=Quadrant.ANY)
+        py = r_point3d(O=Point3D(-4.0, 0.0, 4.0), R=[2.0, 3.0], axis=Axis.Y, quadrant=Quadrant.ANY)
+        pz = r_point3d(O=Point3D(-4.0, 0.0, 4.0), R=[2.0, 3.0], axis=Axis.Z, quadrant=Quadrant.ANY)
         # print(p.to_tuple())
-        xs.extend([p.x, px.x, py.x, pz.x])
-        ys.extend([p.y, px.y, py.y, pz.y])
-        zs.extend([p.z, px.z, py.z, pz.z])
+        xs.extend([p1.x, p2.x, p3.x, px.x, py.x, pz.x])
+        ys.extend([p1.y, p2.y, p3.y, px.y, py.y, pz.y])
+        zs.extend([p1.z, p2.z, p3.z, px.z, py.z, pz.z])
 
     ax.scatter(xs, zs, ys)
 
