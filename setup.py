@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='BoolNetController',
-      version='0.0.2a',
+      version='1.0.0',
       description='A Boolean Netowork-based controller for robotic agents',
       url='https://github.com/XanderC94/BoolNetController',
       author='XanderC94',
