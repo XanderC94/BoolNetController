@@ -441,7 +441,7 @@ class DefaultConfigOptions(Jsonkin):
             value=1,
             type=int,
             alt=None,
-            descr='''# number of instances of the test cycle for each bn'''
+            descr='''Number of instances of the test cycle for each bn'''
         ),
         # test_aggr_function=DefaultOption(
         #     value=FunctionWrapper('bncontroller.sim.config::empty'),
@@ -614,3 +614,11 @@ class Config(Jsonkin):
         self.bn_q = Q
         self.bn_n_inputs = I 
         self.bn_n_outputs = O
+
+if __name__ == "__main__":
+    
+    import os
+
+    print(os.getcwd())
+
+    write_json(Config(), os.getcwd() + '/template.json', indent=True)

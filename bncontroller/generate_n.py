@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     N, K, P, I, O = GLOBALS.bn_n, GLOBALS.bn_k, GLOBALS.bn_p, GLOBALS.bn_n_inputs, GLOBALS.bn_n_outputs
         
-    path = get_dir(Path('./tmp/thousand_bns/'), create_if_dir=True)
+    path = get_dir(Path(GLOBALS.bn_model_path), create_if_dir=True)
     
     for l in range(GLOBALS.sd_max_iters):
 
@@ -19,6 +19,10 @@ if __name__ == "__main__":
 
         Path(path / f'{l}_bn_n{N}_k{K}_p{int(P*100)}_{FROZEN_DATE}.ebnf').write_text(
             bn.to_ebnf()
+        )
+
+        Path(path / f'{l}_bn_n{N}_k{K}_p{int(P*100)}_{FROZEN_DATE}.json').write_text(
+            bn.to_json()
         )
 
         df = DataFrame(bn.atm.dtableau)
