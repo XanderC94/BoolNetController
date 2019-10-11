@@ -303,7 +303,7 @@ def plot_data(data: dict, infos: dict, positives_threshold: float, light_intensi
             'pt -- fdist - idist < 0.35',
             'apt -- fdist - idist > 0.35',
             f'wpt <= {LEAST_OPT_WPT_SCORE}',
-            f'apt >= wpt',
+            f'wapt >= wpt',
             '|APT| / |PT| < 0.15    (pt)',
             '|PT| / |APT| < 0.15    (apt)',
         ]
